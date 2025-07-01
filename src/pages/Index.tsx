@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,7 +58,7 @@ const tvGenres = [
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState('all');
   const [contentType, setContentType] = useState('movie');
   const [sortBy, setSortBy] = useState('popularity.desc');
   const [selectedMovie, setSelectedMovie] = useState(null);
@@ -80,7 +79,7 @@ const Index = () => {
       sort_by: sortBy,
     });
 
-    if (selectedGenre) params.append('with_genres', selectedGenre);
+    if (selectedGenre && selectedGenre !== 'all') params.append('with_genres', selectedGenre);
     if (searchQuery) {
       endpoint = `/search/${contentType}`;
       params.append('query', searchQuery);
@@ -114,7 +113,7 @@ const Index = () => {
   const { data: filteredContent } = useQuery({
     queryKey: ['filtered', contentType, selectedGenre, sortBy, searchQuery],
     queryFn: fetchFilteredContent,
-    enabled: !!(selectedGenre || searchQuery),
+    enabled: !!(selectedGenre !== 'all' || searchQuery),
   });
 
   const handleMovieClick = (movie: any) => {
@@ -207,7 +206,7 @@ const Index = () => {
                   <SelectValue placeholder="Genre" />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700 max-h-60">
-                  <SelectItem value="">All Genres</SelectItem>
+                  <SelectItem value="all">All Genres</SelectItem>
                   {(contentType === 'movie' ? genres : tvGenres).map((genre) => (
                     <SelectItem key={genre.id} value={genre.id.toString()}>
                       {genre.name}
@@ -252,7 +251,7 @@ const Index = () => {
         </div>
 
         {/* Filtered Results */}
-        {(selectedGenre || searchQuery) && filteredContent?.results && (
+        {(selectedGenre !== 'all' || searchQuery) && filteredContent?.results && (
           <MovieSection 
             title={searchQuery ? `Search Results for "${searchQuery}"` : `${contentType === 'movie' ? 'Movies' : 'TV Shows'} - ${genres.find(g => g.id.toString() === selectedGenre)?.name || tvGenres.find(g => g.id.toString() === selectedGenre)?.name}`}
             movies={filteredContent.results}
@@ -261,7 +260,7 @@ const Index = () => {
         )}
 
         {/* Movie Sections */}
-        {!searchQuery && !selectedGenre && (
+        {!searchQuery && selectedGenre === 'all' && (
           <>
             <MovieSection title="Trending Movies" movies={trendingMovies?.results || []} isLarge={true} />
             <MovieSection title="Top Rated Movies" movies={topRatedMovies?.results || []} />
