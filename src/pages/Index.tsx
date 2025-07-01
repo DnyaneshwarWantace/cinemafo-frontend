@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -235,82 +236,87 @@ const Index = () => {
       <HeroSlider movies={trendingMovies?.results?.slice(0, 5) || []} onMovieClick={handleMovieClick} />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Improved Filters */}
+        {/* Improved Modern Filters */}
         <div className="mb-8">
-          <div className="bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm p-8 rounded-2xl border border-gray-700/50 shadow-2xl">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-blue-600/20 rounded-lg">
-                <Filter className="w-6 h-6 text-blue-400" />
+          <div className="relative overflow-hidden rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-red-600/10 via-transparent to-blue-600/10"></div>
+            <div className="relative p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-gradient-to-br from-red-600 to-blue-600 rounded-xl">
+                  <Filter className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                  Discover Content
+                </h3>
               </div>
-              <h3 className="text-xl font-bold text-white">Discover Content</h3>
-            </div>
-            
-            <div className="flex flex-wrap gap-6 items-end">
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-300">Content Type</label>
-                <Select value={contentType} onValueChange={setContentType}>
-                  <SelectTrigger className="w-[140px] bg-gray-800/80 border-gray-600 text-white hover:bg-gray-700/80 transition-colors">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
-                    <SelectItem value="movie">🎬 Movies</SelectItem>
-                    <SelectItem value="tv">📺 TV Shows</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              
+              <div className="flex flex-wrap gap-6 items-end">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-300">Content Type</label>
+                  <Select value={contentType} onValueChange={setContentType}>
+                    <SelectTrigger className="w-[140px] bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70 transition-all rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black/90 backdrop-blur-xl border-white/20 rounded-xl">
+                      <SelectItem value="movie">🎬 Movies</SelectItem>
+                      <SelectItem value="tv">📺 TV Shows</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-300">Genre</label>
-                <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-                  <SelectTrigger className="w-[160px] bg-gray-800/80 border-gray-600 text-white hover:bg-gray-700/80 transition-colors">
-                    <SelectValue placeholder="Select Genre" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600 max-h-60">
-                    <SelectItem value="all">🎭 All Genres</SelectItem>
-                    {(contentType === 'movie' ? genres : tvGenres).map((genre) => (
-                      <SelectItem key={genre.id} value={genre.id.toString()}>
-                        {genre.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-300">Genre</label>
+                  <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                    <SelectTrigger className="w-[160px] bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70 transition-all rounded-xl">
+                      <SelectValue placeholder="Select Genre" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black/90 backdrop-blur-xl border-white/20 max-h-60 rounded-xl">
+                      <SelectItem value="all">🎭 All Genres</SelectItem>
+                      {(contentType === 'movie' ? genres : tvGenres).map((genre) => (
+                        <SelectItem key={genre.id} value={genre.id.toString()}>
+                          {genre.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-300">Sort By</label>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[160px] bg-gray-800/80 border-gray-600 text-white hover:bg-gray-700/80 transition-colors">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-600">
-                    <SelectItem value="popularity.desc">🔥 Most Popular</SelectItem>
-                    <SelectItem value="vote_average.desc">⭐ Highest Rated</SelectItem>
-                    <SelectItem value="release_date.desc">🆕 Newest</SelectItem>
-                    <SelectItem value="revenue.desc">💰 Highest Grossing</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-300">Sort By</label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-[160px] bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70 transition-all rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black/90 backdrop-blur-xl border-white/20 rounded-xl">
+                      <SelectItem value="popularity.desc">🔥 Most Popular</SelectItem>
+                      <SelectItem value="vote_average.desc">⭐ Highest Rated</SelectItem>
+                      <SelectItem value="release_date.desc">🆕 Newest</SelectItem>
+                      <SelectItem value="revenue.desc">💰 Highest Grossing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="flex flex-col gap-2 flex-grow max-w-md">
-                <label className="text-sm font-medium text-gray-300">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    placeholder="Search movies & TV shows..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-gray-800/80 border-gray-600 text-white pl-10 pr-10 hover:bg-gray-700/80 focus:bg-gray-700/80 transition-colors"
-                  />
-                  {searchQuery && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1 h-6 w-6"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
+                <div className="flex flex-col gap-2 flex-grow max-w-md">
+                  <label className="text-sm font-medium text-gray-300">Search</label>
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Search movies & TV shows..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="bg-black/50 backdrop-blur-sm border-white/20 text-white pl-12 pr-12 hover:bg-black/70 focus:bg-black/70 transition-all rounded-xl h-10"
+                    />
+                    {searchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1 h-6 w-6 rounded-full"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

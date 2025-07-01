@@ -55,7 +55,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
   return (
     <Dialog open={!!movie} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] bg-gray-900 border-gray-800 text-white p-0 overflow-hidden">
-        {/* Custom Close Button */}
+        {/* Custom Close Button - Only one X button */}
         <Button
           variant="ghost"
           size="sm"
