@@ -12,10 +12,43 @@ interface MovieModalProps {
 
 const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
   const handleWatchNow = () => {
-    // Scroll to the iframe section within the modal
-    const iframeSection = document.getElementById('movie-iframe');
-    if (iframeSection) {
-      iframeSection.scrollIntoView({ behavior: 'smooth' });
+    // Close the modal first
+    onClose();
+    
+    // Create iframe section on the main page
+    const existingIframe = document.getElementById('main-movie-iframe');
+    if (existingIframe) {
+      existingIframe.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    // Create new iframe section
+    const iframeSection = document.createElement('div');
+    iframeSection.id = 'main-movie-iframe';
+    iframeSection.className = 'fixed inset-0 z-50 bg-black flex items-center justify-center';
+    iframeSection.innerHTML = `
+      <button id="close-iframe" class="absolute top-4 right-4 z-10 bg-red-600 hover:bg-red-700 text-white p-3 rounded-full">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+      <iframe 
+        src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" 
+        class="w-full h-full" 
+        frameborder="0" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+        allowfullscreen>
+      </iframe>
+    `;
+
+    document.body.appendChild(iframeSection);
+
+    // Add close functionality
+    const closeBtn = document.getElementById('close-iframe');
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        document.body.removeChild(iframeSection);
+      };
     }
   };
 
@@ -116,24 +149,6 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
                   </div>
                 )}
               </div>
-            </div>
-            
-            {/* Video Player Section */}
-            <div className="mt-12" id="movie-iframe">
-              <h3 className="text-2xl font-bold mb-6 text-white">Watch Preview</h3>
-              <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
-                <iframe
-                  src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1"
-                  title="Movie Preview"
-                  className="w-full h-full"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-              <p className="text-gray-400 text-sm mt-3">
-                * This is a preview. Full movie streaming requires subscription.
-              </p>
             </div>
           </div>
         </div>
