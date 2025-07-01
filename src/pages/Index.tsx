@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Play, Star, Calendar, Clock, Filter, X } from "lucide-react";
+import { Search, Play, Star, Calendar, Clock, Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import HeroSlider from "@/components/HeroSlider";
 import Navigation from "@/components/Navigation";
@@ -122,7 +122,7 @@ const Index = () => {
 
   const MovieCard = ({ movie, isLarge = false }: { movie: any, isLarge?: boolean }) => (
     <Card 
-      className={`${isLarge ? 'min-w-[300px]' : 'min-w-[200px]'} bg-gray-900/50 border-gray-800 card-hover cursor-pointer`}
+      className={`${isLarge ? 'min-w-[300px]' : 'min-w-[200px]'} bg-gray-900/50 border-gray-800 card-hover cursor-pointer flex-shrink-0`}
       onClick={() => handleMovieClick(movie)}
     >
       <CardContent className="p-0">
@@ -162,16 +162,69 @@ const Index = () => {
     </Card>
   );
 
-  const MovieSection = ({ title, movies, isLarge = false }: { title: string, movies: any[], isLarge?: boolean }) => (
-    <section className="mb-12">
-      <h2 className="text-2xl font-bold text-white mb-6">{title}</h2>
-      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
-        {movies?.map((movie) => (
-          <MovieCard key={movie.id} movie={movie} isLarge={isLarge} />
-        ))}
-      </div>
-    </section>
-  );
+  const MovieSection = ({ title, movies, isLarge = false }: { title: string, movies: any[], isLarge?: boolean }) => {
+    const [scrollPosition, setScrollPosition] = useState(0);
+    const scrollRef = React.useRef<HTMLDivElement>(null);
+
+    const scroll = (direction: 'left' | 'right') => {
+      if (scrollRef.current) {
+        const scrollAmount = 400;
+        const newPosition = direction === 'left' 
+          ? scrollPosition - scrollAmount 
+          : scrollPosition + scrollAmount;
+        
+        scrollRef.current.scrollTo({ left: newPosition, behavior: 'smooth' });
+        setScrollPosition(newPosition);
+      }
+    };
+
+    const handleScroll = () => {
+      if (scrollRef.current) {
+        setScrollPosition(scrollRef.current.scrollLeft);
+      }
+    };
+
+    return (
+      <section className="mb-12 relative">
+        <h2 className="text-2xl font-bold text-white mb-6">{title}</h2>
+        <div className="relative group">
+          {/* Left Arrow */}
+          {scrollPosition > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => scroll('left')}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+          )}
+          
+          <div 
+            ref={scrollRef}
+            className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
+            onScroll={handleScroll}
+          >
+            {movies?.map((movie) => (
+              <MovieCard key={movie.id} movie={movie} isLarge={isLarge} />
+            ))}
+          </div>
+
+          {/* Right Arrow */}
+          {scrollRef.current && scrollPosition < (scrollRef.current.scrollWidth - scrollRef.current.clientWidth) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => scroll('right')}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          )}
+        </div>
+      </section>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-black">
@@ -182,70 +235,84 @@ const Index = () => {
       <HeroSlider movies={trendingMovies?.results?.slice(0, 5) || []} onMovieClick={handleMovieClick} />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Filters */}
-        <div className="mb-8 bg-gray-900/30 p-6 rounded-lg border border-gray-800">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-blue-400" />
-              <span className="text-white font-medium">Filters:</span>
+        {/* Improved Filters */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm p-8 rounded-2xl border border-gray-700/50 shadow-2xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-blue-600/20 rounded-lg">
+                <Filter className="w-6 h-6 text-blue-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Discover Content</h3>
             </div>
             
-            <div className="flex gap-4 flex-wrap">
-              <Select value={contentType} onValueChange={setContentType}>
-                <SelectTrigger className="w-[120px] bg-gray-800 border-gray-700">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value="movie">Movies</SelectItem>
-                  <SelectItem value="tv">TV Shows</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-wrap gap-6 items-end">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-300">Content Type</label>
+                <Select value={contentType} onValueChange={setContentType}>
+                  <SelectTrigger className="w-[140px] bg-gray-800/80 border-gray-600 text-white hover:bg-gray-700/80 transition-colors">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600">
+                    <SelectItem value="movie">🎬 Movies</SelectItem>
+                    <SelectItem value="tv">📺 TV Shows</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-                <SelectTrigger className="w-[140px] bg-gray-800 border-gray-700">
-                  <SelectValue placeholder="Genre" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 max-h-60">
-                  <SelectItem value="all">All Genres</SelectItem>
-                  {(contentType === 'movie' ? genres : tvGenres).map((genre) => (
-                    <SelectItem key={genre.id} value={genre.id.toString()}>
-                      {genre.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-300">Genre</label>
+                <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                  <SelectTrigger className="w-[160px] bg-gray-800/80 border-gray-600 text-white hover:bg-gray-700/80 transition-colors">
+                    <SelectValue placeholder="Select Genre" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600 max-h-60">
+                    <SelectItem value="all">🎭 All Genres</SelectItem>
+                    {(contentType === 'movie' ? genres : tvGenres).map((genre) => (
+                      <SelectItem key={genre.id} value={genre.id.toString()}>
+                        {genre.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[140px] bg-gray-800 border-gray-700">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value="popularity.desc">Most Popular</SelectItem>
-                  <SelectItem value="vote_average.desc">Highest Rated</SelectItem>
-                  <SelectItem value="release_date.desc">Newest</SelectItem>
-                  <SelectItem value="revenue.desc">Highest Grossing</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-300">Sort By</label>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[160px] bg-gray-800/80 border-gray-600 text-white hover:bg-gray-700/80 transition-colors">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-600">
+                    <SelectItem value="popularity.desc">🔥 Most Popular</SelectItem>
+                    <SelectItem value="vote_average.desc">⭐ Highest Rated</SelectItem>
+                    <SelectItem value="release_date.desc">🆕 Newest</SelectItem>
+                    <SelectItem value="revenue.desc">💰 Highest Grossing</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="flex items-center gap-2 min-w-[250px]">
-              <Search className="w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Search movies & TV shows..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white"
-              />
-              {searchQuery && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearchQuery('')}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              )}
+              <div className="flex flex-col gap-2 flex-grow max-w-md">
+                <label className="text-sm font-medium text-gray-300">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    placeholder="Search movies & TV shows..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-gray-800/80 border-gray-600 text-white pl-10 pr-10 hover:bg-gray-700/80 focus:bg-gray-700/80 transition-colors"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1 h-6 w-6"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
