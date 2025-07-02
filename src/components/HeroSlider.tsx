@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Play, Info, ChevronLeft, ChevronRight } from "lucide-react";
@@ -43,7 +42,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ movies, onMovieClick }) => {
 
   if (!movies || movies.length === 0) {
     return (
-      <div className="relative h-[70vh] bg-gradient-to-r from-gray-900 to-black flex items-center justify-center">
+      <div className="relative h-screen bg-gradient-to-r from-gray-900 to-black flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
       </div>
     );
@@ -52,12 +51,14 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ movies, onMovieClick }) => {
   const currentMovie = movies[currentSlide];
 
   return (
-    <div className="relative h-[70vh] overflow-hidden">
+    <div className="relative h-screen overflow-hidden">
       {/* Background Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000 ease-in-out"
         style={{
           backgroundImage: `url(https://image.tmdb.org/t/p/original${currentMovie?.backdrop_path})`,
+          height: '100%',
+          width: '100%'
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
@@ -66,7 +67,8 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ movies, onMovieClick }) => {
 
       {/* Content */}
       <div className="relative z-10 h-full flex items-center">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 flex gap-8 items-center pt-20">
+          {/* Text Content */}
           <div className="max-w-2xl">
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 fade-in">
               {currentMovie?.title || currentMovie?.name}
@@ -102,6 +104,18 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ movies, onMovieClick }) => {
                 More Info
               </Button>
             </div>
+          </div>
+
+          {/* Poster Image */}
+          <div className="hidden lg:block w-[400px] h-[600px] rounded-lg overflow-hidden shadow-2xl">
+            <img
+              src={`https://image.tmdb.org/t/p/original${currentMovie?.poster_path}`}
+              alt={currentMovie?.title || currentMovie?.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = '/placeholder.svg';
+              }}
+            />
           </div>
         </div>
       </div>

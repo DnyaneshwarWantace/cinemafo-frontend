@@ -1,41 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Search, Play, Star, Calendar, Clock, Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Star, Calendar, Play, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import HeroSlider from "@/components/HeroSlider";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import MovieModal from "@/components/MovieModal";
 import LoadingBar from "@/components/LoadingBar";
+import HeroSlider from "@/components/HeroSlider";
 
 const TMDB_API_KEY = '8265bd1679663a7ea12ac168da84d2e8';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-
-const genres = [
-  { id: 28, name: 'Action' },
-  { id: 12, name: 'Adventure' },
-  { id: 16, name: 'Animation' },
-  { id: 35, name: 'Comedy' },
-  { id: 80, name: 'Crime' },
-  { id: 99, name: 'Documentary' },
-  { id: 18, name: 'Drama' },
-  { id: 10751, name: 'Family' },
-  { id: 14, name: 'Fantasy' },
-  { id: 36, name: 'History' },
-  { id: 27, name: 'Horror' },
-  { id: 10402, name: 'Music' },
-  { id: 9648, name: 'Mystery' },
-  { id: 10749, name: 'Romance' },
-  { id: 878, name: 'Sci-Fi' },
-  { id: 10770, name: 'TV Movie' },
-  { id: 53, name: 'Thriller' },
-  { id: 10752, name: 'War' },
-  { id: 37, name: 'Western' }
-];
 
 const tvGenres = [
   { id: 10759, name: 'Action & Adventure' },
@@ -56,22 +33,21 @@ const tvGenres = [
   { id: 37, name: 'Western' }
 ];
 
-const Index = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+const Shows = () => {
   const [selectedGenre, setSelectedGenre] = useState('all');
-  const [contentType, setContentType] = useState('movie');
   const [sortBy, setSortBy] = useState('popularity.desc');
-  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedShow, setSelectedShow] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchMovies = async (endpoint: string) => {
+  const fetchShows = async (endpoint: string) => {
     const response = await fetch(`${TMDB_BASE_URL}${endpoint}?api_key=${TMDB_API_KEY}&language=en-US&page=1`);
     if (!response.ok) throw new Error('Failed to fetch');
     return response.json();
   };
 
-  const fetchFilteredContent = async () => {
-    let endpoint = `/discover/${contentType}`;
+  const fetchFilteredShows = async () => {
+    let endpoint = `/discover/tv`;
     const params = new URLSearchParams({
       api_key: TMDB_API_KEY,
       language: 'en-US',
@@ -79,9 +55,12 @@ const Index = () => {
       sort_by: sortBy,
     });
 
-    if (selectedGenre && selectedGenre !== 'all') params.append('with_genres', selectedGenre);
+    if (selectedGenre && selectedGenre !== 'all') {
+      params.append('with_genres', selectedGenre);
+    }
+
     if (searchQuery) {
-      endpoint = `/search/${contentType}`;
+      endpoint = `/search/tv`;
       params.append('query', searchQuery);
     }
 
@@ -90,46 +69,46 @@ const Index = () => {
     return response.json();
   };
 
-  const { data: trendingMovies } = useQuery({
-    queryKey: ['trending', 'movie'],
-    queryFn: () => fetchMovies('/trending/movie/week'),
+  const { data: popularShows } = useQuery({
+    queryKey: ['popular', 'tv'],
+    queryFn: () => fetchShows('/tv/popular'),
   });
 
-  const { data: topRatedMovies } = useQuery({
-    queryKey: ['topRated', 'movie'],
-    queryFn: () => fetchMovies('/movie/top_rated'),
+  const { data: topRatedShows } = useQuery({
+    queryKey: ['topRated', 'tv'],
+    queryFn: () => fetchShows('/tv/top_rated'),
   });
 
-  const { data: popularMovies } = useQuery({
-    queryKey: ['popular', 'movie'],
-    queryFn: () => fetchMovies('/movie/popular'),
+  const { data: airingTodayShows } = useQuery({
+    queryKey: ['airingToday', 'tv'],
+    queryFn: () => fetchShows('/tv/airing_today'),
   });
 
-  const { data: trendingTv } = useQuery({
-    queryKey: ['trending', 'tv'],
-    queryFn: () => fetchMovies('/trending/tv/week'),
+  const { data: onTheAirShows } = useQuery({
+    queryKey: ['onTheAir', 'tv'],
+    queryFn: () => fetchShows('/tv/on_the_air'),
   });
 
-  const { data: filteredContent } = useQuery({
-    queryKey: ['filtered', contentType, selectedGenre, sortBy, searchQuery],
-    queryFn: fetchFilteredContent,
+  const { data: filteredShows } = useQuery({
+    queryKey: ['filtered', 'tv', selectedGenre, sortBy, searchQuery],
+    queryFn: fetchFilteredShows,
     enabled: !!(selectedGenre !== 'all' || searchQuery),
   });
 
-  const handleMovieClick = (movie: any) => {
-    setSelectedMovie(movie);
+  const handleShowClick = (show: any) => {
+    setSelectedShow(show);
   };
 
-  const MovieCard = ({ movie, isLarge = false }: { movie: any, isLarge?: boolean }) =>
+  const ShowCard = ({ show, isLarge = false }: { show: any, isLarge?: boolean }) => (
     <Card 
-      className={`${isLarge ? 'w-[300px]' : 'w-[200px]'} bg-gray-900/50 border-gray-800 card-hover cursor-pointer flex-shrink-0`}
-      onClick={() => handleMovieClick(movie)}
+      className={`${isLarge ? 'w-[300px]' : 'w-[200px]'} bg-gray-900/50 border-gray-800 card-hover cursor-pointer flex-shrink-0 transition-all duration-300 hover:scale-105 hover:bg-gray-800/70`}
+      onClick={() => handleShowClick(show)}
     >
       <CardContent className="p-0 relative">
         <div className="relative aspect-[2/3] w-full">
           <img
-            src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-            alt={movie.title || movie.name}
+            src={`https://image.tmdb.org/t/p/w500${show.poster_path}`}
+            alt={show.name}
             className="w-full h-full object-cover rounded-t-lg"
             onError={(e) => {
               e.currentTarget.src = '/placeholder.svg';
@@ -138,33 +117,34 @@ const Index = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent rounded-t-lg" />
           <div className="absolute bottom-4 left-4 right-4">
             <h3 className={`text-white font-bold ${isLarge ? 'text-lg' : 'text-sm'} mb-2 line-clamp-2`}>
-              {movie.title || movie.name}
+              {show.name}
             </h3>
             <div className="flex items-center gap-2 text-xs text-gray-300">
               <Star className="w-3 h-3 text-yellow-400" />
-              <span>{movie.vote_average?.toFixed(1)}</span>
+              <span>{show.vote_average?.toFixed(1)}</span>
               <Calendar className="w-3 h-3 ml-2" />
-              <span>{new Date(movie.release_date || movie.first_air_date).getFullYear()}</span>
+              <span>{new Date(show.first_air_date).getFullYear()}</span>
             </div>
           </div>
           <Button 
             size="sm" 
-            className="absolute top-4 right-4 bg-red-600 hover:bg-red-700"
+            className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => {
               e.stopPropagation();
-              handleMovieClick(movie);
+              handleShowClick(show);
             }}
           >
             <Play className="w-3 h-3" />
           </Button>
         </div>
       </CardContent>
-    </Card>;
+    </Card>
+  );
 
-  const MovieSection = ({ title, movies, isLarge = false }: { title: string, movies: any[], isLarge?: boolean }) => {
+  const ShowSection = ({ title, shows, isLarge = false }: { title: string, shows: any[], isLarge?: boolean }) => {
     const [currentPage, setCurrentPage] = useState(0);
     const itemsPerPage = 6;
-    const totalPages = Math.ceil(movies?.length / itemsPerPage);
+    const totalPages = Math.ceil((shows?.length || 0) / itemsPerPage);
     const scrollRef = React.useRef<HTMLDivElement>(null);
 
     const scroll = (direction: 'left' | 'right') => {
@@ -174,8 +154,8 @@ const Index = () => {
           : Math.min(totalPages - 1, currentPage + 1);
         
         setCurrentPage(newPage);
-        const cardWidth = isLarge ? 300 : 200; // Width of each card
-        const gap = 16; // Gap between cards (4 units in Tailwind = 16px)
+        const cardWidth = isLarge ? 300 : 200;
+        const gap = 16;
         const scrollAmount = newPage * (cardWidth + gap) * itemsPerPage;
         scrollRef.current.scrollTo({ left: scrollAmount, behavior: 'smooth' });
       }
@@ -185,7 +165,6 @@ const Index = () => {
       <section className="mb-12 relative group pt-4">
         <h2 className="text-2xl font-bold text-white mb-6 pl-4">{title}</h2>
         <div className="relative">
-          {/* Left Arrow */}
           {currentPage > 0 && (
             <Button
               variant="ghost"
@@ -205,12 +184,11 @@ const Index = () => {
               WebkitMaskImage: 'linear-gradient(to right, black 95%, transparent 98%)'
             }}
           >
-            {movies?.map((movie) => (
-              <MovieCard key={movie.id} movie={movie} isLarge={isLarge} />
+            {shows?.map((show) => (
+              <ShowCard key={show.id} show={show} isLarge={isLarge} />
             ))}
           </div>
 
-          {/* Right Arrow */}
           {currentPage < totalPages - 1 && (
             <Button
               variant="ghost"
@@ -228,104 +206,94 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-black">
-      <LoadingBar isLoading={isLoading} />
       <Navigation />
+      <LoadingBar isLoading={isLoading} />
       
-      {/* Hero Slider */}
-      <HeroSlider movies={trendingMovies?.results?.slice(0, 5) || []} onMovieClick={handleMovieClick} />
+      {/* Hero Slider for TV Shows */}
+      <HeroSlider movies={popularShows?.results?.slice(0, 5) || []} onMovieClick={handleShowClick} />
 
-      <div className="container mx-auto px-4 py-8 pt-20">
-        {/* Simple Netflix-style Discover Filters */}
+      <div className="container mx-auto px-4 py-8">
+        {/* Simple Netflix-style Filters */}
         <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/80 rounded-lg border border-gray-800">
           <div className="flex gap-4 items-center flex-wrap">
-                  <Select value={contentType} onValueChange={setContentType}>
-              <SelectTrigger className="w-[140px] bg-gray-800 border-gray-700 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="movie">Movies</SelectItem>
-                <SelectItem value="tv">TV Shows</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+            <Select value={selectedGenre} onValueChange={setSelectedGenre}>
               <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
                 <SelectValue placeholder="Genre" />
-                    </SelectTrigger>
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Genres</SelectItem>
-                      {(contentType === 'movie' ? genres : tvGenres).map((genre) => (
-                        <SelectItem key={genre.id} value={genre.id.toString()}>
-                          {genre.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {tvGenres.map((genre) => (
+                  <SelectItem key={genre.id} value={genre.id.toString()}>
+                    {genre.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-                  <Select value={sortBy} onValueChange={setSortBy}>
+            <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="popularity.desc">Popular</SelectItem>
                 <SelectItem value="vote_average.desc">Top Rated</SelectItem>
-                <SelectItem value="release_date.desc">Latest</SelectItem>
-                <SelectItem value="revenue.desc">Box Office</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <SelectItem value="first_air_date.desc">Latest</SelectItem>
+                <SelectItem value="first_air_date.asc">Oldest</SelectItem>
+              </SelectContent>
+            </Select>
 
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      placeholder="Search movies & TV shows..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+              <Input
+                placeholder="Search TV shows..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-gray-800 border-gray-700 text-white pl-10 pr-10"
-                    />
-                    {searchQuery && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSearchQuery('')}
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSearchQuery('')}
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1 h-6 w-6"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
 
         {/* Filtered Results */}
-        {(selectedGenre !== 'all' || searchQuery) && filteredContent?.results && (
-          <MovieSection 
-            title={searchQuery ? `Search Results for "${searchQuery}"` : `${contentType === 'movie' ? 'Movies' : 'TV Shows'} - ${genres.find(g => g.id.toString() === selectedGenre)?.name || tvGenres.find(g => g.id.toString() === selectedGenre)?.name}`}
-            movies={filteredContent.results}
+        {(selectedGenre !== 'all' || searchQuery) && filteredShows?.results && (
+          <ShowSection 
+            title={searchQuery ? `Search Results for "${searchQuery}"` : `${tvGenres.find(g => g.id.toString() === selectedGenre)?.name} Shows`}
+            shows={filteredShows.results}
             isLarge={true}
           />
         )}
 
-        {/* Movie Sections */}
+        {/* TV Show Sections */}
         {!searchQuery && selectedGenre === 'all' && (
           <>
-            <MovieSection title="Trending Movies" movies={trendingMovies?.results || []} isLarge={true} />
-            <MovieSection title="Top Rated Movies" movies={topRatedMovies?.results || []} />
-            <MovieSection title="Popular Movies" movies={popularMovies?.results || []} />
-            <MovieSection title="Trending TV Shows" movies={trendingTv?.results || []} />
+            <ShowSection title="🔥 Popular TV Shows" shows={popularShows?.results || []} isLarge={true} />
+            <ShowSection title="⭐ Top Rated TV Shows" shows={topRatedShows?.results || []} />
+            <ShowSection title="📺 On The Air" shows={onTheAirShows?.results || []} />
+            <ShowSection title="📅 Airing Today" shows={airingTodayShows?.results || []} />
           </>
         )}
       </div>
 
       <Footer />
       
-      {selectedMovie && (
+      {selectedShow && (
         <MovieModal 
-          movie={selectedMovie} 
-          onClose={() => setSelectedMovie(null)} 
+          movie={selectedShow} 
+          onClose={() => setSelectedShow(null)} 
         />
       )}
     </div>
   );
 };
 
-export default Index;
+export default Shows; 
