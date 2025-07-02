@@ -211,7 +211,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
     <>
       <Dialog open={!!movie && !showTrailer} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-6xl max-h-[90vh] bg-gray-900 border-gray-800 text-white p-0 overflow-hidden [&>button]:hidden">
-          <div className="overflow-y-auto max-h-[90vh] scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500">
+          <div className="overflow-y-auto max-h-[90vh] scrollbar-hide">
           {/* Hero Section */}
           <div className="relative h-[400px] overflow-hidden">
             <img
@@ -362,9 +362,9 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Trailer Modal - Full Screen with Better Error Handling */}
+      {/* Trailer Modal - Full Screen Netflix-style Player */}
       {showTrailer && trailerData && (
-        <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center overflow-hidden trailer-modal" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="fixed inset-0 z-[100] netflix-player flex items-center justify-center overflow-hidden trailer-modal" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Close Button */}
           <button
             onClick={closeTrailer}
@@ -410,7 +410,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
                 <div>
                   <button
                     onClick={() => setShowQualityMenu(!showQualityMenu)}
-                    className="bg-black/70 hover:bg-black/90 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-2xl backdrop-blur-sm flex items-center gap-2"
+                    className="netflix-button text-white px-4 py-2 rounded-lg flex items-center gap-2"
                     disabled={isLoadingQuality}
                   >
                     {isLoadingQuality ? (
@@ -429,9 +429,9 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
                     </svg>
                   </button>
                   
-                  {/* Quality Menu */}
+                   {/* Quality Menu */}
                   {showQualityMenu && (
-                    <div className="absolute top-full mt-2 right-0 bg-black/90 backdrop-blur-sm rounded-lg shadow-2xl border border-gray-700 min-w-[160px]">
+                    <div className="absolute top-full mt-2 right-0 netflix-quality-menu rounded-lg min-w-[160px]">
                       {trailerData.availableQualities.map((quality: any) => (
                         <div key={quality.formatId} className="flex">
                           <button
@@ -554,9 +554,9 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
             )}
           </div>
           
-          {/* Video Info Overlay */}
-          <div className="absolute bottom-6 left-6 text-white z-[110] bg-black/70 px-4 py-2 rounded-lg backdrop-blur-sm">
-            <h3 className="text-lg font-bold">{movie.title || movie.name}</h3>
+          {/* Video Info Overlay - Netflix Style */}
+          <div className="absolute bottom-6 left-6 text-white z-[110] netflix-controls px-4 py-3 rounded-lg">
+            <h3 className="text-lg font-bold text-white">{movie.title || movie.name}</h3>
             <p className="text-gray-300 text-sm">
               Official Trailer
               {useYouTubeFallback ? (
@@ -577,8 +577,8 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
             </p>
           </div>
           
-          {/* Controls Info */}
-          <div className="absolute bottom-6 right-6 text-white z-[110] bg-black/70 px-4 py-2 rounded-lg backdrop-blur-sm">
+          {/* Controls Info - Netflix Style */}
+          <div className="absolute bottom-6 right-6 text-white z-[110] netflix-controls px-4 py-3 rounded-lg">
             <p className="text-gray-300 text-sm">
               ESC to close • {!useYouTubeFallback && 'Download trailer • Change quality • '}Fullscreen
             </p>

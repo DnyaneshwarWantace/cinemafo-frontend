@@ -67,28 +67,35 @@
     display: none;
   }
   
-  /* Custom scrollbar styles for movie modal */
-  .scrollbar-thin {
-    scrollbar-width: thin;
+  /* Netflix-style video player controls */
+  .netflix-player {
+    background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(20,20,20,0.9) 100%);
   }
   
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  .netflix-controls {
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+    backdrop-filter: blur(8px);
   }
   
-  .scrollbar-track-gray-800::-webkit-scrollbar-track {
-    background: #1f2937;
-    border-radius: 4px;
+  .netflix-button {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
-  .scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
-    background: #4b5563;
-    border-radius: 4px;
+  .netflix-button:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
   }
   
-  .hover\:scrollbar-thumb-gray-500:hover::-webkit-scrollbar-thumb {
-    background: #6b7280;
+  .netflix-quality-menu {
+    background: rgba(0,0,0,0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.8);
   }
   
   /* Hide scrollbars completely for trailer modal */
