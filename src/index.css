@@ -78,17 +78,14 @@
   }
   
   .netflix-button {
-    background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.2);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #e50914;
+    border: none;
+    transition: all 0.2s ease;
   }
   
   .netflix-button:hover {
-    background: rgba(255,255,255,0.2);
-    border-color: rgba(255,255,255,0.3);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    background: #f40612;
+    transform: scale(1.05);
   }
   
   .netflix-quality-menu {
