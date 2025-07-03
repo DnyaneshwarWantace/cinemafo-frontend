@@ -1,148 +1,125 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Play, Info, ChevronLeft, ChevronRight } from "lucide-react";
-
-interface Movie {
-  id: number;
-  title?: string;
-  name?: string;
-  overview: string;
-  backdrop_path: string;
-  poster_path: string;
-  vote_average: number;
-  release_date?: string;
-  first_air_date?: string;
-}
+import { Button } from './ui/button';
+import { ChevronLeft, ChevronRight, Play, Info } from 'lucide-react';
+import { Movie, TVShow } from '@/services/api';
 
 interface HeroSliderProps {
-  movies: Movie[];
-  onMovieClick: (movie: Movie) => void;
+  items: (Movie | TVShow)[];
+  onItemClick?: (item: Movie | TVShow) => void;
 }
 
-const HeroSlider: React.FC<HeroSliderProps> = ({ movies, onMovieClick }) => {
-  const [currentSlide, setCurrentSlide] = useState(0);
+const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
-    if (movies.length === 0) return;
-    
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % movies.length);
-    }, 5000); // Auto-slide every 5 seconds
-
+      handleNext();
+    }, 8000);
     return () => clearInterval(interval);
-  }, [movies.length]);
+  }, [currentIndex]);
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % movies.length);
+  const handlePrev = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentIndex((prev) => (prev === 0 ? items.length - 1 : prev - 1));
+    setTimeout(() => setIsTransitioning(false), 500);
   };
 
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + movies.length) % movies.length);
+  const handleNext = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentIndex((prev) => (prev === items.length - 1 ? 0 : prev + 1));
+    setTimeout(() => setIsTransitioning(false), 500);
   };
 
-  if (!movies || movies.length === 0) {
-    return (
-      <div className="relative h-screen bg-gradient-to-r from-gray-900 to-black flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
-  }
+  if (!items.length) return null;
 
-  const currentMovie = movies[currentSlide];
+  const currentItem = items[currentIndex];
+  const title = 'title' in currentItem ? currentItem.title : currentItem.name;
+  const releaseDate = 'release_date' in currentItem ? currentItem.release_date : currentItem.first_air_date;
 
   return (
-    <div className="relative h-screen overflow-hidden">
+    <div className="relative w-full h-[50vh] min-h-[300px] md:h-[70vh] lg:h-[90vh] overflow-hidden">
       {/* Background Image */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000 ease-in-out"
-        style={{
-          backgroundImage: `url(https://image.tmdb.org/t/p/original${currentMovie?.backdrop_path})`,
-          height: '100%',
-          width: '100%'
-        }}
+        className="absolute inset-0 w-full h-full"
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+        <img
+          src={`https://image.tmdb.org/t/p/original${currentItem.backdrop_path}`}
+          alt={title}
+          className="w-full h-full object-cover object-center md:object-center lg:object-center transition-transform duration-500"
+          style={{
+            transform: isTransitioning ? 'scale(1.05)' : 'scale(1)',
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 h-full flex items-center">
-        <div className="container mx-auto px-4 flex gap-8 items-center pt-20">
-          {/* Text Content */}
-          <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 fade-in">
-              {currentMovie?.title || currentMovie?.name}
-            </h1>
-            <p className="text-lg text-gray-200 mb-6 line-clamp-3 fade-in">
-              {currentMovie?.overview}
-            </p>
-            <div className="flex items-center gap-4 mb-8 fade-in">
-              <div className="flex items-center gap-2 text-yellow-400">
-                <span className="text-2xl">★</span>
-                <span className="text-white font-semibold">{currentMovie?.vote_average?.toFixed(1)}</span>
-              </div>
-              <div className="text-gray-300">
-                {new Date(currentMovie?.release_date || currentMovie?.first_air_date).getFullYear()}
-              </div>
-            </div>
-            <div className="flex gap-4 fade-in">
-              <Button 
-                size="lg" 
-                className="bg-red-600 hover:bg-red-700 text-white px-8"
-                onClick={() => onMovieClick(currentMovie)}
-              >
-                <Play className="w-5 h-5 mr-2" />
-                Watch Now
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="bg-gray-800/80 border-gray-600 text-white hover:bg-gray-700"
-                onClick={() => onMovieClick(currentMovie)}
-              >
-                <Info className="w-5 h-5 mr-2" />
-                More Info
-              </Button>
-            </div>
-          </div>
-
-          {/* Poster Image */}
-          <div className="hidden lg:block w-[400px] h-[600px] rounded-lg overflow-hidden shadow-2xl">
-            <img
-              src={`https://image.tmdb.org/t/p/original${currentMovie?.poster_path}`}
-              alt={currentMovie?.title || currentMovie?.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = '/placeholder.svg';
-              }}
-            />
-          </div>
+      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8 md:p-16 z-10 flex flex-col justify-end h-full">
+        <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold text-white mb-2 sm:mb-4 drop-shadow-lg">
+          {title}
+        </h1>
+        <p className="text-base sm:text-lg md:text-xl text-white/80 mb-4 sm:mb-6 line-clamp-3 max-w-2xl drop-shadow">
+          {currentItem.overview}
+        </p>
+        <div className="flex gap-3 sm:gap-4">
+          <Button 
+            size="lg" 
+            className="gap-2"
+            onClick={() => onItemClick?.(currentItem)}
+          >
+            <Play className="w-5 h-5" />
+            Watch Now
+          </Button>
+          <Button 
+            size="lg" 
+            variant="outline" 
+            className="gap-2"
+            onClick={() => onItemClick?.(currentItem)}
+          >
+            <Info className="w-5 h-5" />
+            More Info
+          </Button>
         </div>
       </div>
 
-      {/* Navigation Arrows */}
-      <button
-        onClick={prevSlide}
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all"
-      >
-        <ChevronLeft className="w-6 h-6" />
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all"
-      >
-        <ChevronRight className="w-6 h-6" />
-      </button>
+      {/* Navigation Buttons */}
+      <div className="absolute top-1/2 left-2 sm:left-4 -translate-y-1/2 z-20">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="bg-black/60 hover:bg-black/80 text-white rounded-full w-10 h-10 sm:w-12 sm:h-12"
+          onClick={handlePrev}
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </Button>
+      </div>
+      <div className="absolute top-1/2 right-2 sm:right-4 -translate-y-1/2 z-20">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="bg-black/60 hover:bg-black/80 text-white rounded-full w-10 h-10 sm:w-12 sm:h-12"
+          onClick={handleNext}
+        >
+          <ChevronRight className="w-6 h-6" />
+        </Button>
+      </div>
 
-      {/* Slide Indicators */}
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
-        {movies.map((_, index) => (
+      {/* Indicators */}
+      <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+        {items.map((_, index) => (
           <button
             key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all ${
-              index === currentSlide ? 'bg-red-600' : 'bg-white/30 hover:bg-white/50'
+            className={`w-2 h-2 rounded-full transition-all ${
+              index === currentIndex ? 'bg-white w-4' : 'bg-white/50'
             }`}
+            onClick={() => {
+              setCurrentIndex(index);
+              setIsTransitioning(true);
+              setTimeout(() => setIsTransitioning(false), 500);
+            }}
           />
         ))}
       </div>

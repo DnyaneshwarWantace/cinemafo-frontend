@@ -1,298 +1,187 @@
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { Star, Calendar, Play, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
-import MovieModal from "@/components/MovieModal";
-import LoadingBar from "@/components/LoadingBar";
-import HeroSlider from "@/components/HeroSlider";
-
-const TMDB_API_KEY = '8265bd1679663a7ea12ac168da84d2e8';
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-
-const genres = [
-  { id: 28, name: 'Action' },
-  { id: 12, name: 'Adventure' },
-  { id: 16, name: 'Animation' },
-  { id: 35, name: 'Comedy' },
-  { id: 80, name: 'Crime' },
-  { id: 99, name: 'Documentary' },
-  { id: 18, name: 'Drama' },
-  { id: 10751, name: 'Family' },
-  { id: 14, name: 'Fantasy' },
-  { id: 36, name: 'History' },
-  { id: 27, name: 'Horror' },
-  { id: 10402, name: 'Music' },
-  { id: 9648, name: 'Mystery' },
-  { id: 10749, name: 'Romance' },
-  { id: 878, name: 'Sci-Fi' },
-  { id: 10770, name: 'TV Movie' },
-  { id: 53, name: 'Thriller' },
-  { id: 10752, name: 'War' },
-  { id: 37, name: 'Western' }
-];
+import React, { useEffect, useState } from 'react';
+import MovieModal from '@/components/MovieModal';
+import MovieCarousel from '@/components/MovieCarousel';
+import { Button } from '@/components/ui/button';
+import HeroSlider from '@/components/HeroSlider';
+import api, { Movie } from '@/services/api';
+import { Loader2 } from 'lucide-react';
+import { LanguageSelector } from '@/components/ui/language-selector';
 
 const Movies = () => {
-  const [selectedGenre, setSelectedGenre] = useState('all');
-  const [sortBy, setSortBy] = useState('popularity.desc');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMovie, setSelectedMovie] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
+  const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
+  const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
+  const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const fetchMovies = async (endpoint: string) => {
-    const response = await fetch(`${TMDB_BASE_URL}${endpoint}?api_key=${TMDB_API_KEY}&language=en-US&page=1`);
-    if (!response.ok) throw new Error('Failed to fetch');
-    return response.json();
-  };
-
-  const fetchFilteredMovies = async () => {
-    let endpoint = `/discover/movie`;
-    const params = new URLSearchParams({
-      api_key: TMDB_API_KEY,
-      language: 'en-US',
-      page: '1',
-      sort_by: sortBy,
-    });
-
-    if (selectedGenre && selectedGenre !== 'all') {
-      params.append('with_genres', selectedGenre);
-    }
-
-    if (searchQuery) {
-      endpoint = `/search/movie`;
-      params.append('query', searchQuery);
-    }
-
-    const response = await fetch(`${TMDB_BASE_URL}${endpoint}?${params}`);
-    if (!response.ok) throw new Error('Failed to fetch');
-    return response.json();
-  };
-
-  const { data: popularMovies } = useQuery({
-    queryKey: ['popular', 'movie'],
-    queryFn: () => fetchMovies('/movie/popular'),
-  });
-
-  const { data: topRatedMovies } = useQuery({
-    queryKey: ['topRated', 'movie'],
-    queryFn: () => fetchMovies('/movie/top_rated'),
-  });
-
-  const { data: upcomingMovies } = useQuery({
-    queryKey: ['upcoming', 'movie'],
-    queryFn: () => fetchMovies('/movie/upcoming'),
-  });
-
-  const { data: nowPlayingMovies } = useQuery({
-    queryKey: ['nowPlaying', 'movie'],
-    queryFn: () => fetchMovies('/movie/now_playing'),
-  });
-
-  const { data: filteredMovies } = useQuery({
-    queryKey: ['filtered', 'movie', selectedGenre, sortBy, searchQuery],
-    queryFn: fetchFilteredMovies,
-    enabled: !!(selectedGenre !== 'all' || searchQuery),
-  });
-
-  const handleMovieClick = (movie: any) => {
-    setSelectedMovie(movie);
-  };
-
-  const MovieCard = ({ movie, isLarge = false }: { movie: any, isLarge?: boolean }) => (
-    <Card 
-      className={`${isLarge ? 'w-[300px]' : 'w-[200px]'} bg-gray-900/50 border-gray-800 card-hover cursor-pointer flex-shrink-0 transition-all duration-300 hover:scale-105 hover:bg-gray-800/70`}
-      onClick={() => handleMovieClick(movie)}
-    >
-      <CardContent className="p-0 relative">
-        <div className="relative aspect-[2/3] w-full">
-          <img
-            src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-            alt={movie.title}
-            className="w-full h-full object-cover rounded-t-lg"
-            onError={(e) => {
-              e.currentTarget.src = '/placeholder.svg';
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent rounded-t-lg" />
-          <div className="absolute bottom-4 left-4 right-4">
-            <h3 className={`text-white font-bold ${isLarge ? 'text-lg' : 'text-sm'} mb-2 line-clamp-2`}>
-              {movie.title}
-            </h3>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <Star className="w-3 h-3 text-yellow-400" />
-              <span>{movie.vote_average?.toFixed(1)}</span>
-              <Calendar className="w-3 h-3 ml-2" />
-              <span>{new Date(movie.release_date).getFullYear()}</span>
-            </div>
-          </div>
-          <Button 
-            size="sm" 
-            className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleMovieClick(movie);
-            }}
-          >
-            <Play className="w-3 h-3" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const MovieSection = ({ title, movies, isLarge = false }: { title: string, movies: any[], isLarge?: boolean }) => {
-    const [currentPage, setCurrentPage] = useState(0);
-    const itemsPerPage = 6;
-    const totalPages = Math.ceil((movies?.length || 0) / itemsPerPage);
-    const scrollRef = React.useRef<HTMLDivElement>(null);
-
-    const scroll = (direction: 'left' | 'right') => {
-      if (scrollRef.current) {
-        const newPage = direction === 'left' 
-          ? Math.max(0, currentPage - 1)
-          : Math.min(totalPages - 1, currentPage + 1);
-        
-        setCurrentPage(newPage);
-        const cardWidth = isLarge ? 300 : 200;
-        const gap = 16;
-        const scrollAmount = newPage * (cardWidth + gap) * itemsPerPage;
-        scrollRef.current.scrollTo({ left: scrollAmount, behavior: 'smooth' });
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        setLoading(true);
+        const [genresResponse, moviesResponse] = await Promise.all([
+          api.getMovieGenres(),
+          api.getPopularMovies()
+        ]);
+        setGenres(genresResponse.data.genres);
+        setMovies(moviesResponse.data.results);
+      } catch (err) {
+        setError('Failed to load movies');
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
 
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
+    const fetchMoviesByGenre = async () => {
+      if (selectedGenre === null) return;
+      
+      try {
+        setLoading(true);
+        const response = await api.getMoviesByGenre(selectedGenre);
+        setMovies(response.data.results);
+      } catch (err) {
+        setError('Failed to load movies');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMoviesByGenre();
+  }, [selectedGenre]);
+
+  const handleGenreClick = (genreId: number) => {
+    setSelectedGenre(genreId === selectedGenre ? null : genreId);
+  };
+
+  const fetchMovies = async (language: string) => {
+    setIsLoading(true);
+    try {
+      const [trending, popular, topRated] = await Promise.all([
+        api.getTrendingMovies(language),
+        api.getPopularMovies(language),
+        api.getTopRatedMovies(language)
+      ]);
+
+      setTrendingMovies(trending.data.results);
+      setPopularMovies(popular.data.results);
+      setTopRatedMovies(topRated.data.results);
+    } catch (error) {
+      console.error('Error fetching movies:', error);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchMovies(selectedLanguage);
+  }, [selectedLanguage]);
+
+  const handleMovieClick = (movie: Movie) => {
+    setSelectedMovie(movie);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedMovie(null);
+  };
+
+  if (error) {
     return (
-      <section className="mb-12 relative group pt-4">
-        <h2 className="text-2xl font-bold text-white mb-6 pl-4">{title}</h2>
-        <div className="relative">
-          {currentPage > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full w-10 h-10 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => scroll('left')}
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </Button>
-          )}
-          
-          <div 
-            ref={scrollRef}
-            className="flex gap-4 overflow-x-hidden pb-4 relative px-4"
-            style={{
-              maskImage: 'linear-gradient(to right, black 95%, transparent 98%)',
-              WebkitMaskImage: 'linear-gradient(to right, black 95%, transparent 98%)'
-            }}
-          >
-            {movies?.map((movie) => (
-              <MovieCard key={movie.id} movie={movie} isLarge={isLarge} />
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground pb-20">
+      {/* Language Selector */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex justify-end mb-8">
+          <LanguageSelector
+            selectedLanguage={selectedLanguage}
+            onLanguageChange={(language) => setSelectedLanguage(language)}
+          />
+        </div>
+
+        {/* Hero Section */}
+        <HeroSlider 
+          items={movies.slice(0, 5)} 
+          onItemClick={(item) => setSelectedMovie(item as Movie)}
+        />
+
+        {/* Genre Filter */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-wrap gap-2 mb-8">
+            {genres.map((genre) => (
+              <Button
+                key={genre.id}
+                variant={selectedGenre === genre.id ? "default" : "secondary"}
+                onClick={() => handleGenreClick(genre.id)}
+                className="rounded-full"
+              >
+                {genre.name}
+              </Button>
             ))}
           </div>
 
-          {currentPage < totalPages - 1 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full w-10 h-10 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => scroll('right')}
-            >
-              <ChevronRight className="w-6 h-6" />
-            </Button>
+          {/* Movies Carousel */}
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-8 h-8 animate-spin" />
+            </div>
+          ) : (
+            <MovieCarousel
+              title={selectedGenre ? `${genres.find(g => g.id === selectedGenre)?.name} Movies` : "Popular Movies"}
+              items={movies}
+              onItemClick={(item) => setSelectedMovie(item as Movie)}
+            />
           )}
         </div>
-      </section>
-    );
-  };
-
-  return (
-    <div className="min-h-screen bg-black">
-      <Navigation />
-      <LoadingBar isLoading={isLoading} />
-      
-      {/* Hero Slider for Movies */}
-      <HeroSlider movies={popularMovies?.results?.slice(0, 5) || []} onMovieClick={handleMovieClick} />
-
-      <div className="container mx-auto px-4 py-8">
-        {/* Simple Netflix-style Filters */}
-        <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/80 rounded-lg border border-gray-800">
-          <div className="flex gap-4 items-center flex-wrap">
-            <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-              <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
-                <SelectValue placeholder="Genre" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Genres</SelectItem>
-                {genres.map((genre) => (
-                  <SelectItem key={genre.id} value={genre.id.toString()}>
-                    {genre.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="popularity.desc">Popular</SelectItem>
-                <SelectItem value="vote_average.desc">Top Rated</SelectItem>
-                <SelectItem value="release_date.desc">Latest</SelectItem>
-                <SelectItem value="revenue.desc">Box Office</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Search movies..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white pl-10 pr-10"
-              />
-              {searchQuery && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1 h-6 w-6"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Filtered Results */}
-        {(selectedGenre !== 'all' || searchQuery) && filteredMovies?.results && (
-          <MovieSection 
-            title={searchQuery ? `Search Results for "${searchQuery}"` : `${genres.find(g => g.id.toString() === selectedGenre)?.name} Movies`}
-            movies={filteredMovies.results}
-            isLarge={true}
-          />
-        )}
 
         {/* Movie Sections */}
-        {!searchQuery && selectedGenre === 'all' && (
-          <>
-            <MovieSection title="🔥 Popular Movies" movies={popularMovies?.results || []} isLarge={true} />
-            <MovieSection title="⭐ Top Rated Movies" movies={topRatedMovies?.results || []} />
-            <MovieSection title="🎬 Now Playing" movies={nowPlayingMovies?.results || []} />
-            <MovieSection title="🆕 Upcoming Movies" movies={upcomingMovies?.results || []} />
-          </>
-        )}
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold mb-6">Trending Movies</h2>
+          <MovieCarousel 
+            title="Trending Movies"
+            items={trendingMovies}
+            onItemClick={handleMovieClick}
+          />
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold mb-6">Popular Movies</h2>
+          <MovieCarousel 
+            title="Popular Movies"
+            items={popularMovies}
+            onItemClick={handleMovieClick}
+          />
+        </section>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold mb-6">Top Rated Movies</h2>
+          <MovieCarousel 
+            title="Top Rated Movies"
+            items={topRatedMovies}
+            onItemClick={handleMovieClick}
+          />
+        </section>
       </div>
 
-      <Footer />
-      
+      {/* Movie Modal */}
       {selectedMovie && (
-        <MovieModal 
-          movie={selectedMovie} 
-          onClose={() => setSelectedMovie(null)} 
+        <MovieModal
+          movie={selectedMovie}
+          onClose={handleCloseModal}
         />
       )}
     </div>

@@ -1,46 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, Calendar, Play, Search as SearchIcon, X } from "lucide-react";
+import { Star, Calendar, Play, Search as SearchIcon, X, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import MovieModal from "@/components/MovieModal";
+import TVShowPlayer from "@/components/TVShowPlayer";
 import LoadingBar from "@/components/LoadingBar";
+import api, { Movie, TVShow } from '@/services/api';
+import { useDebounce } from '@/hooks/useDebounce';
 
 const TMDB_API_KEY = '8265bd1679663a7ea12ac168da84d2e8';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 const Search = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<(Movie | TVShow)[]>([]);
+  const [selectedItem, setSelectedItem] = useState<Movie | TVShow | null>(null);
+  const [showTVPlayer, setShowTVPlayer] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState('multi');
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const searchContent = async () => {
-    if (!searchQuery.trim()) return { results: [] };
+  const debouncedQuery = useDebounce(query, 500);
+
+  useEffect(() => {
+    const searchContent = async () => {
+      if (!debouncedQuery.trim()) {
+        setResults([]);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await api.search(debouncedQuery);
+        setResults(response.data.results);
+      } catch (err) {
+        setError('Failed to search content');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    searchContent();
+  }, [debouncedQuery]);
+
+  const clearSearch = () => {
+    setQuery('');
+    setResults([]);
+  };
+
+  const handleItemClick = (item: Movie | TVShow) => {
+    // Check if it's a TV show using media_type or fallback to name/title check
+    const isTVShow = item.media_type === 'tv' || ('name' in item && !('title' in item));
     
-    const endpoint = mediaType === 'multi' ? '/search/multi' : `/search/${mediaType}`;
-    const response = await fetch(
-      `${TMDB_BASE_URL}${endpoint}?api_key=${TMDB_API_KEY}&language=en-US&page=1&query=${encodeURIComponent(searchQuery)}`
-    );
-    if (!response.ok) throw new Error('Failed to fetch');
-    return response.json();
+    if (isTVShow) {
+      setSelectedItem(item);
+      setShowTVPlayer(true);
+    } else {
+      setSelectedItem(item);
+      setShowTVPlayer(false);
+    }
   };
 
-  const { data: searchResults, isError } = useQuery({
-    queryKey: ['search', searchQuery, mediaType],
-    queryFn: searchContent,
-    enabled: !!searchQuery.trim(),
-  });
-
-  const handleItemClick = (item: any) => {
-    setSelectedItem(item);
-  };
-
-  const MediaCard = ({ item }: { item: any }) => (
+  const MediaCard = ({ item }: { item: Movie | TVShow }) => (
     <Card 
       className="w-[200px] bg-gray-900/50 border-gray-800 card-hover cursor-pointer flex-shrink-0 transition-all duration-300 hover:scale-105 hover:bg-gray-800/70"
       onClick={() => handleItemClick(item)}
@@ -92,7 +120,7 @@ const Search = () => {
   return (
     <div className="min-h-screen bg-black">
       <Navigation />
-      <LoadingBar isLoading={isLoading} />
+      <LoadingBar isLoading={loading} />
       
       {/* Hero Section for Search */}
       <div className="relative h-screen flex items-center justify-center">
@@ -118,15 +146,15 @@ const Search = () => {
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Search movies, TV shows, or people..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
                 className="bg-gray-800 border-gray-700 text-white pl-10 pr-10 h-12 text-lg"
               />
-              {searchQuery && (
+              {query && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSearchQuery('')}
+                  onClick={clearSearch}
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1 h-6 w-6"
                 >
                   <X className="w-4 h-4" />
@@ -148,37 +176,42 @@ const Search = () => {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center text-red-500 mb-8">
+            {error}
+          </div>
+        )}
+
         {/* Search Results */}
-        {searchQuery && (
+        {!loading && results.length > 0 && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-6">
-              Search Results for "{searchQuery}"
-              {searchResults?.total_results && (
+              Search Results for "{query}"
+              {results.length > 0 && (
                 <span className="text-gray-400 text-lg ml-2">
-                  ({searchResults.total_results} results)
+                  ({results.length} results)
                 </span>
               )}
             </h2>
             
-            {searchResults?.results?.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                {searchResults.results
-                  .filter(item => item.poster_path)
-                  .map((item) => (
-                    <MediaCard key={`${item.id}-${item.media_type}`} item={item} />
-                  ))}
-              </div>
-            ) : searchResults && searchResults.results?.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-gray-400 text-xl mb-4">No results found</div>
-                <p className="text-gray-500">Try searching with different keywords</p>
-              </div>
-            ) : null}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+              {results.map((item) => (
+                <MediaCard key={item.id} item={item} />
+              ))}
+            </div>
           </div>
         )}
 
         {/* Welcome Message */}
-        {!searchQuery && (
+        {!query && (
           <div className="text-center py-20">
             <h2 className="text-3xl font-bold text-white mb-4">
               What would you like to watch?
@@ -192,10 +225,21 @@ const Search = () => {
 
       <Footer />
       
-      {selectedItem && (
+      {/* Show either MovieModal or TVShowPlayer based on the content type */}
+      {selectedItem && !showTVPlayer && (
         <MovieModal 
-          movie={selectedItem} 
+          movie={selectedItem}
           onClose={() => setSelectedItem(null)} 
+        />
+      )}
+      
+      {selectedItem && showTVPlayer && (
+        <TVShowPlayer
+          show={selectedItem as TVShow}
+          onClose={() => {
+            setSelectedItem(null);
+            setShowTVPlayer(false);
+          }}
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Home, Film, Tv, Search } from "lucide-react";
+import { Home, Film, Tv, Search, Calendar } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const Navigation = () => {
@@ -18,9 +18,9 @@ const Navigation = () => {
   return (
     <nav className="bg-transparent backdrop-blur-0 border-b-0 fixed top-0 w-full z-50">
       <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/20 to-transparent"></div>
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="w-full px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="flex items-center justify-between h-20">
-          {/* Logo */}
+          {/* Logo and Nav */}
           <div className="flex items-center space-x-8">
             <div 
               className="text-3xl font-bold text-white cursor-pointer hover:scale-105 transition-transform"
@@ -29,7 +29,6 @@ const Navigation = () => {
               <span className="text-red-600 drop-shadow-lg">CINEMA</span>
               <span className="text-blue-400 drop-shadow-lg">.FO</span>
             </div>
-            
             {/* Navigation Links */}
             <div className="hidden md:flex items-center space-x-2">
               <Button 
@@ -61,6 +60,16 @@ const Navigation = () => {
               >
                 <Tv className="w-4 h-4 mr-2" />
                 Shows
+              </Button>
+              <Button 
+                variant="ghost" 
+                className={`text-white/90 hover:text-red-500 font-medium px-4 py-2 rounded-lg transition-all duration-200 ${
+                  isActive('/upcoming') ? 'text-red-500' : 'hover:scale-105'
+                }`}
+                onClick={() => navigate('/upcoming')}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Upcoming
               </Button>
               <Button 
                 variant="ghost" 

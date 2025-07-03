@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Star, Calendar, Clock, Loader2, AlertCircle, Film, Download } from "lucide-react";
+import { Play, Star, Calendar, Clock, Loader2, AlertCircle, Film, Download, Volume2, VolumeX } from "lucide-react";
+import VideoPlayer from "./VideoPlayer";
+import TVShowPlayer from "./TVShowPlayer";
 
 interface MovieModalProps {
   movie: any;
@@ -19,6 +21,9 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
   const [isLoadingQuality, setIsLoadingQuality] = useState(false);
   const [useYouTubeFallback, setUseYouTubeFallback] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [showFullMovie, setShowFullMovie] = useState(false);
+  const [showTVShowPlayer, setShowTVShowPlayer] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
 
   // Function to fetch trailer from our backend
   const fetchTrailer = async () => {
@@ -43,13 +48,12 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
       setTrailerData(data);
       setCurrentQuality(data.currentQuality);
       
-      // Only close modal and show trailer if we successfully got trailer data
+      // Auto-play trailer
       setShowTrailer(true);
       
     } catch (error) {
       console.error('Error fetching trailer:', error);
       
-      // Show specific error message
       let errorMessage = 'Sorry, trailer not available for this movie.';
       if (error.message.includes('fetch')) {
         errorMessage = 'Unable to connect to trailer service. Please check if the backend is running.';
@@ -58,9 +62,21 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
       }
       
       setTrailerError(errorMessage);
-      // Keep the modal open to show error message
     } finally {
       setIsLoadingTrailer(false);
+    }
+  };
+
+  // Auto-fetch trailer when modal opens
+  useEffect(() => {
+    fetchTrailer();
+  }, [movie.id]);
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    const video = document.querySelector('#trailer-video') as HTMLVideoElement;
+    if (video) {
+      video.muted = !isMuted;
     }
   };
 
@@ -69,8 +85,41 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
   };
 
   const handleWatchNow = () => {
-    // Placeholder for Watch Now functionality
-    alert('Watch Now feature coming soon!');
+    // Check if content is released
+    const releaseDate = movie.release_date || movie.first_air_date;
+    
+    if (!releaseDate) {
+      console.warn('No release date available for this content');
+    }
+    
+    if (releaseDate) {
+      const releaseDateObj = new Date(releaseDate);
+      const now = new Date();
+      
+      if (releaseDateObj > now) {
+        // Content is not released yet - this shouldn't happen as button should be disabled
+        console.log('Content is not yet released:', releaseDate);
+      return;
+    }
+    }
+    
+    // Check if it's a TV show using media_type or fallback to name/title check
+    const isTVShow = movie.media_type === 'tv' || (movie.name && !movie.title);
+    
+    console.log(`MovieModal handleWatchNow: Detected content type: ${isTVShow ? 'TV Show' : 'Movie'}`, {
+      media_type: movie.media_type,
+      has_name: !!movie.name,
+      has_title: !!movie.title,
+      tmdb_id: movie.id
+    });
+    
+    if (isTVShow) {
+      // For TV shows, close modal and open TVShowPlayer directly
+      onClose();
+      setShowTVShowPlayer(true);
+    } else {
+      setShowFullMovie(true);
+    }
   };
 
   const changeQuality = async (quality: any) => {
@@ -204,12 +253,12 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mousedown', handleClickOutside);
-    };
+      };
   }, [showTrailer, showQualityMenu, onClose]);
 
   return (
     <>
-      <Dialog open={!!movie && !showTrailer} onOpenChange={(open) => !open && onClose()}>
+      <Dialog open={!!movie && !showTrailer && !showFullMovie && !showTVShowPlayer} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-6xl max-h-[90vh] bg-gray-900 border-gray-800 text-white p-0 overflow-hidden [&>button]:hidden">
           <div className="overflow-y-auto max-h-[90vh] scrollbar-hide">
           {/* Hero Section */}
@@ -224,6 +273,18 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent" />
             
+            {/* Upcoming Badge */}
+            {(() => {
+              const releaseDate = movie.release_date || movie.first_air_date;
+              const isUpcoming = releaseDate && new Date(releaseDate) > new Date();
+              
+              return isUpcoming ? (
+                <div className="absolute top-6 right-6 bg-yellow-400/90 text-black px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg">
+                  Upcoming Release
+                </div>
+              ) : null;
+            })()}
+            
             {/* Content Overlay */}
             <div className="absolute bottom-8 left-8 right-8">
               <h1 className="text-4xl font-bold mb-4">
@@ -237,7 +298,17 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
-                  <span>{new Date(movie.release_date || movie.first_air_date).getFullYear()}</span>
+                  <span>
+                    {(() => {
+                      const releaseDate = movie.release_date || movie.first_air_date;
+                      if (!releaseDate) return 'Unknown';
+                      
+                      const date = new Date(releaseDate);
+                      const isUpcoming = date > new Date();
+                      
+                      return `${date.getFullYear()}${isUpcoming ? ' (Upcoming)' : ''}`;
+                    })()}
+                  </span>
                 </div>
                 {movie.runtime && (
                   <div className="flex items-center gap-2">
@@ -246,7 +317,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
                   </div>
                 )}
               </div>
-                
+              
                 {/* Action Buttons */}
                 <div className="flex items-center gap-4">
                   <Button 
@@ -268,15 +339,49 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
                     )}
                   </Button>
               
+              {(() => {
+                const releaseDate = movie.release_date || movie.first_air_date;
+                const isUpcoming = releaseDate && new Date(releaseDate) > new Date();
+                
+                if (isUpcoming) {
+                  const releaseDateTime = new Date(releaseDate);
+                  const now = new Date();
+                  const diffTime = releaseDateTime.getTime() - now.getTime();
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  
+                  let countdownText = "Upcoming";
+                  if (diffDays === 0) countdownText = "Releases Today";
+                  else if (diffDays === 1) countdownText = "Releases Tomorrow";
+                  else if (diffDays < 7) countdownText = `Releases in ${diffDays} days`;
+                  else if (diffDays < 30) countdownText = `Releases in ${Math.ceil(diffDays / 7)} weeks`;
+                  else if (diffDays < 365) countdownText = `Releases in ${Math.ceil(diffDays / 30)} months`;
+                  
+                  return (
+                    <Button 
+                      size="lg" 
+                      variant="outline"
+                      className="border-yellow-400/50 text-yellow-400 hover:bg-yellow-400/10 px-8 py-3 text-lg transition-all duration-200 cursor-not-allowed"
+                      disabled
+                      title={`This movie releases on ${releaseDateTime.toLocaleDateString()}`}
+                    >
+                      <Calendar className="w-6 h-6 mr-3" />
+                      {countdownText}
+                    </Button>
+                  );
+                } else {
+                  return (
               <Button 
                 size="lg" 
-                    variant="outline"
-                    className="border-white/30 text-white hover:bg-white/10 px-8 py-3 text-lg transition-all duration-200"
+                      variant="outline"
+                      className="border-white/30 text-white hover:bg-white/10 px-8 py-3 text-lg transition-all duration-200"
                 onClick={handleWatchNow}
               >
-                    <Film className="w-6 h-6 mr-3" />
+                      <Film className="w-6 h-6 mr-3" />
                 Watch Now
               </Button>
+                  );
+                }
+              })()}
                 </div>
 
                 {trailerError && (
@@ -361,6 +466,19 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Full Movie Player */}
+      {showFullMovie && (
+        <VideoPlayer
+          tmdbId={movie.id}
+          type="movie"
+          title={movie.title}
+          onClose={() => {
+            setShowFullMovie(false);
+            onClose();
+          }}
+        />
+      )}
 
       {/* Trailer Modal - Full Screen Netflix-style Player */}
       {showTrailer && trailerData && (
@@ -605,6 +723,23 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
         </div>
       )}
 
+      {/* TV Show Player */}
+      {showTVShowPlayer && (
+        <TVShowPlayer
+          show={movie}
+          onClose={() => setShowTVShowPlayer(false)}
+        />
+      )}
+
+      {/* Full Movie Player */}
+      {showFullMovie && (
+        <VideoPlayer
+          tmdbId={movie.id}
+          type="movie"
+          title={movie.title || movie.name}
+          onClose={() => setShowFullMovie(false)}
+        />
+      )}
 
     </>
   );
