@@ -4,7 +4,6 @@ import HeroSlider from '@/components/HeroSlider';
 import MovieCarousel from '@/components/MovieCarousel';
 import api, { TVShow } from '@/services/api';
 import { Loader2 } from 'lucide-react';
-import MovieModal from "@/components/MovieModal";
 import TVShowPlayer from "@/components/TVShowPlayer";
 
 const Shows = () => {
@@ -12,7 +11,6 @@ const Shows = () => {
   const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
-  const [showTVPlayer, setShowTVPlayer] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +38,6 @@ const Shows = () => {
   useEffect(() => {
     const fetchShowsByGenre = async () => {
       if (selectedGenre === null) return;
-      
       try {
         setLoading(true);
         const response = await api.getShowsByGenre(selectedGenre);
@@ -52,12 +49,15 @@ const Shows = () => {
         setLoading(false);
       }
     };
-
     fetchShowsByGenre();
   }, [selectedGenre]);
 
   const handleGenreClick = (genreId: number) => {
     setSelectedGenre(genreId === selectedGenre ? null : genreId);
+  };
+
+  const handleShowClick = (item: TVShow) => {
+    setSelectedShow(item);
   };
 
   if (error) {
@@ -73,14 +73,11 @@ const Shows = () => {
       {/* Hero Section */}
       <HeroSlider 
         items={shows.slice(0, 5)} 
-        onItemClick={(item) => {
-          setSelectedShow(item as TVShow);
-          setShowTVPlayer(true);
-        }}
+        onItemClick={handleShowClick}
       />
 
       {/* Genre Filter */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-wrap gap-2 mb-8">
           {genres.map((genre) => (
             <Button
@@ -103,22 +100,16 @@ const Shows = () => {
           <MovieCarousel
             title={selectedGenre ? `${genres.find(g => g.id === selectedGenre)?.name} Shows` : "Popular TV Shows"}
             items={shows}
-            onItemClick={(item) => {
-              setSelectedShow(item as TVShow);
-              setShowTVPlayer(true);
-            }}
+            onItemClick={handleShowClick}
           />
         )}
       </div>
 
       {/* TV Show Player */}
-      {selectedShow && showTVPlayer && (
+      {selectedShow && (
         <TVShowPlayer
           show={selectedShow}
-          onClose={() => {
-            setSelectedShow(null);
-            setShowTVPlayer(false);
-          }}
+          onClose={() => setSelectedShow(null)}
         />
       )}
     </div>

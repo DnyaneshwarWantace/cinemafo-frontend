@@ -83,12 +83,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ tmdbId, type, season, episode
         hlsRef.current = null;
       }
 
-      // Stop any existing video playback
+      // Stop any existing video playback and clear all sources
       if (videoRef.current) {
         videoRef.current.pause();
         videoRef.current.currentTime = 0;
-        videoRef.current.src = '';
+        // Remove all sources to ensure audio stops
+        videoRef.current.removeAttribute('src');
+        videoRef.current.srcObject = null;
         videoRef.current.load();
+        // Force mute during cleanup
+        videoRef.current.muted = true;
+        // Wait a bit to ensure cleanup
+        await new Promise(resolve => setTimeout(resolve, 100));
+        videoRef.current.muted = false;
       }
 
       try {
@@ -96,7 +103,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ tmdbId, type, season, episode
         
         if (Hls.isSupported()) {
           const hls = new Hls({
-            debug: false
+            debug: false,
+            // Add audio-specific config
+            enableWorker: true,
+            lowLatencyMode: false,
+            // Reduce audio buffer to prevent overlap
+            maxBufferLength: 30,
+            maxMaxBufferLength: 60,
+            maxBufferSize: 60 * 1000 * 1000,
+            maxBufferHole: 0.5,
           });
 
           hlsRef.current = hls;
@@ -109,7 +124,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ tmdbId, type, season, episode
 
           hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
             console.log('HLS: Manifest parsed, playback should begin');
-            videoRef.current?.play().catch(console.error);
+            // Ensure video is muted initially and then unmute after a delay
+            if (videoRef.current) {
+              videoRef.current.muted = true;
+              videoRef.current.play().then(() => {
+                setTimeout(() => {
+                  if (videoRef.current) {
+                    videoRef.current.muted = false;
+                  }
+                }, 500);
+              }).catch(console.error);
+            }
             setLoading(false);
 
             // Get available audio tracks
@@ -131,21 +156,57 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ tmdbId, type, season, episode
             }
           });
 
-          // Handle seeking to prevent audio overlap
-          videoRef.current.addEventListener('seeking', () => {
+          // Improved seeking handlers to prevent audio overlap
+          let seekingTimeout: NodeJS.Timeout;
+          
+          const handleSeeking = () => {
             if (videoRef.current) {
               videoRef.current.muted = true;
+              // Clear any existing timeout
+              clearTimeout(seekingTimeout);
             }
-          });
+          };
 
-          videoRef.current.addEventListener('seeked', () => {
+          const handleSeeked = () => {
             if (videoRef.current) {
-              videoRef.current.muted = false;
+              // Delay unmuting to ensure proper audio sync
+              seekingTimeout = setTimeout(() => {
+                if (videoRef.current) {
+                  videoRef.current.muted = false;
+                }
+              }, 300);
             }
-          });
+          };
+
+          const handleTimeUpdate = () => {
+            // Ensure audio context is resumed on user interaction
+            if (videoRef.current && !videoRef.current.muted) {
+              const audioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
+              if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+              }
+            }
+          };
+
+          videoRef.current.addEventListener('seeking', handleSeeking);
+          videoRef.current.addEventListener('seeked', handleSeeked);
+          videoRef.current.addEventListener('timeupdate', handleTimeUpdate);
+
+          // Store event handlers for cleanup
+          (videoRef.current as any)._seekingHandler = handleSeeking;
+          (videoRef.current as any)._seekedHandler = handleSeeked;
+          (videoRef.current as any)._timeUpdateHandler = handleTimeUpdate;
 
           hls.on(Hls.Events.ERROR, (event, data) => {
+            console.error('HLS Error:', data);
             if (data.fatal) {
+              // Clean up before switching to fallback
+              if (videoRef.current) {
+                videoRef.current.pause();
+                videoRef.current.muted = true;
+                videoRef.current.currentTime = 0;
+              }
+              
               switch (data.type) {
                 case Hls.ErrorTypes.NETWORK_ERROR:
                   console.error('HLS: Fatal network error', data);
@@ -169,28 +230,59 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ tmdbId, type, season, episode
           // For Safari - native HLS support
           videoRef.current.src = hlsUrl;
           
-          // Handle seeking to prevent audio overlap
-          videoRef.current.addEventListener('seeking', () => {
+          // Improved seeking handlers for Safari
+          let safariSeekingTimeout: NodeJS.Timeout;
+          
+          const handleSafariSeeking = () => {
             if (videoRef.current) {
               videoRef.current.muted = true;
+              clearTimeout(safariSeekingTimeout);
             }
-          });
+          };
 
-          videoRef.current.addEventListener('seeked', () => {
+          const handleSafariSeeked = () => {
             if (videoRef.current) {
-              videoRef.current.muted = false;
+              safariSeekingTimeout = setTimeout(() => {
+                if (videoRef.current) {
+                  videoRef.current.muted = false;
+                }
+              }, 300);
             }
-          });
+          };
 
-          videoRef.current.addEventListener('loadedmetadata', () => {
-            videoRef.current?.play().catch(console.error);
+          const handleLoadedMetadata = () => {
+            if (videoRef.current) {
+              videoRef.current.muted = true;
+              videoRef.current.play().then(() => {
+                setTimeout(() => {
+                  if (videoRef.current) {
+                    videoRef.current.muted = false;
+                  }
+                }, 500);
+              }).catch(console.error);
+            }
             setLoading(false);
-          });
+          };
 
-          videoRef.current.addEventListener('error', () => {
+          const handleError = () => {
+            if (videoRef.current) {
+              videoRef.current.pause();
+              videoRef.current.muted = true;
+            }
             setError('Playback error. Switching to alternative player...');
             setUseIframeFallback(true);
-          });
+          };
+
+          videoRef.current.addEventListener('seeking', handleSafariSeeking);
+          videoRef.current.addEventListener('seeked', handleSafariSeeked);
+          videoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
+          videoRef.current.addEventListener('error', handleError);
+
+          // Store handlers for cleanup
+          (videoRef.current as any)._safariSeekingHandler = handleSafariSeeking;
+          (videoRef.current as any)._safariSeekedHandler = handleSafariSeeked;
+          (videoRef.current as any)._safariLoadedMetadataHandler = handleLoadedMetadata;
+          (videoRef.current as any)._safariErrorHandler = handleError;
         } else {
           console.warn('HLS not supported, falling back to iframe');
           setUseIframeFallback(true);
@@ -204,33 +296,101 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ tmdbId, type, season, episode
 
     initializePlayer();
 
-    // Cleanup function
+    // Enhanced cleanup function
     return () => {
+      console.log('VideoPlayer cleanup initiated');
+      
+      // Destroy HLS instance first
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
       
+      // Comprehensive video cleanup
       if (videoRef.current) {
-        videoRef.current.pause();
-        videoRef.current.currentTime = 0;
-        videoRef.current.src = '';
-        videoRef.current.load();
+        const video = videoRef.current;
         
-        // Remove event listeners
-        videoRef.current.removeEventListener('seeking', () => {});
-        videoRef.current.removeEventListener('seeked', () => {});
-        videoRef.current.removeEventListener('loadedmetadata', () => {});
-        videoRef.current.removeEventListener('error', () => {});
+        // Pause and mute immediately
+        video.pause();
+        video.muted = true;
+        video.currentTime = 0;
+        
+        // Remove all sources
+        video.removeAttribute('src');
+        video.srcObject = null;
+        
+        // Remove event listeners using stored handlers
+        if ((video as any)._seekingHandler) {
+          video.removeEventListener('seeking', (video as any)._seekingHandler);
+        }
+        if ((video as any)._seekedHandler) {
+          video.removeEventListener('seeked', (video as any)._seekedHandler);
+        }
+        if ((video as any)._timeUpdateHandler) {
+          video.removeEventListener('timeupdate', (video as any)._timeUpdateHandler);
+        }
+        if ((video as any)._safariSeekingHandler) {
+          video.removeEventListener('seeking', (video as any)._safariSeekingHandler);
+        }
+        if ((video as any)._safariSeekedHandler) {
+          video.removeEventListener('seeked', (video as any)._safariSeekedHandler);
+        }
+        if ((video as any)._safariLoadedMetadataHandler) {
+          video.removeEventListener('loadedmetadata', (video as any)._safariLoadedMetadataHandler);
+        }
+        if ((video as any)._safariErrorHandler) {
+          video.removeEventListener('error', (video as any)._safariErrorHandler);
+        }
+        
+        // Force reload to clear any remaining buffers
+        video.load();
+        
+        console.log('VideoPlayer cleanup completed');
       }
     };
   }, [tmdbId, type, season, episode]);
+
+  // Add cleanup on component unmount or close
+  useEffect(() => {
+    return () => {
+      // Additional cleanup when component unmounts
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.muted = true;
+        videoRef.current.currentTime = 0;
+        videoRef.current.removeAttribute('src');
+        videoRef.current.srcObject = null;
+        videoRef.current.load();
+      }
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
       {/* Close Button */}
       <button
-        onClick={onClose}
+        onClick={() => {
+          // Immediate audio cleanup before closing
+          if (videoRef.current) {
+            videoRef.current.pause();
+            videoRef.current.muted = true;
+            videoRef.current.currentTime = 0;
+            videoRef.current.removeAttribute('src');
+            videoRef.current.srcObject = null;
+            videoRef.current.load();
+          }
+          
+          // Destroy HLS instance
+          if (hlsRef.current) {
+            hlsRef.current.destroy();
+            hlsRef.current = null;
+          }
+          
+          // Small delay to ensure cleanup, then close
+          setTimeout(() => {
+            onClose();
+          }, 100);
+        }}
         className="absolute top-6 right-6 z-[110] bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-all duration-200 shadow-2xl backdrop-blur-sm"
         aria-label="Close player"
       >

@@ -1,17 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Star, Calendar, Clock, Loader2, AlertCircle, Film, Download, Volume2, VolumeX } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Play, Star, Calendar, Clock, Loader2, AlertCircle, Film, Download, Volume2, VolumeX, Users, Globe, Info, DollarSign, 
+  Award, Building2, MapPin, Languages, Tags, ThumbsUp, Hash
+} from "lucide-react";
 import VideoPlayer from "./VideoPlayer";
 import TVShowPlayer from "./TVShowPlayer";
+import api, { Movie, TVShow, cacheUtils } from "@/services/api";
 
 interface MovieModalProps {
-  movie: any;
+  movie: Movie;
   onClose: () => void;
 }
 
-const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
+const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose }) => {
+  const [movie, setMovie] = useState<Movie>(initialMovie);
+  const [loading, setLoading] = useState(false);
   const [trailerData, setTrailerData] = useState<any>(null);
   const [isLoadingTrailer, setIsLoadingTrailer] = useState(false);
   const [trailerError, setTrailerError] = useState<string | null>(null);
@@ -24,6 +32,15 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
   const [showFullMovie, setShowFullMovie] = useState(false);
   const [showTVShowPlayer, setShowTVShowPlayer] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+
+  // No need to check for detailed data anymore - backend provides complete data
+  console.log(`✅ Movie ${initialMovie.id} loaded with complete data from backend`);
+  
+  // Log cache stats in development
+  if (process.env.NODE_ENV === 'development') {
+    const stats = cacheUtils.getStats();
+    console.log(`📊 Cache stats: ${stats.size} items cached`);
+  }
 
   // Function to fetch trailer from our backend
   const fetchTrailer = async () => {
@@ -85,36 +102,24 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
   };
 
   const handleWatchNow = () => {
-    // Check if content is released
     const releaseDate = movie.release_date || movie.first_air_date;
     
     if (!releaseDate) {
       console.warn('No release date available for this content');
-    }
-    
-    if (releaseDate) {
-      const releaseDateObj = new Date(releaseDate);
-      const now = new Date();
-      
-      if (releaseDateObj > now) {
-        // Content is not released yet - this shouldn't happen as button should be disabled
-        console.log('Content is not yet released:', releaseDate);
       return;
     }
-    }
+
+    const releaseDateObj = new Date(releaseDate);
+    const now = new Date();
     
-    // Check if it's a TV show using media_type or fallback to name/title check
+    if (releaseDateObj > now) {
+      console.log('Content is not yet released:', releaseDate);
+      return;
+    }
+
     const isTVShow = movie.media_type === 'tv' || (movie.name && !movie.title);
     
-    console.log(`MovieModal handleWatchNow: Detected content type: ${isTVShow ? 'TV Show' : 'Movie'}`, {
-      media_type: movie.media_type,
-      has_name: !!movie.name,
-      has_title: !!movie.title,
-      tmdb_id: movie.id
-    });
-    
     if (isTVShow) {
-      // For TV shows, close modal and open TVShowPlayer directly
       onClose();
       setShowTVShowPlayer(true);
     } else {
@@ -256,229 +261,262 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
       };
   }, [showTrailer, showQualityMenu, onClose]);
 
-  return (
-    <>
-      <Dialog open={!!movie && !showTrailer && !showFullMovie && !showTVShowPlayer} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-6xl max-h-[90vh] bg-gray-900 border-gray-800 text-white p-0 overflow-hidden [&>button]:hidden">
-          <div className="overflow-y-auto max-h-[90vh] scrollbar-hide">
-          {/* Hero Section */}
-          <div className="relative h-[400px] overflow-hidden">
-            <img
-              src={`https://image.tmdb.org/t/p/original${movie.backdrop_path || movie.poster_path}`}
-              alt={movie.title || movie.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = '/placeholder.svg';
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent" />
-            
-            {/* Upcoming Badge */}
-            {(() => {
-              const releaseDate = movie.release_date || movie.first_air_date;
-              const isUpcoming = releaseDate && new Date(releaseDate) > new Date();
-              
-              return isUpcoming ? (
-                <div className="absolute top-6 right-6 bg-yellow-400/90 text-black px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg">
-                  Upcoming Release
-                </div>
-              ) : null;
-            })()}
-            
-            {/* Content Overlay */}
-            <div className="absolute bottom-8 left-8 right-8">
-              <h1 className="text-4xl font-bold mb-4">
-                {movie.title || movie.name}
-              </h1>
-              
-              <div className="flex items-center gap-6 text-sm text-gray-300 mb-6">
-                <div className="flex items-center gap-2">
-                  <Star className="w-5 h-5 text-yellow-400" />
-                  <span className="text-white font-semibold text-lg">{movie.vote_average?.toFixed(1)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  <span>
-                    {(() => {
-                      const releaseDate = movie.release_date || movie.first_air_date;
-                      if (!releaseDate) return 'Unknown';
-                      
-                      const date = new Date(releaseDate);
-                      const isUpcoming = date > new Date();
-                      
-                      return `${date.getFullYear()}${isUpcoming ? ' (Upcoming)' : ''}`;
-                    })()}
-                  </span>
-                </div>
-                {movie.runtime && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    <span>{movie.runtime} min</span>
-                  </div>
-                )}
-              </div>
-              
-                {/* Action Buttons */}
-                <div className="flex items-center gap-4">
-                  <Button 
-                    size="lg" 
-                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg disabled:opacity-50 transition-all duration-200"
-                    onClick={handleWatchTrailer}
-                    disabled={isLoadingTrailer}
-                  >
-                    {isLoadingTrailer ? (
-                      <>
-                        <Loader2 className="w-6 h-6 mr-3 animate-spin" />
-                        Loading Trailer...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-6 h-6 mr-3" />
-                        Watch Trailer
-                      </>
-                    )}
-                  </Button>
-              
-              {(() => {
-                const releaseDate = movie.release_date || movie.first_air_date;
-                const isUpcoming = releaseDate && new Date(releaseDate) > new Date();
-                
-                if (isUpcoming) {
-                  const releaseDateTime = new Date(releaseDate);
-                  const now = new Date();
-                  const diffTime = releaseDateTime.getTime() - now.getTime();
-                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                  
-                  let countdownText = "Upcoming";
-                  if (diffDays === 0) countdownText = "Releases Today";
-                  else if (diffDays === 1) countdownText = "Releases Tomorrow";
-                  else if (diffDays < 7) countdownText = `Releases in ${diffDays} days`;
-                  else if (diffDays < 30) countdownText = `Releases in ${Math.ceil(diffDays / 7)} weeks`;
-                  else if (diffDays < 365) countdownText = `Releases in ${Math.ceil(diffDays / 30)} months`;
-                  
-                  return (
-                    <Button 
-                      size="lg" 
-                      variant="outline"
-                      className="border-yellow-400/50 text-yellow-400 hover:bg-yellow-400/10 px-8 py-3 text-lg transition-all duration-200 cursor-not-allowed"
-                      disabled
-                      title={`This movie releases on ${releaseDateTime.toLocaleDateString()}`}
-                    >
-                      <Calendar className="w-6 h-6 mr-3" />
-                      {countdownText}
-                    </Button>
-                  );
-                } else {
-                  return (
-              <Button 
-                size="lg" 
-                      variant="outline"
-                      className="border-white/30 text-white hover:bg-white/10 px-8 py-3 text-lg transition-all duration-200"
-                onClick={handleWatchNow}
-              >
-                      <Film className="w-6 h-6 mr-3" />
-                Watch Now
-              </Button>
-                  );
-                }
-              })()}
-                </div>
 
-                {trailerError && (
-                  <div className="mt-4 flex items-center gap-2 text-yellow-400 bg-yellow-400/10 px-4 py-2 rounded-lg">
-                    <AlertCircle className="w-5 h-5" />
-                    <span>{trailerError}</span>
-                  </div>
-                )}
-            </div>
-          </div>
 
-          {/* Content Section */}
-          <div className="p-8">
-            <div className="grid md:grid-cols-3 gap-8">
-              {/* Poster */}
-              <div className="md:col-span-1">
-                <img
-                  src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                  alt={movie.title || movie.name}
-                    className="w-full rounded-lg shadow-2xl transform hover:scale-105 transition-transform duration-300"
-                  onError={(e) => {
-                    e.currentTarget.src = '/placeholder.svg';
-                  }}
-                />
-              </div>
-              
-              {/* Details */}
-              <div className="md:col-span-2 space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold mb-3 text-gray-200">Overview</h3>
-                  <p className="text-gray-300 leading-relaxed text-lg">
-                    {movie.overview || "No overview available for this title."}
-                  </p>
-                </div>
-                
-                {movie.genres && (
-                  <div>
-                    <h3 className="text-xl font-semibold mb-3 text-gray-200">Genres</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {movie.genres.map((genre: any) => (
-                          <Badge key={genre.id} variant="secondary" className="bg-blue-600/20 text-blue-400 px-3 py-1 hover:bg-blue-600/30 transition-colors">
-                          {genre.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
+  const formatReleaseDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
-                  {/* Additional Movie Details */}
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    {movie.production_countries && movie.production_countries.length > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-gray-300 mb-1">Country</h4>
-                        <p className="text-gray-400">{movie.production_countries[0].name}</p>
-                      </div>
-                    )}
-                    
-                    {movie.original_language && (
-                      <div>
-                        <h4 className="font-semibold text-gray-300 mb-1">Language</h4>
-                        <p className="text-gray-400 uppercase">{movie.original_language}</p>
-                      </div>
-                    )}
-                    
-                    {movie.budget && movie.budget > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-gray-300 mb-1">Budget</h4>
-                        <p className="text-gray-400">${movie.budget.toLocaleString()}</p>
-                      </div>
-                    )}
-                    
-                    {movie.revenue && movie.revenue > 0 && (
-                      <div>
-                        <h4 className="font-semibold text-gray-300 mb-1">Revenue</h4>
-                        <p className="text-gray-400">${movie.revenue.toLocaleString()}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+  const formatRuntime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+  };
+
+  const formatMoney = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Memoized computed values
+  const director = useMemo(() => {
+    if (!movie.crew) return null;
+    return movie.crew.find(member => member.job === 'Director');
+  }, [movie.crew]);
+
+  const mainCast = useMemo(() => {
+    if (!movie.cast) return [];
+    return movie.cast.slice(0, 6);
+  }, [movie.cast]);
+
+  const isUpcoming = useMemo(() => {
+    const releaseDate = new Date(movie.release_date || movie.first_air_date);
+    return releaseDate > new Date();
+  }, [movie.release_date, movie.first_air_date]);
+
+  if (loading) {
+    return (
+      <Dialog open onOpenChange={() => onClose()}>
+        <DialogContent className="max-w-5xl h-[90vh] p-0">
+          <div className="h-full flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin" />
           </div>
         </DialogContent>
       </Dialog>
+    );
+  }
 
-      {/* Full Movie Player */}
-      {showFullMovie && (
-        <VideoPlayer
-          tmdbId={movie.id}
-          type="movie"
-          title={movie.title}
-          onClose={() => {
-            setShowFullMovie(false);
-            onClose();
-          }}
-        />
-      )}
+  return (
+    <>
+      <Dialog open={!!movie && !showTrailer && !showFullMovie && !showTVShowPlayer} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-5xl h-[90vh] p-0">
+          <ScrollArea className="h-full">
+            {/* Backdrop Image */}
+            <div className="relative w-full h-[40vh]">
+              <img
+                src={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
+              alt={movie.title || movie.name}
+              className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/20" />
+            </div>
+
+            {/* Content */}
+            <div className="p-6 -mt-10 relative z-10">
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Poster */}
+                <div className="w-[200px] flex-shrink-0">
+                  <img
+                    src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                    alt={movie.title || movie.name}
+                    className="w-full rounded-lg shadow-xl"
+                  />
+                </div>
+
+                {/* Main Info */}
+                <div className="flex-1">
+                  <h2 className="text-2xl md:text-3xl font-bold mb-2">
+                    {movie.title || movie.name}
+                  </h2>
+
+                  {movie.tagline && (
+                    <p className="text-muted-foreground italic mb-4">{movie.tagline}</p>
+                  )}
+
+                  {/* Primary Metadata */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {movie.vote_average > 0 && (
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Star className="w-3 h-3 text-yellow-400" />
+                        {movie.vote_average.toFixed(1)}
+                        {movie.vote_count > 0 && (
+                          <span className="text-xs">({movie.vote_count.toLocaleString()} votes)</span>
+                        )}
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {formatReleaseDate(movie.release_date || movie.first_air_date)}
+                    </Badge>
+                {movie.runtime && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatRuntime(movie.runtime)}
+                      </Badge>
+                    )}
+                    {movie.genres?.map((genre: any) => (
+                      <Badge key={genre.id} variant="secondary">
+                        {genre.name}
+                      </Badge>
+                    ))}
+                  </div>
+
+                  {/* Overview */}
+                  <p className="text-muted-foreground mb-6">{movie.overview}</p>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap gap-4 mb-6">
+                    {isUpcoming ? (
+                      <Button disabled className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Coming {formatReleaseDate(movie.release_date || movie.first_air_date)}
+                      </Button>
+                    ) : (
+                      <Button onClick={handleWatchNow} className="flex items-center gap-2">
+                        <Film className="w-4 h-4" />
+                        Watch Now
+                      </Button>
+                )}
+              </div>
+              
+                  {/* Detailed Information Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {director && (
+                      <div className="flex items-center gap-2">
+                        <Film className="w-4 h-4" />
+                        <span className="text-sm">Director: {director.name}</span>
+                      </div>
+                    )}
+                    {movie.status && (
+                      <div className="flex items-center gap-2">
+                        <Info className="w-4 h-4" />
+                        <span className="text-sm">
+                          {movie.status === 'Released' 
+                            ? `Released on ${formatReleaseDate(movie.release_date)}` 
+                            : movie.status}
+                        </span>
+                      </div>
+                    )}
+                    {movie.original_language && (
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        <span className="text-sm">Original Language: {movie.original_language.toUpperCase()}</span>
+                      </div>
+                    )}
+                    {movie.budget > 0 && (
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4" />
+                        <span className="text-sm">Budget: {formatMoney(movie.budget)}</span>
+                      </div>
+                    )}
+                    {movie.revenue > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Award className="w-4 h-4" />
+                        <span className="text-sm">Revenue: {formatMoney(movie.revenue)}</span>
+                      </div>
+                    )}
+                    {movie.production_companies?.[0] && (
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4" />
+                        <span className="text-sm">Studio: {movie.production_companies[0].name}</span>
+                      </div>
+                    )}
+                    {movie.production_countries?.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        <span className="text-sm">
+                          Countries: {movie.production_countries.map(c => c.name).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                    {movie.spoken_languages?.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Languages className="w-4 h-4" />
+                        <span className="text-sm">
+                          Languages: {movie.spoken_languages.map(l => l.name).join(', ')}
+                        </span>
+            </div>
+                    )}
+          </div>
+
+                  {/* Cast Section */}
+                  {mainCast.length > 0 && (
+                    <>
+                      <Separator className="my-6" />
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Users className="w-5 h-5" />
+                          Cast
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {mainCast.map(actor => (
+                            <div key={actor.id} className="flex items-center gap-3">
+                              {actor.profile_path ? (
+                                <img
+                                  src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
+                                  alt={actor.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                                  <Users className="w-6 h-6 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-medium text-sm">{actor.name}</p>
+                                <p className="text-xs text-muted-foreground">{actor.character}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Keywords */}
+                  {movie.keywords?.length > 0 && (
+                    <>
+                      <Separator className="my-6" />
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Tags className="w-5 h-5" />
+                          Keywords
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {movie.keywords.map(keyword => (
+                            <Badge key={keyword.id} variant="outline" className="text-xs">
+                              {keyword.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
       {/* Trailer Modal - Full Screen Netflix-style Player */}
       {showTrailer && trailerData && (
@@ -568,7 +606,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
                           >
                             <Download className="w-3 h-3" />
                           </button>
-                        </div>
+                </div>
                       ))}
                     </div>
                   )}
@@ -700,7 +738,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
             <p className="text-gray-300 text-sm">
               ESC to close • {!useYouTubeFallback && 'Download trailer • Change quality • '}Fullscreen
             </p>
-          </div>
+                  </div>
           
           {/* Error Message Overlay */}
           {videoError && !useYouTubeFallback && (
@@ -724,9 +762,13 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
       )}
 
       {/* TV Show Player */}
-      {showTVShowPlayer && (
+      {showTVShowPlayer && movie.media_type === 'tv' && (
         <TVShowPlayer
-          show={movie}
+          show={{
+            ...movie,
+            name: movie.name || movie.title,
+            first_air_date: movie.first_air_date || movie.release_date
+          } as TVShow}
           onClose={() => setShowTVShowPlayer(false)}
         />
       )}
@@ -740,7 +782,6 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
           onClose={() => setShowFullMovie(false)}
         />
       )}
-
     </>
   );
 };

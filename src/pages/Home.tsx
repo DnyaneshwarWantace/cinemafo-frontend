@@ -11,6 +11,7 @@ const Home = () => {
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
+  const [upcomingMovies, setUpcomingMovies] = useState<Movie[]>([]);
   const [trendingShows, setTrendingShows] = useState<TVShow[]>([]);
   const [popularShows, setPopularShows] = useState<TVShow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,17 +25,26 @@ const Home = () => {
         const [
           trendingMoviesRes,
           popularMoviesRes,
+          upcomingMoviesRes,
           trendingShowsRes,
           popularShowsRes
         ] = await Promise.all([
           api.getTrendingMovies(),
           api.getPopularMovies(),
+          api.getUpcomingMovies(),
           api.getTrendingShows(),
           api.getPopularShows()
         ]);
 
+        // Filter upcoming movies to only show unreleased ones
+        const today = new Date();
+        const actuallyUpcoming = upcomingMoviesRes.data.results.filter(movie => 
+          new Date(movie.release_date) > today
+        );
+
         setTrendingMovies(trendingMoviesRes.data.results);
         setPopularMovies(popularMoviesRes.data.results);
+        setUpcomingMovies(actuallyUpcoming);
         setTrendingShows(trendingShowsRes.data.results);
         setPopularShows(popularShowsRes.data.results);
       } catch (err) {
@@ -91,6 +101,17 @@ const Home = () => {
           </div>
         ) : (
           <>
+            {upcomingMovies.length > 0 && (
+              <section>
+                <MovieCarousel
+                  title="Coming Soon"
+                  items={upcomingMovies}
+                  onItemClick={handleContentClick}
+                  isUpcoming={true}
+                />
+              </section>
+            )}
+
             <section>
               <MovieCarousel
                 title="Trending Movies"
