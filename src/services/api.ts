@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://api.cinemafo.lol/api';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://24.144.84.120/api';
 
 // Client-side cache for movie details
 const movieCache = new Map<string, { data: any; timestamp: number }>();
