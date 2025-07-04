@@ -38,15 +38,15 @@ const Home = () => {
 
         // Filter upcoming movies to only show unreleased ones
         const today = new Date();
-        const actuallyUpcoming = upcomingMoviesRes.data.results.filter(movie => 
+        const actuallyUpcoming = upcomingMoviesRes.data?.results?.filter(movie => 
           new Date(movie.release_date) > today
-        );
+        ) || [];
 
-        setTrendingMovies(trendingMoviesRes.data.results);
-        setPopularMovies(popularMoviesRes.data.results);
+        setTrendingMovies(trendingMoviesRes.data?.results || []);
+        setPopularMovies(popularMoviesRes.data?.results || []);
         setUpcomingMovies(actuallyUpcoming);
-        setTrendingShows(trendingShowsRes.data.results);
-        setPopularShows(popularShowsRes.data.results);
+        setTrendingShows(trendingShowsRes.data?.results || []);
+        setPopularShows(popularShowsRes.data?.results || []);
       } catch (err) {
         console.error('Error fetching content:', err);
         setError('Failed to load content. Please try again later.');

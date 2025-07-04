@@ -36,7 +36,7 @@ const Search = () => {
         setLoading(true);
         setError(null);
         const response = await api.search(debouncedQuery);
-        setResults(response.data.results);
+        setResults(response.data?.results || []);
       } catch (err) {
         setError('Failed to search content');
         console.error(err);

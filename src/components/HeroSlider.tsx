@@ -42,7 +42,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
     });
   };
 
-  if (!items.length) return null;
+  if (!items || !items.length) return null;
 
   const currentItem = items[currentIndex];
   const title = 'title' in currentItem ? currentItem.title : currentItem.name;
@@ -80,7 +80,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
             <div className="inline-flex items-center gap-2 bg-black/80 text-white px-3 py-1.5 rounded-full text-sm font-semibold mb-4 w-fit">
               <Star className="w-4 h-4 text-yellow-400" />
               {currentItem.vote_average.toFixed(1)} Rating
-              {currentItem.vote_count > 0 && (
+              {'vote_count' in currentItem && currentItem.vote_count > 0 && (
                 <span className="text-gray-400 text-xs">
                   ({currentItem.vote_count.toLocaleString()} votes)
                 </span>
@@ -164,7 +164,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
 
       {/* Indicators */}
       <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-        {items.map((_, index) => (
+        {items?.map((_, index) => (
           <button
             key={index}
             className={`w-2 h-2 rounded-full transition-all ${

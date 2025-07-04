@@ -18,9 +18,9 @@ const Upcoming = () => {
         const response = await api.getUpcomingMovies();
         // Filter to only show truly upcoming movies (not released yet)
         const today = new Date();
-        const actuallyUpcoming = response.data.results.filter(movie => 
+        const actuallyUpcoming = response.data?.results?.filter(movie => 
           new Date(movie.release_date) > today
-        );
+        ) || [];
         setUpcomingMovies(actuallyUpcoming);
       } catch (err) {
         setError('Failed to load upcoming movies');

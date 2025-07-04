@@ -21,7 +21,7 @@ const Movies = () => {
     const fetchGenres = async () => {
       try {
         const genresResponse = await api.getMovieGenres();
-        setGenres(genresResponse.data.genres);
+        setGenres(genresResponse.data?.genres || []);
       } catch (err) {
         setError('Failed to load genres');
         console.error(err);
@@ -43,13 +43,13 @@ const Movies = () => {
 
       // Filter upcoming movies to only show unreleased ones
       const today = new Date();
-      const actuallyUpcoming = upcoming.data.results.filter(movie => 
+      const actuallyUpcoming = upcoming.data?.results?.filter(movie => 
         new Date(movie.release_date) > today
-      );
+      ) || [];
 
-      setTrendingMovies(trending.data.results);
-      setPopularMovies(popular.data.results);
-      setTopRatedMovies(topRated.data.results);
+      setTrendingMovies(trending.data?.results || []);
+      setPopularMovies(popular.data?.results || []);
+      setTopRatedMovies(topRated.data?.results || []);
       setUpcomingMovies(actuallyUpcoming);
     } catch (error) {
       console.error('Error fetching movies:', error);
@@ -100,7 +100,7 @@ const Movies = () => {
       <div className="w-full px-4 sm:px-6 lg:px-8 space-y-12 py-8">
         {/* Genre Filter */}
         <div className="flex flex-wrap gap-2 mb-8">
-          {genres.map((genre) => (
+          {genres?.map((genre) => (
             <Button
               key={genre.id}
               variant={selectedGenre === genre.id ? "default" : "secondary"}

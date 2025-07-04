@@ -232,7 +232,7 @@ const Index = () => {
       <Navigation />
       
       {/* Hero Slider */}
-      <HeroSlider movies={trendingMovies?.results?.slice(0, 5) || []} onMovieClick={handleMovieClick} />
+      <HeroSlider items={trendingMovies?.results?.slice(0, 5) || []} onItemClick={handleMovieClick} />
 
       <div className="container mx-auto px-4 py-8 pt-20">
         {/* Simple Netflix-style Discover Filters */}
@@ -254,7 +254,7 @@ const Index = () => {
                     </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Genres</SelectItem>
-                      {(contentType === 'movie' ? genres : tvGenres).map((genre) => (
+                      {(contentType === 'movie' ? genres : tvGenres)?.map((genre) => (
                         <SelectItem key={genre.id} value={genre.id.toString()}>
                           {genre.name}
                         </SelectItem>

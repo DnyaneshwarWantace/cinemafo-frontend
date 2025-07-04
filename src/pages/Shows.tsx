@@ -22,8 +22,8 @@ const Shows = () => {
           api.getTVGenres(),
           api.getPopularShows()
         ]);
-        setGenres(genresResponse.data.genres);
-        setShows(showsResponse.data.results);
+        setGenres(genresResponse.data?.genres || []);
+        setShows(showsResponse.data?.results || []);
       } catch (err) {
         setError('Failed to load TV shows');
         console.error(err);
@@ -41,7 +41,7 @@ const Shows = () => {
       try {
         setLoading(true);
         const response = await api.getShowsByGenre(selectedGenre);
-        setShows(response.data.results);
+        setShows(response.data?.results || []);
       } catch (err) {
         setError('Failed to load TV shows');
         console.error(err);
@@ -79,7 +79,7 @@ const Shows = () => {
       {/* Genre Filter */}
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-wrap gap-2 mb-8">
-          {genres.map((genre) => (
+          {genres?.map((genre) => (
             <Button
               key={genre.id}
               variant={selectedGenre === genre.id ? "default" : "secondary"}

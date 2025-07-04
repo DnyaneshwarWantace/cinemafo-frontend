@@ -444,7 +444,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
                         <span className="text-sm">
-                          Countries: {movie.production_countries.map(c => c.name).join(', ')}
+                          Countries: {movie.production_countries?.map(c => c.name).join(', ') || 'N/A'}
                         </span>
                       </div>
                     )}
@@ -452,7 +452,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                       <div className="flex items-center gap-2">
                         <Languages className="w-4 h-4" />
                         <span className="text-sm">
-                          Languages: {movie.spoken_languages.map(l => l.name).join(', ')}
+                          Languages: {movie.spoken_languages?.map(l => l.name).join(', ') || 'N/A'}
                         </span>
             </div>
                     )}

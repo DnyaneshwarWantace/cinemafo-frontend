@@ -73,7 +73,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
           msOverflowStyle: 'none'
         }}
       >
-        {items.map((item) => (
+        {items && items.length > 0 ? items.map((item) => (
           <div
             key={item.id}
             className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] snap-start cursor-pointer group/item"
@@ -122,7 +122,11 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
               </div>
             </div>
           </div>
-        ))}
+        )) : (
+          <div className="flex items-center justify-center w-full py-8 text-gray-500">
+            No items available
+          </div>
+        )}
       </div>
 
       <style dangerouslySetInnerHTML={{
