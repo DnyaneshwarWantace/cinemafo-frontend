@@ -53,7 +53,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
       const movieId = movie.id;
       console.log('Fetching trailer for movie:', movieId, movie.title || movie.name);
       
-      const response = await fetch(`http://localhost:5000/api/trailer/${movieId}`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/trailer/${movieId}`);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Trailer not found' }));
@@ -136,7 +136,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
     
     try {
       console.log(`Changing quality to ${quality.quality}`);
-      const response = await fetch(`http://localhost:5000/api/trailer/${movie.id}/quality/${quality.formatId}`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/trailer/${movie.id}/quality/${quality.formatId}`);
       
       if (!response.ok) {
         throw new Error('Failed to get quality URL');
@@ -170,7 +170,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
     
     try {
       const formatId = quality?.formatId || '';
-      const response = await fetch(`http://localhost:5000/api/trailer/${movie.id}/download/${formatId}`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/trailer/${movie.id}/download/${formatId}`);
       
       if (!response.ok) {
         throw new Error('Failed to get download URL');
