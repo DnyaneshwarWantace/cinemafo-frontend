@@ -56,7 +56,7 @@ src/
 
 Create `.env` file:
 ```
-VITE_API_URL=http://localhost:5000/api
+VITE_BACKEND_URL=http://localhost:5000/api
 VITE_DISCORD_URL=your_discord_invite_url
 ```
 
