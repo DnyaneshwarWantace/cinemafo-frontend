@@ -11,9 +11,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import MovieModal from "@/components/MovieModal";
 import LoadingBar from "@/components/LoadingBar";
-
-const TMDB_API_KEY = '8265bd1679663a7ea12ac168da84d2e8';
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+import api from "@/services/api";
 
 const genres = [
   { id: 28, name: 'Action' },
@@ -65,49 +63,49 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchMovies = async (endpoint: string) => {
-    const response = await fetch(`${TMDB_BASE_URL}${endpoint}?api_key=${TMDB_API_KEY}&language=en-US&page=1`);
+    // Use backend API instead of direct TMDB calls
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}${endpoint}`);
     if (!response.ok) throw new Error('Failed to fetch');
     return response.json();
   };
 
   const fetchFilteredContent = async () => {
-    let endpoint = `/discover/${contentType}`;
-    const params = new URLSearchParams({
-      api_key: TMDB_API_KEY,
-      language: 'en-US',
-      page: '1',
-      sort_by: sortBy,
-    });
-
-    if (selectedGenre && selectedGenre !== 'all') params.append('with_genres', selectedGenre);
     if (searchQuery) {
-      endpoint = `/search/${contentType}`;
-      params.append('query', searchQuery);
+      // Use search endpoint
+      const response = await api.search(searchQuery);
+      return response.data;
+    } else if (selectedGenre && selectedGenre !== 'all') {
+      // Use genre endpoint
+      const genreId = parseInt(selectedGenre);
+      if (contentType === 'movie') {
+        const response = await api.getMoviesByGenre(genreId);
+        return response.data;
+      } else {
+        const response = await api.getShowsByGenre(genreId);
+        return response.data;
+      }
     }
-
-    const response = await fetch(`${TMDB_BASE_URL}${endpoint}?${params}`);
-    if (!response.ok) throw new Error('Failed to fetch');
-    return response.json();
+    throw new Error('Invalid filter combination');
   };
 
   const { data: trendingMovies } = useQuery({
     queryKey: ['trending', 'movie'],
-    queryFn: () => fetchMovies('/trending/movie/week'),
+    queryFn: () => api.getTrendingMovies(),
   });
 
   const { data: topRatedMovies } = useQuery({
     queryKey: ['topRated', 'movie'],
-    queryFn: () => fetchMovies('/movie/top_rated'),
+    queryFn: () => api.getTopRatedMovies(),
   });
 
   const { data: popularMovies } = useQuery({
     queryKey: ['popular', 'movie'],
-    queryFn: () => fetchMovies('/movie/popular'),
+    queryFn: () => api.getPopularMovies(),
   });
 
   const { data: trendingTv } = useQuery({
     queryKey: ['trending', 'tv'],
-    queryFn: () => fetchMovies('/trending/tv/week'),
+    queryFn: () => api.getTrendingShows(),
   });
 
   const { data: filteredContent } = useQuery({
@@ -232,7 +230,7 @@ const Index = () => {
       <Navigation />
       
       {/* Hero Slider */}
-      <HeroSlider items={trendingMovies?.results?.slice(0, 5) || []} onItemClick={handleMovieClick} />
+      <HeroSlider items={trendingMovies?.data?.results?.slice(0, 5) || []} onItemClick={handleMovieClick} />
 
       <div className="container mx-auto px-4 py-8 pt-20">
         {/* Simple Netflix-style Discover Filters */}
@@ -308,10 +306,10 @@ const Index = () => {
         {/* Movie Sections */}
         {!searchQuery && selectedGenre === 'all' && (
           <>
-            <MovieSection title="Trending Movies" movies={trendingMovies?.results || []} isLarge={true} />
-            <MovieSection title="Top Rated Movies" movies={topRatedMovies?.results || []} />
-            <MovieSection title="Popular Movies" movies={popularMovies?.results || []} />
-            <MovieSection title="Trending TV Shows" movies={trendingTv?.results || []} />
+            <MovieSection title="Trending Movies" movies={trendingMovies?.data?.results || []} isLarge={true} />
+            <MovieSection title="Top Rated Movies" movies={topRatedMovies?.data?.results || []} />
+            <MovieSection title="Popular Movies" movies={popularMovies?.data?.results || []} />
+            <MovieSection title="Trending TV Shows" movies={trendingTv?.data?.results || []} />
           </>
         )}
       </div>

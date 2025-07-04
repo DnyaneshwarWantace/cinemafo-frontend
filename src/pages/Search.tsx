@@ -12,8 +12,7 @@ import MovieCarousel from "@/components/MovieCarousel";
 import api, { Movie, TVShow } from '@/services/api';
 import { useDebounce } from '@/hooks/useDebounce';
 
-const TMDB_API_KEY = '8265bd1679663a7ea12ac168da84d2e8';
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+// These are now handled by the backend API
 
 const Search = () => {
   const [query, setQuery] = useState('');
