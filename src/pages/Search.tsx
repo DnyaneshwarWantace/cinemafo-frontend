@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search as SearchIcon, Filter, X } from 'lucide-react';
 import MovieCard from '@/components/MovieCard';
+import AdSpot from '@/components/AdSpot';
 import api, { Movie } from '@/services/api';
 import { Loader2 } from 'lucide-react';
 
@@ -273,6 +274,9 @@ const Search = () => {
             </div>
           )}
         </div>
+        
+        {/* Search Page Ad 2 */}
+        <AdSpot adKey="searchPageAd2" />
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import HeroSection from '../components/HeroSection';
 import MovieRow from '../components/MovieRow';
 import MovieModal from '../components/MovieModal';
 import TVShowPlayer from '../components/TVShowPlayer';
+import AdSpot from '../components/AdSpot';
 import api, { Movie, TVShow } from '@/services/api';
 
 interface MovieRowData {
@@ -194,16 +195,27 @@ const Home = () => {
       {/* Movie Rows with Lazy Loading */}
       <div className="relative z-10 -mt-32 space-y-12 pb-16">
         {movieRows.map((row, index) => (
-          <div
-            key={row.title}
-            ref={(el) => observeElement(el, index)}
-          >
-            <MovieRow
-              title={row.title}
-              movies={row.movies}
-              loading={row.loading}
-          onItemClick={handleContentClick}
-        />
+          <div key={row.title}>
+            <div ref={(el) => observeElement(el, index)}>
+              <MovieRow
+                title={row.title}
+                movies={row.movies.map(item => ({
+                  ...item,
+                  title: 'title' in item ? item.title : item.name,
+                  release_date: 'release_date' in item ? item.release_date : item.first_air_date
+                }))}
+                loading={row.loading}
+                onItemClick={(movie) => {
+                  const originalItem = row.movies.find(item => item.id === movie.id);
+                  if (originalItem) handleContentClick(originalItem);
+                }}
+              />
+            </div>
+            
+            {/* Main Page Ads */}
+            {index === 0 && <AdSpot adKey="mainPageAd1" />}
+            {index === 2 && <AdSpot adKey="mainPageAd2" />}
+            {index === 4 && <AdSpot adKey="mainPageAd3" />}
           </div>
         ))}
       </div>

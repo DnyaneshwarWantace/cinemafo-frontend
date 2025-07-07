@@ -61,14 +61,34 @@ All colors MUST be HSL.
 }
 
 /* Custom scrollbar styles */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom scrollbar for desktop */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
   }
   
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  ::-webkit-scrollbar-track {
+    background: #1a1a1a;
   }
+  
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #2563eb, #1e40af);
+  }
+}
 
 /* Video player slider styles */
 .slider::-webkit-slider-thumb {
