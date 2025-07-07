@@ -26,23 +26,27 @@ const Footer = () => {
             </div>
           </div>
           
-          {/* Contact */}
+          {/* Contact & Admin */}
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-white">Contact Us</h3>
             <p className="text-gray-400 leading-relaxed">
               Have questions or need support? Get in touch with our team.
             </p>
             <div className="space-y-2">
-              <Button variant="link" className="text-gray-400 hover:text-white justify-start p-0">
-                Contact Support
-              </Button>
-              <Button 
-                variant="link" 
-                className="text-gray-400 hover:text-white justify-start p-0"
-                onClick={() => window.location.href = '/admin'}
-              >
-                Admin Login
-              </Button>
+              <div>
+                <Button variant="link" className="text-gray-400 hover:text-white justify-start p-0">
+                  Contact Support
+                </Button>
+              </div>
+              <div>
+                <Button 
+                  variant="link" 
+                  className="text-gray-400 hover:text-blue-400 justify-start p-0 font-medium"
+                  onClick={() => window.location.href = '/admin'}
+                >
+                  Admin Login
+                </Button>
+              </div>
             </div>
           </div>
         </div>
