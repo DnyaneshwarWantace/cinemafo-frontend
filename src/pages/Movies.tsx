@@ -1,41 +1,83 @@
 import React, { useEffect, useState } from 'react';
+import { Filter, Grid, List } from 'lucide-react';
+import MovieCard from '@/components/MovieCard';
+import MovieRow from '@/components/MovieRow';
+import HeroSection from '@/components/HeroSection';
 import MovieModal from '@/components/MovieModal';
-import MovieCarousel from '@/components/MovieCarousel';
-import HeroSlider from '@/components/HeroSlider';
+import Navigation from '@/components/Navigation';
 import api, { Movie } from '@/services/api';
 import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
+interface Genre {
+  id: number;
+  name: string;
+}
 
 const Movies = () => {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
-  const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
+  const [genres, setGenres] = useState<Genre[]>([]);
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [heroMovies, setHeroMovies] = useState<Movie[]>([]);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
   const [upcomingMovies, setUpcomingMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
+  const [heroLoading, setHeroLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedGenre, setSelectedGenre] = useState<string>('');
+  const [sortBy, setSortBy] = useState('popularity.desc');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
-    const fetchGenres = async () => {
-      try {
-        const genresResponse = await api.getMovieGenres();
-        setGenres(genresResponse.data?.genres || []);
-      } catch (err) {
-        setError('Failed to load genres');
-        console.error(err);
-      }
-    };
     fetchGenres();
+    fetchInitialMovies();
   }, []);
 
-  const fetchMovies = async (genreId?: number) => {
+  useEffect(() => {
+    if (selectedGenre || sortBy !== 'popularity.desc') {
+      fetchFilteredMovies(1, true);
+    }
+  }, [selectedGenre, sortBy]);
+
+  useEffect(() => {
+    fetchInitialMovies();
+  }, []);
+
+  // Handle custom events from "More Like This" clicks
+  useEffect(() => {
+    const handleOpenMovieModal = (event: any) => {
+      const movie = event.detail;
+      handleMovieClick(movie);
+    };
+
+    window.addEventListener('openMovieModal', handleOpenMovieModal);
+
+    return () => {
+      window.removeEventListener('openMovieModal', handleOpenMovieModal);
+    };
+  }, []);
+
+  const fetchGenres = async () => {
+    try {
+      const genresResponse = await api.getMovieGenres();
+      setGenres(genresResponse.data?.genres || []);
+    } catch (err) {
+      setError('Failed to load genres');
+      console.error(err);
+    }
+  };
+
+  const fetchInitialMovies = async () => {
     setLoading(true);
+    setHeroLoading(true);
     setError(null);
     try {
       const [trending, popular, topRated, upcoming] = await Promise.all([
-        genreId ? api.getMoviesByGenre(genreId) : api.getTrendingMovies(),
+        api.getTrendingMovies(),
         api.getPopularMovies(),
         api.getTopRatedMovies(),
         api.getUpcomingMovies()
@@ -47,23 +89,90 @@ const Movies = () => {
         new Date(movie.release_date) > today
       ) || [];
 
-      setTrendingMovies(trending.data?.results || []);
-      setPopularMovies(popular.data?.results || []);
-      setTopRatedMovies(topRated.data?.results || []);
+      const trendingResults = trending.data?.results || [];
+      const popularResults = popular.data?.results || [];
+      const topRatedResults = topRated.data?.results || [];
+
+      setTrendingMovies(trendingResults);
+      setPopularMovies(popularResults);
+      setTopRatedMovies(topRatedResults);
       setUpcomingMovies(actuallyUpcoming);
+      setHeroMovies(trendingResults.slice(0, 5)); // Set hero movies from trending
+      setMovies(popularResults); // Default to popular movies
     } catch (error) {
       console.error('Error fetching movies:', error);
       setError('Failed to load movies. Please try again later.');
     }
     setLoading(false);
+    setHeroLoading(false);
   };
 
-  useEffect(() => {
-    fetchMovies(selectedGenre || undefined);
-  }, [selectedGenre]);
+  const fetchFilteredMovies = async (page: number, reset: boolean = false) => {
+    try {
+      if (reset) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
 
-  const handleGenreClick = (genreId: number) => {
-    setSelectedGenre(genreId === selectedGenre ? null : genreId);
+      let response;
+      if (selectedGenre) {
+        response = await api.getMoviesByGenre(parseInt(selectedGenre));
+      } else {
+        // Use existing data based on sort
+        switch (sortBy) {
+          case 'vote_average.desc':
+            response = { data: { results: topRatedMovies, total_pages: 1 } };
+            break;
+          case 'release_date.desc':
+            response = { data: { results: upcomingMovies, total_pages: 1 } };
+            break;
+          case 'title.asc':
+            const sortedAsc = [...popularMovies].sort((a, b) => a.title.localeCompare(b.title));
+            response = { data: { results: sortedAsc, total_pages: 1 } };
+            break;
+          case 'title.desc':
+            const sortedDesc = [...popularMovies].sort((a, b) => b.title.localeCompare(a.title));
+            response = { data: { results: sortedDesc, total_pages: 1 } };
+            break;
+          default:
+            response = { data: { results: popularMovies, total_pages: 1 } };
+            break;
+        }
+      }
+
+      if (reset) {
+        setMovies(response.data?.results || []);
+        setCurrentPage(1);
+      } else {
+        setMovies(prev => [...prev, ...(response.data?.results || [])]);
+      }
+      
+      setTotalPages(response.data?.total_pages || 1);
+    } catch (error) {
+      console.error('Error fetching filtered movies:', error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const loadMoreMovies = () => {
+    if (currentPage < totalPages && !loadingMore) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchFilteredMovies(nextPage, false);
+    }
+  };
+
+  const handleGenreChange = (genreId: string) => {
+    setSelectedGenre(genreId);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (sort: string) => {
+    setSortBy(sort);
+    setCurrentPage(1);
   };
 
   const handleMovieClick = (movie: Movie) => {
@@ -87,80 +196,134 @@ const Movies = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black">
+      <Navigation />
+      
       {/* Hero Section */}
-      <section className="w-full">
-        <HeroSlider 
-          items={trendingMovies.slice(0, 5)}
-          onItemClick={handleMovieClick}
-        />
-      </section>
-
-      {/* Content Sections */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 space-y-12 py-8">
-        {/* Genre Filter */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {genres?.map((genre) => (
-            <Button
-              key={genre.id}
-              variant={selectedGenre === genre.id ? "default" : "secondary"}
-              onClick={() => handleGenreClick(genre.id)}
-              className="rounded-full"
-            >
-              {genre.name}
-            </Button>
-          ))}
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <Loader2 className="w-12 h-12 animate-spin text-primary" />
+      <HeroSection 
+        items={heroMovies}
+        loading={heroLoading}
+        onItemClick={handleMovieClick}
+      />
+      
+      <div className="pt-20 pb-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-12">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Movies</h1>
+            <p className="text-xl text-gray-400">Discover amazing movies from around the world</p>
           </div>
-        ) : (
-          <>
-            {upcomingMovies.length > 0 && (
-              <section>
-                <MovieCarousel
-                  title="Coming Soon"
-                  items={upcomingMovies}
-                  onItemClick={handleMovieClick}
-                  isUpcoming={true}
-                />
-              </section>
-            )}
 
-            <section>
-              <MovieCarousel 
-                title="Trending Movies"
-                items={trendingMovies}
-                onItemClick={handleMovieClick}
-              />
-            </section>
+          {/* Filters */}
+          <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8">
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+              <div className="flex flex-col sm:flex-row gap-4 flex-1">
+                {/* Genre Filter */}
+                <div className="flex items-center gap-2">
+                  <Filter size={20} className="text-gray-400" />
+                  <select
+                    value={selectedGenre}
+                    onChange={(e) => handleGenreChange(e.target.value)}
+                    className="bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">All Genres</option>
+                    {genres.map((genre) => (
+                      <option key={genre.id} value={genre.id.toString()}>
+                        {genre.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <section>
-              <MovieCarousel 
-                title="Popular Movies"
-                items={popularMovies}
-                onItemClick={handleMovieClick}
-              />
-            </section>
+                {/* Sort Filter */}
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400 text-sm">Sort by:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    className="bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="popularity.desc">Most Popular</option>
+                    <option value="vote_average.desc">Highest Rated</option>
+                    <option value="release_date.desc">Newest First</option>
+                    <option value="title.asc">A-Z</option>
+                    <option value="title.desc">Z-A</option>
+                  </select>
+                </div>
+              </div>
 
-            <section>
-              <MovieCarousel 
-                title="Top Rated Movies"
-                items={topRatedMovies}
-                onItemClick={handleMovieClick}
-              />
-            </section>
-          </>
-        )}
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-2 bg-gray-800 rounded-md p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded transition-colors ${
+                    viewMode === 'grid' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Grid size={18} />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded transition-colors ${
+                    viewMode === 'list' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <List size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Movies Grid */}
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {Array.from({ length: 20 }).map((_, index) => (
+                <div key={index} className="w-full h-96 bg-gray-800 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className={`grid gap-6 ${
+                viewMode === 'grid' 
+                  ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
+                  : 'grid-cols-1 md:grid-cols-2'
+              }`}>
+                {movies.map((movie) => (
+                  <MovieCard 
+                    key={movie.id} 
+                    movie={movie} 
+                    size={viewMode === 'list' ? 'large' : 'medium'}
+                    onItemClick={handleMovieClick}
+                  />
+                ))}
+              </div>
+
+              {/* Load More Button */}
+              {currentPage < totalPages && (
+                <div className="text-center mt-12">
+                  <button
+                    onClick={loadMoreMovies}
+                    disabled={loadingMore}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-8 py-3 rounded-md font-medium transition-colors duration-200 disabled:cursor-not-allowed"
+                  >
+                    {loadingMore ? 'Loading...' : 'Load More Movies'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Movie Modal */}
       {selectedMovie && (
         <MovieModal
-          movie={selectedMovie}
           onClose={() => setSelectedMovie(null)}
+          movie={selectedMovie}
         />
       )}
     </div>

@@ -1,165 +1,279 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Star, Calendar, Play, Search as SearchIcon, X, Loader2 } from "lucide-react";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
-import MovieModal from "@/components/MovieModal";
-import TVShowPlayer from "@/components/TVShowPlayer";
-import LoadingBar from "@/components/LoadingBar";
-import MovieCarousel from "@/components/MovieCarousel";
-import api, { Movie, TVShow } from '@/services/api';
-import { useDebounce } from '@/hooks/useDebounce';
+import { Search as SearchIcon, Filter, X } from 'lucide-react';
+import MovieCard from '@/components/MovieCard';
+import api, { Movie } from '@/services/api';
+import { Loader2 } from 'lucide-react';
 
-// These are now handled by the backend API
+interface Genre {
+  id: number;
+  name: string;
+}
 
 const Search = () => {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<(Movie | TVShow)[]>([]);
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [movies, setMovies] = useState<Movie[]>([]);
+  const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [mediaType, setMediaType] = useState('multi');
-
-  const debouncedQuery = useDebounce(query, 500);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [filters, setFilters] = useState({
+    genre: '',
+    year: '',
+    rating: '',
+  });
 
   useEffect(() => {
-    const searchContent = async () => {
-      if (!debouncedQuery.trim()) {
-        setResults([]);
-        return;
-      }
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await api.search(debouncedQuery);
-        setResults(response.data?.results || []);
-      } catch (err) {
-        setError('Failed to search content');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    searchContent();
-  }, [debouncedQuery]);
+    fetchGenres();
+    loadSearchHistory();
+  }, []);
 
-  const clearSearch = () => {
-    setQuery('');
-    setResults([]);
+  useEffect(() => {
+    const delayedSearch = setTimeout(() => {
+      if (searchQuery.trim()) {
+        searchMovies();
+        setShowHistory(false);
+      } else {
+        setMovies([]);
+        setShowHistory(searchHistory.length > 0);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayedSearch);
+  }, [searchQuery]);
+
+  const fetchGenres = async () => {
+    try {
+      const response = await api.getMovieGenres();
+      setGenres(response.data?.genres || []);
+    } catch (error) {
+      console.error('Error fetching genres:', error);
+    }
   };
 
-  const handleItemClick = (item: Movie | TVShow) => {
-    if ('title' in item) {
-      setSelectedMovie(item as Movie);
-    } else {
-      setSelectedShow(item as TVShow);
+  const loadSearchHistory = () => {
+    const history = localStorage.getItem('searchHistory');
+    if (history) {
+      const parsedHistory = JSON.parse(history);
+      setSearchHistory(parsedHistory);
+      setShowHistory(parsedHistory.length > 0 && !searchQuery);
     }
+  };
+
+  const saveSearchHistory = (query: string) => {
+    const newHistory = [query, ...searchHistory.filter(item => item !== query)].slice(0, 5);
+    setSearchHistory(newHistory);
+    localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+  };
+
+  const searchMovies = async () => {
+    if (!searchQuery.trim()) return;
+
+    try {
+      setLoading(true);
+      const response = await api.search(searchQuery);
+      setMovies(response.data?.results || []);
+      saveSearchHistory(searchQuery);
+    } catch (error) {
+      console.error('Error searching movies:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchFromHistory = (query: string) => {
+    setSearchQuery(query);
+    setShowHistory(false);
+  };
+
+  const clearSearchHistory = () => {
+    setSearchHistory([]);
+    localStorage.removeItem('searchHistory');
+    setShowHistory(false);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setMovies([]);
+    setShowHistory(searchHistory.length > 0);
+  };
+
+  const handleSearchFocus = () => {
+    if (!searchQuery && searchHistory.length > 0) {
+      setShowHistory(true);
+    }
+  };
+
+  const handleSearchBlur = () => {
+    // Delay hiding to allow clicks on history items
+    setTimeout(() => setShowHistory(false), 200);
   };
 
   return (
     <div className="min-h-screen bg-black">
-      <Navigation />
-      <LoadingBar isLoading={loading} />
-      {/* Hero Section for Search */}
-      <div className="relative h-[40vh] min-h-[200px] flex items-center justify-center">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-black to-blue-900/20" />
-        <div className="relative z-10 text-center px-4">
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
-            Find Your Next
-            <span className="block bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Favorite
-            </span>
-          </h1>
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Discover millions of movies and TV shows. Search by title, genre, or actor.
-          </p>
-        </div>
-      </div>
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Filters */}
-        <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/80 rounded-lg border border-gray-800">
-          <div className="flex gap-4 items-center flex-wrap w-full">
-            <div className="relative flex-1 min-w-[300px]">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Search movies, TV shows, or people..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white pl-10 pr-10 h-12 text-lg"
+      <div className="pt-20 pb-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-12">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Search</h1>
+            <p className="text-xl text-gray-400">Find your favorite movies and shows</p>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative mb-8">
+            <div className="relative">
+              <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={24} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={handleSearchFocus}
+                onBlur={handleSearchBlur}
+                placeholder="Search for movies..."
+                className="w-full bg-gray-900/50 backdrop-blur-sm text-white pl-12 pr-12 py-4 rounded-xl border border-gray-700 focus:border-blue-500 focus:outline-none text-lg transition-all duration-300"
               />
-              {query && (
-                <Button
-                  variant="ghost"
-                  size="sm"
+              {searchQuery && (
+                <button
                   onClick={clearSearch}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1 h-6 w-6"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                 >
-                  <X className="w-4 h-4" />
-                </Button>
+                  <X size={24} />
+                </button>
               )}
             </div>
-            <Select value={mediaType} onValueChange={setMediaType}>
-              <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white h-12">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="multi">All</SelectItem>
-                <SelectItem value="movie">Movies</SelectItem>
-                <SelectItem value="tv">TV Shows</SelectItem>
-                <SelectItem value="person">People</SelectItem>
-              </SelectContent>
-            </Select>
+
+            {/* Search Suggestions/History */}
+            {showHistory && searchHistory.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-b-xl mt-1 z-50">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-gray-400">Recent Searches</h3>
+                    <button
+                      onClick={clearSearchHistory}
+                      className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  {searchHistory.map((query, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSearchFromHistory(query)}
+                      className="block w-full text-left px-3 py-2 text-gray-300 hover:bg-gray-800 rounded-md text-sm transition-colors"
+                    >
+                      <SearchIcon className="inline w-4 h-4 mr-2 text-gray-500" />
+                      {query}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Filters Toggle */}
+          <div className="mb-6">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors"
+            >
+              <Filter size={18} />
+              Filters
+              {showFilters && <span className="text-xs bg-blue-600 px-2 py-1 rounded-full ml-2">Open</span>}
+            </button>
+          </div>
+
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8 border border-gray-700">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Genre</label>
+                  <select
+                    value={filters.genre}
+                    onChange={(e) => setFilters({ ...filters, genre: e.target.value })}
+                    className="w-full bg-gray-800 text-white px-3 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">All Genres</option>
+                    {genres.map((genre) => (
+                      <option key={genre.id} value={genre.id.toString()}>
+                        {genre.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Year</label>
+                  <input
+                    type="number"
+                    value={filters.year}
+                    onChange={(e) => setFilters({ ...filters, year: e.target.value })}
+                    placeholder="e.g. 2023"
+                    min="1900"
+                    max={new Date().getFullYear()}
+                    className="w-full bg-gray-800 text-white px-3 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Rating</label>
+                  <select
+                    value={filters.rating}
+                    onChange={(e) => setFilters({ ...filters, rating: e.target.value })}
+                    className="w-full bg-gray-800 text-white px-3 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">Any Rating</option>
+                    <option value="9">9+ Stars</option>
+                    <option value="8">8+ Stars</option>
+                    <option value="7">7+ Stars</option>
+                    <option value="6">6+ Stars</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Search Results */}
+          {loading ? (
+            <div className="text-center py-12">
+              <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
+              <p className="text-gray-400">Searching...</p>
+            </div>
+          ) : movies.length > 0 ? (
+            <>
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-white">
+                  Search Results for "{searchQuery}"
+                </h2>
+                <p className="text-gray-400 mt-1">{movies.length} movies found</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {movies.map((movie) => (
+                  <MovieCard 
+                    key={movie.id} 
+                    movie={movie}
+                    size="medium"
+                  />
+                ))}
+              </div>
+            </>
+          ) : searchQuery ? (
+            <div className="text-center py-12">
+              <div className="text-gray-500 mb-4">
+                <SearchIcon size={48} className="mx-auto mb-4" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-400 mb-2">No results found</h3>
+              <p className="text-gray-500">Try searching with different keywords or check your spelling</p>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-gray-500 mb-4">
+                <SearchIcon size={48} className="mx-auto mb-4" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-400 mb-2">Start searching</h3>
+              <p className="text-gray-500">Enter a movie title, actor, or keyword to get started</p>
+            </div>
+          )}
         </div>
-        {/* Loading State */}
-        {loading && (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin" />
-          </div>
-        )}
-        {/* Error State */}
-        {error && (
-          <div className="text-center text-red-500 mb-8">
-            {error}
-          </div>
-        )}
-        {/* Search Results */}
-        {!loading && results.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-white mb-6">
-              Search Results for "{query}"
-              {results.length > 0 && (
-                <span className="text-gray-400 text-lg ml-2">
-                  ({results.length} results)
-                </span>
-              )}
-            </h2>
-            <MovieCarousel
-              title="Results"
-              items={results}
-              onItemClick={handleItemClick}
-            />
-          </div>
-        )}
       </div>
-      {/* Movie Modal */}
-      {selectedMovie && (
-        <MovieModal
-          movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
-        />
-      )}
-      {/* TV Show Player */}
-      {selectedShow && (
-        <TVShowPlayer
-          show={selectedShow}
-          onClose={() => setSelectedShow(null)}
-        />
-      )}
-      <Footer />
     </div>
   );
 };

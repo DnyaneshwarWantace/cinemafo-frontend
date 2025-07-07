@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
 
 // Client-side cache for movie details
 const movieCache = new Map<string, { data: any; timestamp: number }>();
@@ -121,12 +121,56 @@ export interface TVShow {
   backdrop_path: string;
   first_air_date: string;
   vote_average: number;
+  vote_count: number;
   genres: { id: number; name: string }[];
   media_type?: string;
   number_of_seasons?: number;
   seasons?: Season[];
   original_language?: string;
   available_languages?: string[];
+  runtime?: number;
+  status?: string;
+  budget?: number;
+  revenue?: number;
+  tagline?: string;
+  production_companies?: {
+    id: number;
+    name: string;
+    logo_path: string | null;
+    origin_country: string;
+  }[];
+  production_countries?: {
+    iso_3166_1: string;
+    name: string;
+  }[];
+  spoken_languages?: {
+    iso_639_1: string;
+    name: string;
+  }[];
+  cast?: {
+    id: number;
+    name: string;
+    character: string;
+    profile_path: string | null;
+    order: number;
+  }[];
+  crew?: {
+    id: number;
+    name: string;
+    job: string;
+    department: string;
+    profile_path: string | null;
+  }[];
+  keywords?: {
+    id: number;
+    name: string;
+  }[];
+  recommendations?: {
+    id: number;
+    title: string;
+    poster_path: string;
+    vote_average: number;
+  }[];
 }
 
 export interface Season {
@@ -147,7 +191,7 @@ export interface Episode {
 }
 
 const api = {
-  // Movies - All with caching
+  // Movies - All with caching and complete details
   getTrendingMovies: (language?: string) => {
     const cacheKey = getCacheKey('trending_movies', undefined, { language });
     const cached = getFromCache(cacheKey);
@@ -158,6 +202,7 @@ const api = {
     
     return axios.get(`${BASE_URL}/movies/trending`, { params: { language } })
       .then(response => {
+        // The backend already provides complete data with cast, crew, etc.
         setCache(cacheKey, response.data);
         return response;
       });
@@ -173,6 +218,7 @@ const api = {
     
     return axios.get(`${BASE_URL}/movies/popular`, { params: { language } })
       .then(response => {
+        // The backend already provides complete data with cast, crew, etc.
         setCache(cacheKey, response.data);
         return response;
       });
@@ -188,6 +234,7 @@ const api = {
     
     return axios.get(`${BASE_URL}/movies/top-rated`, { params: { language } })
       .then(response => {
+        // The backend already provides complete data with cast, crew, etc.
         setCache(cacheKey, response.data);
         return response;
       });
@@ -203,6 +250,7 @@ const api = {
     
     return axios.get(`${BASE_URL}/movies/upcoming`, { params: { language } })
       .then(response => {
+        // The backend already provides complete data with cast, crew, etc.
         setCache(cacheKey, response.data);
         return response;
       });
@@ -250,6 +298,24 @@ const api = {
       .then(response => {
         setCache(cacheKey, response.data);
         return response;
+      })
+      .catch(error => {
+        console.error('Error fetching movie details:', error);
+        // Return mock data if API fails
+        const mockData = {
+          id: movieId,
+          title: "Movie Details Unavailable",
+          overview: "Movie details are currently unavailable. Please try again later.",
+          poster_path: null,
+          backdrop_path: null,
+          release_date: "2024-01-01",
+          vote_average: 7.0,
+          runtime: 120,
+          genres: [{ id: 1, name: "Action" }],
+          cast: [],
+          crew: []
+        };
+        return { data: mockData };
       });
   },
 
@@ -434,6 +500,93 @@ const api = {
       .then(response => {
         setCache(cacheKey, response.data);
         return response;
+      });
+  },
+
+  // New TV show category endpoints
+  getWebSeries: (language?: string) => {
+    const cacheKey = getCacheKey('web_series', undefined, { language });
+    const cached = getFromCache(cacheKey);
+    
+    if (cached) {
+      return Promise.resolve({ data: cached });
+    }
+    
+    return axios.get(`${BASE_URL}/tv/web-series`, { params: { language } })
+      .then(response => {
+        setCache(cacheKey, response.data);
+        return response;
+      });
+  },
+
+  getCrimeDramas: (language?: string) => {
+    const cacheKey = getCacheKey('crime_dramas', undefined, { language });
+    const cached = getFromCache(cacheKey);
+    
+    if (cached) {
+      return Promise.resolve({ data: cached });
+    }
+    
+    return axios.get(`${BASE_URL}/tv/crime-dramas`, { params: { language } })
+      .then(response => {
+        setCache(cacheKey, response.data);
+        return response;
+      });
+  },
+
+  getSciFiFantasy: (language?: string) => {
+    const cacheKey = getCacheKey('sci_fi_fantasy', undefined, { language });
+    const cached = getFromCache(cacheKey);
+    
+    if (cached) {
+      return Promise.resolve({ data: cached });
+    }
+    
+    return axios.get(`${BASE_URL}/tv/sci-fi-fantasy`, { params: { language } })
+      .then(response => {
+        setCache(cacheKey, response.data);
+        return response;
+      });
+  },
+
+  getComedySeries: (language?: string) => {
+    const cacheKey = getCacheKey('comedy_series', undefined, { language });
+    const cached = getFromCache(cacheKey);
+    
+    if (cached) {
+      return Promise.resolve({ data: cached });
+    }
+    
+    return axios.get(`${BASE_URL}/tv/comedy-series`, { params: { language } })
+      .then(response => {
+        setCache(cacheKey, response.data);
+        return response;
+      });
+  },
+
+  // Similar movies - using popular movies as fallback since similar endpoint doesn't exist
+  getSimilarMovies: (movieId: number, language?: string) => {
+    const cacheKey = getCacheKey('similar_movies', movieId, { language });
+    const cached = getFromCache(cacheKey);
+    
+    if (cached) {
+      return Promise.resolve({ data: cached });
+    }
+    
+    // Since similar movies endpoint doesn't exist, return popular movies as fallback
+    return axios.get(`${BASE_URL}/movies/popular`, { params: { language } })
+      .then(response => {
+        // Filter out the current movie and take first 20
+        const similarMovies = response.data.results?.filter((movie: any) => movie.id !== movieId).slice(0, 20) || [];
+        const data = { ...response.data, results: similarMovies };
+        setCache(cacheKey, data);
+        return { data };
+      })
+      .catch(error => {
+        console.error('Error fetching similar movies:', error);
+        // Return empty results if API fails
+        const mockData = { results: [], total_pages: 0, total_results: 0 };
+        return { data: mockData };
       });
   },
 };

@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Play, Star, Calendar, Clock, Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import HeroSlider from "@/components/HeroSlider";
+import HeroSection from "@/components/HeroSection";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import MovieModal from "@/components/MovieModal";
@@ -224,13 +224,31 @@ const Index = () => {
     );
   };
 
+  useEffect(() => {
+    loadAllContent();
+  }, []);
+
+  // Handle custom events from "More Like This" clicks
+  useEffect(() => {
+    const handleOpenMovieModal = (event: any) => {
+      const movie = event.detail;
+      handleItemClick(movie);
+    };
+
+    window.addEventListener('openMovieModal', handleOpenMovieModal);
+
+    return () => {
+      window.removeEventListener('openMovieModal', handleOpenMovieModal);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-black">
       <LoadingBar isLoading={isLoading} />
       <Navigation />
       
-      {/* Hero Slider */}
-      <HeroSlider items={trendingMovies?.data?.results?.slice(0, 5) || []} onItemClick={handleMovieClick} />
+      {/* Hero Section */}
+      <HeroSection items={trendingMovies?.data?.results?.slice(0, 5) || []} onItemClick={handleMovieClick} />
 
       <div className="container mx-auto px-4 py-8 pt-20">
         {/* Simple Netflix-style Discover Filters */}
