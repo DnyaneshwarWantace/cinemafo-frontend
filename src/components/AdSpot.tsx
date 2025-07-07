@@ -10,10 +10,21 @@ const AdSpot: React.FC<AdSpotProps> = ({ adKey, className = '' }) => {
   const { settings } = useAdmin();
   const ad = settings.ads[adKey as keyof typeof settings.ads];
 
-  console.log(`AdSpot ${adKey}:`, ad); // Debug log
+  console.log(`AdSpot ${adKey}:`, ad, 'Settings:', settings); // Debug log
 
-  if (!ad || !ad.enabled || !ad.imageUrl) {
-    console.log(`AdSpot ${adKey} not showing: enabled=${ad?.enabled}, imageUrl=${ad?.imageUrl}`);
+  // Force show ads for testing - remove the null return temporarily
+  if (!ad) {
+    console.log(`AdSpot ${adKey} - no ad config found`);
+    return null;
+  }
+
+  if (!ad.enabled) {
+    console.log(`AdSpot ${adKey} - ad disabled`);
+    return null;
+  }
+
+  if (!ad.imageUrl) {
+    console.log(`AdSpot ${adKey} - no image URL`);
     return null;
   }
 

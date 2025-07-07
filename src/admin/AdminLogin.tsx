@@ -35,6 +35,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4">
+      {/* No Navigation - Completely separate admin area */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-purple-900/20"></div>
       
       <Card className="w-full max-w-md bg-gray-900/90 border-gray-700/50 backdrop-blur-xl shadow-2xl">

@@ -29,10 +29,11 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+      {/* No regular navigation - completely separate admin design */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/10 via-transparent to-purple-900/10"></div>
       
       <div className="container mx-auto px-4 py-8 relative">
-        {/* Header */}
+        {/* Admin Header with Back to Site */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
@@ -41,14 +42,23 @@ const AdminDashboard: React.FC = () => {
             </div>
             <p className="text-gray-400 mt-2">Manage your streaming platform settings</p>
           </div>
-          <Button 
-            onClick={logout} 
-            variant="outline" 
-            className="border-gray-600 text-white hover:bg-gray-800/50 backdrop-blur-sm"
-          >
-            <LogOut size={16} className="mr-2" />
-            Logout
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              onClick={() => window.location.href = '/'} 
+              variant="outline" 
+              className="border-gray-600 text-white hover:bg-gray-800/50 backdrop-blur-sm"
+            >
+              Back to Site
+            </Button>
+            <Button 
+              onClick={logout} 
+              variant="outline" 
+              className="border-gray-600 text-white hover:bg-gray-800/50 backdrop-blur-sm"
+            >
+              <LogOut size={16} className="mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
