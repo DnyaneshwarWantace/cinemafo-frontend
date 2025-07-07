@@ -114,6 +114,9 @@ const Search = () => {
     <div className="min-h-screen bg-black">
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-12">
+          {/* Search Page Ad 1 */}
+          <AdSpot adKey="searchPageAd1" />
+          
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Search</h1>

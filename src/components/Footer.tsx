@@ -36,6 +36,13 @@ const Footer = () => {
               <Button variant="link" className="text-gray-400 hover:text-white justify-start p-0">
                 Contact Support
               </Button>
+              <Button 
+                variant="link" 
+                className="text-gray-400 hover:text-white justify-start p-0"
+                onClick={() => window.location.href = '/admin'}
+              >
+                Admin Login
+              </Button>
             </div>
           </div>
         </div>

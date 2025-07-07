@@ -42,16 +42,56 @@ const defaultSettings: AdminSettings = {
   showFloatingButtons: true,
   customCSS: "",
   ads: {
-    mainPageAd1: { enabled: false, imageUrl: "", clickUrl: "" },
-    mainPageAd2: { enabled: false, imageUrl: "", clickUrl: "" },
-    mainPageAd3: { enabled: false, imageUrl: "", clickUrl: "" },
-    searchPageAd1: { enabled: false, imageUrl: "", clickUrl: "" },
-    searchPageAd2: { enabled: false, imageUrl: "", clickUrl: "" },
-    moviesPageAdTop: { enabled: false, imageUrl: "", clickUrl: "" },
-    moviesPageAdBottom: { enabled: false, imageUrl: "", clickUrl: "" },
-    showsPageAdTop: { enabled: false, imageUrl: "", clickUrl: "" },
-    showsPageAdBottom: { enabled: false, imageUrl: "", clickUrl: "" },
-    playerPageAd: { enabled: false, imageUrl: "", clickUrl: "" },
+    mainPageAd1: { 
+      enabled: true, 
+      imageUrl: "https://images.unsplash.com/photo-1489599006593-1e8e12b8e04a?w=600&h=200&fit=crop", 
+      clickUrl: "https://example.com/gaming" 
+    },
+    mainPageAd2: { 
+      enabled: true, 
+      imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=200&fit=crop", 
+      clickUrl: "https://example.com/shopping" 
+    },
+    mainPageAd3: { 
+      enabled: true, 
+      imageUrl: "https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=600&h=200&fit=crop", 
+      clickUrl: "https://example.com/travel" 
+    },
+    searchPageAd1: { 
+      enabled: true, 
+      imageUrl: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=200&fit=crop", 
+      clickUrl: "https://example.com/tech" 
+    },
+    searchPageAd2: { 
+      enabled: true, 
+      imageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&h=200&fit=crop", 
+      clickUrl: "https://example.com/food" 
+    },
+    moviesPageAdTop: { 
+      enabled: true, 
+      imageUrl: "https://images.unsplash.com/photo-1489599006593-1e8e12b8e04a?w=600&h=200&fit=crop", 
+      clickUrl: "https://example.com/entertainment" 
+    },
+    moviesPageAdBottom: { 
+      enabled: true, 
+      imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=200&fit=crop", 
+      clickUrl: "https://example.com/products" 
+    },
+    showsPageAdTop: { 
+      enabled: true, 
+      imageUrl: "https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=600&h=200&fit=crop", 
+      clickUrl: "https://example.com/streaming" 
+    },
+    showsPageAdBottom: { 
+      enabled: true, 
+      imageUrl: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=200&fit=crop", 
+      clickUrl: "https://example.com/subscriptions" 
+    },
+    playerPageAd: { 
+      enabled: true, 
+      imageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&h=200&fit=crop", 
+      clickUrl: "https://example.com/premium" 
+    },
   }
 };
 

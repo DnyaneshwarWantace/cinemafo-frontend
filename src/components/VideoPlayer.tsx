@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
 import { X, Play, Pause, Volume2, VolumeX, Settings, Maximize, Minimize, Languages, SkipForward, SkipBack, ArrowLeft } from 'lucide-react';
+import AdSpot from './AdSpot';
 
 interface VideoPlayerProps {
   tmdbId: number;
@@ -567,11 +568,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   return (
     <div 
       ref={playerContainerRef} 
-      className="fixed inset-0 z-[200] bg-black"
+      className="fixed inset-0 z-[200] bg-black overflow-y-auto"
       tabIndex={0}
       style={{ outline: 'none' }}
       onFocus={() => console.log('Video player focused')}
     >
+      {/* Player Page Ad - Shows before video loads or during loading */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <div className="max-w-4xl w-full px-4">
+            <AdSpot adKey="playerPageAd" className="mb-8" />
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+              <p className="text-white">Loading video...</p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Video/Iframe Container */}
       <div 
         className="relative w-full h-full"
@@ -649,15 +662,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
         )}
         
-        {/* Loading Overlay */}
-        {loading && (
-          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-              <p className="text-white">Loading video...</p>
-            </div>
-          </div>
-        )}
         
         {/* Error Overlay */}
         {error && (
