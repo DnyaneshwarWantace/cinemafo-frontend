@@ -175,8 +175,21 @@ const Movies = () => {
     setCurrentPage(1);
   };
 
-  const handleMovieClick = (movie: Movie) => {
-    setSelectedMovie(movie);
+  const handleMovieClick = async (movie: Movie) => {
+    try {
+      // Fetch complete movie details with cast/crew if not already present
+      if (!movie.cast || !movie.crew) {
+        console.log('Fetching complete movie details for:', movie.title);
+        const completeMovie = await api.getMovieDetails(movie.id);
+        setSelectedMovie(completeMovie.data);
+      } else {
+        setSelectedMovie(movie);
+      }
+    } catch (error) {
+      console.error('Error fetching complete movie details:', error);
+      // Fallback to original movie if fetch fails
+      setSelectedMovie(movie);
+    }
   };
 
   if (error) {

@@ -93,8 +93,21 @@ const Shows = () => {
     // Apply sorting logic here if needed
   };
 
-  const handleShowClick = (item: TVShow) => {
-    setSelectedShow(item);
+  const handleShowClick = async (item: TVShow) => {
+    try {
+      // Fetch complete show details with cast/crew if not already present
+      if (!item.cast || !item.crew) {
+        console.log('Fetching complete show details for:', item.name);
+        const completeShow = await api.getShowDetails(item.id);
+        setSelectedShow(completeShow.data as any);
+      } else {
+        setSelectedShow(item);
+      }
+    } catch (error) {
+      console.error('Error fetching complete show details:', error);
+      // Fallback to original show if fetch fails
+      setSelectedShow(item);
+    }
   };
 
   // Handle custom events from "More Like This" clicks
@@ -234,8 +247,8 @@ const Shows = () => {
         {webSeries.length > 0 && (
           <MovieRow
             title="Web Series"
-            movies={webSeries}
-            onItemClick={handleShowClick}
+            movies={webSeries.map(show => ({...show, title: show.name, release_date: show.first_air_date}))}
+            onItemClick={(movie) => handleShowClick({...webSeries.find(s => s.id === movie.id)!, name: movie.title})}
           />
         )}
 
@@ -243,8 +256,8 @@ const Shows = () => {
         {crimeDramas.length > 0 && (
           <MovieRow
             title="Crime Dramas & Thrillers"
-            movies={crimeDramas}
-            onItemClick={handleShowClick}
+            movies={crimeDramas.map(show => ({...show, title: show.name, release_date: show.first_air_date}))}
+            onItemClick={(movie) => handleShowClick({...crimeDramas.find(s => s.id === movie.id)!, name: movie.title})}
           />
         )}
 
@@ -252,8 +265,8 @@ const Shows = () => {
         {sciFiFantasy.length > 0 && (
           <MovieRow
             title="Sci-Fi & Fantasy"
-            movies={sciFiFantasy}
-            onItemClick={handleShowClick}
+            movies={sciFiFantasy.map(show => ({...show, title: show.name, release_date: show.first_air_date}))}
+            onItemClick={(movie) => handleShowClick({...sciFiFantasy.find(s => s.id === movie.id)!, name: movie.title})}
           />
         )}
 
@@ -261,8 +274,8 @@ const Shows = () => {
         {comedySeries.length > 0 && (
           <MovieRow
             title="Comedy Series"
-            movies={comedySeries}
-            onItemClick={handleShowClick}
+            movies={comedySeries.map(show => ({...show, title: show.name, release_date: show.first_air_date}))}
+            onItemClick={(movie) => handleShowClick({...comedySeries.find(s => s.id === movie.id)!, name: movie.title})}
           />
         )}
       </div>
