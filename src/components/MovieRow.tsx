@@ -4,15 +4,15 @@ import MovieCard from './MovieCard';
 
 interface Movie {
   id: number;
-  title?: string;
-  name?: string;
+  title: string;
   poster_path: string;
   backdrop_path: string;
   vote_average: number;
-  release_date?: string;
-  first_air_date?: string;
+  release_date: string;
   overview: string;
   genre_ids?: number[];
+  name?: string;
+  first_air_date?: string;
 }
 
 interface MovieRowProps {
