@@ -5,7 +5,6 @@ import VideoPlayer from '@/components/VideoPlayer';
 import MovieCard from './MovieCard';
 import MovieRow from './MovieRow';
 import Navigation from './Navigation';
-import AdSpot from './AdSpot';
 import api, { TVShow, Movie } from '@/services/api';
 
 interface Episode {
@@ -45,8 +44,6 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   const [similarShows, setSimilarShows] = useState<Movie[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [detailedShow, setDetailedShow] = useState<TVShow>(show);
-  const [showOverview, setShowOverview] = useState(false);
-  const [showCast, setShowCast] = useState(false);
 
   useEffect(() => {
     // Fetch detailed show information
@@ -181,20 +178,15 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
 
   const episodes = selectedSeason?.episodes || mockEpisodes;
 
-  // If playing, show video player with ad
+  // If playing, show video player
   if (isPlaying) {
     return (
-      <div className="relative">
-        <AdSpot adKey="playerPageAd" className="absolute top-4 right-4 z-50 max-w-sm" />
-        <VideoPlayer
-          tmdbId={displayShow.id}
-          title={title}
-          type="tv"
-          season={selectedSeason?.season_number}
-          episode={selectedEpisode?.episode_number}
-          onClose={() => setIsPlaying(false)}
-        />
-      </div>
+      <VideoPlayer
+        tmdbId={displayShow.id}
+        title={title}
+        type="tv"
+        onClose={() => setIsPlaying(false)}
+      />
     );
   }
 
@@ -288,55 +280,36 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                   </div>
                 )}
 
-                {/* Overview - Collapsible */}
-                <div className="mb-8">
-                  <button 
-                    className="flex items-center gap-2 text-xl font-semibold text-white mb-4 hover:text-blue-400 transition-colors"
-                    onClick={() => setShowOverview(!showOverview)}
-                  >
-                    Description
-                    <span className={`transform transition-transform ${showOverview ? 'rotate-180' : ''}`}>▼</span>
-                  </button>
-                  {showOverview && (
-                    <p className="text-lg text-gray-200 leading-relaxed">
-                      {displayShow.overview || 'No overview available for this show.'}
-                    </p>
-                  )}
-                </div>
+                {/* Overview */}
+                <p className="text-lg text-gray-200 mb-8 leading-relaxed">
+                  {displayShow.overview || 'No overview available for this show.'}
+                </p>
 
-                {/* Cast Section - Collapsible */}
+                {/* Cast Section - Moved here and improved */}
                 {mainCast.length > 0 && (
                   <div className="mb-8">
-                    <button 
-                      className="flex items-center gap-2 text-xl font-semibold text-white mb-4 hover:text-blue-400 transition-colors"
-                      onClick={() => setShowCast(!showCast)}
-                    >
-                      Starring
-                      <span className={`transform transition-transform ${showCast ? 'rotate-180' : ''}`}>▼</span>
-                    </button>
-                    {showCast && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {mainCast.map((actor) => (
-                          <div key={actor.id} className="text-center">
-                            <div className="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden bg-gray-800">
-                              {actor.profile_path ? (
-                                <img
-                                  src={`${profileBaseUrl}${actor.profile_path}`}
-                                  alt={actor.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                                  <span className="text-gray-400 text-xs">No Photo</span>
-                                </div>
-                              )}
-                            </div>
-                            <h4 className="text-white font-medium text-sm mb-1">{actor.name}</h4>
-                            <p className="text-gray-400 text-xs">{actor.character}</p>
+                    <h3 className="text-xl font-bold text-white mb-4">Starring</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {mainCast.map((actor) => (
+                        <div key={actor.id} className="text-center">
+                          <div className="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden bg-gray-800">
+                            {actor.profile_path ? (
+                              <img
+                                src={`${profileBaseUrl}${actor.profile_path}`}
+                                alt={actor.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                                <span className="text-gray-400 text-xs">No Photo</span>
+                              </div>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          <h4 className="text-white font-medium text-sm mb-1">{actor.name}</h4>
+                          <p className="text-gray-400 text-xs">{actor.character}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
