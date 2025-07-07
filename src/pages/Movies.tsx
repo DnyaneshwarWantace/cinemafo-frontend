@@ -4,7 +4,6 @@ import MovieCard from '@/components/MovieCard';
 import MovieRow from '@/components/MovieRow';
 import HeroSection from '@/components/HeroSection';
 import MovieModal from '@/components/MovieModal';
-import AdSpot from '@/components/AdSpot';
 import Navigation from '@/components/Navigation';
 import api, { Movie } from '@/services/api';
 import { Loader2 } from 'lucide-react';
@@ -222,9 +221,6 @@ const Movies = () => {
       
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-12">
-          {/* Movies Page Ad Top */}
-          <AdSpot adKey="moviesPageAdTop" />
-          
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Movies</h1>
@@ -333,9 +329,6 @@ const Movies = () => {
               )}
             </>
           )}
-
-          {/* Movies Page Ad Bottom */}
-          <AdSpot adKey="moviesPageAdBottom" />
         </div>
       </div>
 

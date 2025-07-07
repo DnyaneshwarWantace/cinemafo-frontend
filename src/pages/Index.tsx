@@ -224,13 +224,15 @@ const Index = () => {
     );
   };
 
-  // Remove loadAllContent as it's not defined
+  useEffect(() => {
+    loadAllContent();
+  }, []);
 
   // Handle custom events from "More Like This" clicks
   useEffect(() => {
     const handleOpenMovieModal = (event: any) => {
       const movie = event.detail;
-      handleMovieClick(movie);
+      handleItemClick(movie);
     };
 
     window.addEventListener('openMovieModal', handleOpenMovieModal);

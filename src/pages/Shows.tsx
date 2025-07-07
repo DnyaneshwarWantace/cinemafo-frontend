@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import HeroSection from '@/components/HeroSection';
 import MovieRow from '@/components/MovieRow';
 import MovieCard from '@/components/MovieCard';
-import AdSpot from '@/components/AdSpot';
 import Navigation from '@/components/Navigation';
 import api, { TVShow } from '@/services/api';
 import { Loader2, Tv, Film, Zap, Heart, Star } from 'lucide-react';
@@ -146,9 +145,6 @@ const Shows = () => {
 
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-12">
-          {/* Shows Page Ad Top */}
-          <AdSpot adKey="showsPageAdTop" />
-          
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">TV Shows</h1>
@@ -242,9 +238,6 @@ const Shows = () => {
               ))}
             </div>
           )}
-
-          {/* Shows Page Ad Bottom */}
-          <AdSpot adKey="showsPageAdBottom" />
         </div>
       </div>
 
