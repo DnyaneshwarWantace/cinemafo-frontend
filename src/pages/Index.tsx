@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import HeroSection from "@/components/HeroSection";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import FloatingSocialButtons from "@/components/FloatingSocialButtons";
 import MovieModal from "@/components/MovieModal";
 import LoadingBar from "@/components/LoadingBar";
 import api from "@/services/api";
@@ -224,15 +225,11 @@ const Index = () => {
     );
   };
 
-  useEffect(() => {
-    loadAllContent();
-  }, []);
-
   // Handle custom events from "More Like This" clicks
   useEffect(() => {
     const handleOpenMovieModal = (event: any) => {
       const movie = event.detail;
-      handleItemClick(movie);
+      handleMovieClick(movie);
     };
 
     window.addEventListener('openMovieModal', handleOpenMovieModal);
@@ -333,6 +330,9 @@ const Index = () => {
       </div>
 
       <Footer />
+      
+      {/* Floating Social Buttons */}
+      <FloatingSocialButtons />
       
       {selectedMovie && (
         <MovieModal 

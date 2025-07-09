@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Filter, Grid, List } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import MovieCard from '@/components/MovieCard';
 import MovieRow from '@/components/MovieRow';
 import HeroSection from '@/components/HeroSection';
 import MovieModal from '@/components/MovieModal';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
+import FloatingSocialButtons from '@/components/FloatingSocialButtons';
+import AdBanner from '@/components/AdBanner';
+import AnnouncementBar from '@/components/AnnouncementBar';
 import api, { Movie } from '@/services/api';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Film, Tv, Zap, Heart, Star } from 'lucide-react';
 
 interface Genre {
   id: number;
@@ -61,15 +66,15 @@ const Movies = () => {
     };
   }, []);
 
-  const fetchGenres = async () => {
-    try {
-      const genresResponse = await api.getMovieGenres();
+    const fetchGenres = async () => {
+      try {
+        const genresResponse = await api.getMovieGenres();
       setGenres(genresResponse.data?.genres || []);
-    } catch (err) {
-      setError('Failed to load genres');
-      console.error(err);
-    }
-  };
+      } catch (err) {
+        setError('Failed to load genres');
+        console.error(err);
+      }
+    };
 
   const fetchInitialMovies = async () => {
     setLoading(true);
@@ -188,7 +193,7 @@ const Movies = () => {
     } catch (error) {
       console.error('Error fetching complete movie details:', error);
       // Fallback to original movie if fetch fails
-      setSelectedMovie(movie);
+    setSelectedMovie(movie);
     }
   };
 
@@ -210,14 +215,15 @@ const Movies = () => {
 
   return (
     <div className="min-h-screen bg-black">
+      <AnnouncementBar />
       <Navigation />
       
       {/* Hero Section */}
       <HeroSection 
         items={heroMovies}
         loading={heroLoading}
-        onItemClick={handleMovieClick}
-      />
+          onItemClick={handleMovieClick}
+        />
       
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-12">
@@ -231,7 +237,7 @@ const Movies = () => {
           <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8">
             <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
               <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                {/* Genre Filter */}
+        {/* Genre Filter */}
                 <div className="flex items-center gap-2">
                   <Filter size={20} className="text-gray-400" />
                   <select
@@ -240,9 +246,9 @@ const Movies = () => {
                     className="bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
                   >
                     <option value="">All Genres</option>
-                    {genres.map((genre) => (
+          {genres.map((genre) => (
                       <option key={genre.id} value={genre.id.toString()}>
-                        {genre.name}
+              {genre.name}
                       </option>
                     ))}
                   </select>
@@ -289,17 +295,22 @@ const Movies = () => {
                 </button>
               </div>
             </div>
+        </div>
+
+          {/* Movies Ad */}
+          <div className="mb-8">
+            <AdBanner adKey="moviesPageAd" className="max-w-4xl mx-auto" />
           </div>
 
           {/* Movies Grid */}
-          {loading ? (
+        {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {Array.from({ length: 20 }).map((_, index) => (
                 <div key={index} className="w-full h-96 bg-gray-800 rounded-lg animate-pulse" />
               ))}
-            </div>
-          ) : (
-            <>
+          </div>
+        ) : (
+          <>
               <div className={`grid gap-6 ${
                 viewMode === 'grid' 
                   ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
@@ -310,8 +321,8 @@ const Movies = () => {
                     key={movie.id} 
                     movie={movie} 
                     size={viewMode === 'list' ? 'large' : 'medium'}
-                    onItemClick={handleMovieClick}
-                  />
+                onItemClick={handleMovieClick}
+              />
                 ))}
               </div>
 
@@ -327,18 +338,29 @@ const Movies = () => {
                   </button>
                 </div>
               )}
-            </>
-          )}
+          </>
+        )}
+
+          {/* Bottom Movies Ad */}
+          <div className="mt-12">
+            <AdBanner adKey="moviesPageBottomAd" className="max-w-4xl mx-auto" />
+          </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
 
       {/* Movie Modal */}
       {selectedMovie && (
         <MovieModal
-          onClose={() => setSelectedMovie(null)}
           movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
         />
       )}
+      
+      {/* Floating Social Buttons */}
+      <FloatingSocialButtons />
     </div>
   );
 };

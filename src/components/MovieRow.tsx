@@ -1,25 +1,13 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import MovieCard from './MovieCard';
-
-interface Movie {
-  id: number;
-  title: string;
-  poster_path: string;
-  backdrop_path: string;
-  vote_average: number;
-  release_date: string;
-  overview: string;
-  genre_ids?: number[];
-  name?: string;
-  first_air_date?: string;
-}
+import { Movie, TVShow } from '@/services/api';
 
 interface MovieRowProps {
   title: string;
-  movies: Movie[];
+  movies: (Movie | TVShow)[];
   loading?: boolean;
-  onItemClick?: (movie: Movie) => void;
+  onItemClick?: (movie: Movie | TVShow) => void;
 }
 
 const MovieRow: React.FC<MovieRowProps> = ({ title, movies, loading = false, onItemClick }) => {

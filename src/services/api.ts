@@ -1,6 +1,32 @@
 import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
+const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+
+// Create separate axios instances for admin and regular endpoints
+const adminAxios = axios.create({
+  baseURL: '', // Empty baseURL to use the proxy
+  timeout: 10000,
+});
+
+// Create axios instance for public settings (also uses proxy)
+const publicAxios = axios.create({
+  baseURL: '', // Empty baseURL to use the proxy
+  timeout: 10000,
+});
+
+// Configure regular axios defaults for movie endpoints
+axios.defaults.baseURL = BASE_URL;
+axios.defaults.timeout = 10000;
+
+// Add token to admin requests if available
+adminAxios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('adminToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 // Client-side cache for movie details
 const movieCache = new Map<string, { data: any; timestamp: number }>();
@@ -189,6 +215,103 @@ export interface Episode {
   air_date: string;
   vote_average: number;
 }
+
+export interface SiteSettings {
+  appearance: {
+    announcementBar: {
+      enabled: boolean;
+      text: string;
+      backgroundColor: string;
+      textColor: string;
+    };
+    floatingSocialButtons: {
+      enabled: boolean;
+      discordUrl: string;
+      telegramUrl: string;
+    };
+  };
+  content: {
+    disclaimer: string;
+    aboutUs: string;
+    contactEmail: string;
+    socialLinks: {
+      discord: string;
+      telegram: string;
+    };
+  };
+  ads: {
+    [key: string]: {
+      enabled: boolean;
+      imageUrl: string;
+      clickUrl: string;
+    };
+  };
+}
+
+// Authentication API
+const authApi = {
+  login: async (username: string, password: string) => {
+    const response = await adminAxios.post('/api/admin/login', { username, password });
+    const { token } = response.data;
+    localStorage.setItem('adminToken', token);
+    return response.data;
+  },
+  
+  logout: () => {
+    localStorage.removeItem('adminToken');
+  },
+  
+  isAuthenticated: () => {
+    return !!localStorage.getItem('adminToken');
+  }
+};
+
+// Settings API
+const settings = {
+  getPublicSettings: async () => {
+    console.log('Fetching public settings...');
+    const publicResponse = await publicAxios.get('/api/admin/public/settings');
+    console.log('Public settings response:', publicResponse.data);
+    return publicResponse.data;
+  },
+  
+  // Admin settings methods
+  getAllSettings: async () => {
+    const allResponse = await adminAxios.get('/api/admin/settings');
+    return allResponse.data;
+  },
+
+  updateAppearance: async (settings: Partial<SiteSettings['appearance']>) => {
+    const appearanceResponse = await adminAxios.put('/api/admin/settings/appearance', settings);
+    return appearanceResponse.data;
+  },
+
+  updateContent: async (settings: Partial<SiteSettings['content']>) => {
+    const contentResponse = await adminAxios.put('/api/admin/settings/content', settings);
+    return contentResponse.data;
+  },
+
+  updateAds: async (settings: Partial<SiteSettings['ads']>) => {
+    const adsResponse = await adminAxios.put('/api/admin/settings/ads', settings);
+    return adsResponse.data;
+  },
+
+  updateSettings: async (settings: Partial<SiteSettings>) => {
+    const updateResponse = await adminAxios.put('/api/admin/settings', settings);
+    return updateResponse.data;
+  },
+
+  // Legacy methods for backward compatibility
+  updateAnnouncement: async (settings: { enabled: boolean; text: string; backgroundColor: string; textColor: string }) => {
+    const announcementResponse = await adminAxios.put('/api/admin/settings/announcement', settings);
+    return announcementResponse.data;
+  },
+
+  updateSocialButtons: async (settings: { enabled: boolean; discordUrl: string; telegramUrl: string }) => {
+    const socialResponse = await adminAxios.put('/api/admin/settings/social-buttons', settings);
+    return socialResponse.data;
+  }
+};
 
 const api = {
   // Movies - All with caching and complete details
@@ -589,6 +712,10 @@ const api = {
         return { data: mockData };
       });
   },
+
+  // Site Settings - REMOVED (use api.settings.getPublicSettings() instead)
+  auth: authApi,
+  settings
 };
 
 export default api; 

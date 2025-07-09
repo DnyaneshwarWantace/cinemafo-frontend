@@ -1,8 +1,9 @@
+import React, { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import Home from './pages/Home';
 import Movies from './pages/Movies';
@@ -12,8 +13,34 @@ import Search from './pages/Search';
 import NotFound from './pages/NotFound';
 import Upcoming from './pages/Upcoming';
 import Watchlist from './pages/Watchlist';
+import AdminPanel from './components/admin/AdminPanel';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const queryClient = new QueryClient();
+
+// Layout component to conditionally render Navigation
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin');
+
+  // Trigger admin settings event on app load to ensure ads show
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('adminSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      window.dispatchEvent(new CustomEvent('adminSettingsChanged', { detail: settings }));
+    }
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-black">
+      {!isAdminPage && <Navigation />}
+      <main className="w-full">
+        {children}
+      </main>
+    </div>
+  );
+};
 
 function App() {
   return (
@@ -21,10 +48,9 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <Router>
-          <div className="min-h-screen bg-black">
-            <Navigation />
-            <main className="w-full">
+        <BrowserRouter>
+          <Layout>
+            <main className="min-h-screen bg-black">
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/movies" element={<Movies />} />
@@ -33,11 +59,16 @@ function App() {
                 <Route path="/upcoming" element={<Upcoming />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/watchlist" element={<Watchlist />} />
+                <Route path="/admin" element={
+                  <ErrorBoundary>
+                    <AdminPanel />
+                  </ErrorBoundary>
+                } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
-          </div>
-        </Router>
+          </Layout>
+        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );

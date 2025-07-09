@@ -60,6 +60,36 @@ All colors MUST be HSL.
   }
 }
 
+/* GRADIENT BLUE CUSTOM SCROLLBARS (Desktop Only) */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(45deg, #3b82f6, #1d4ed8, #2563eb);
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(45deg, #2563eb, #1d4ed8, #1e40af);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #3b82f6 rgba(0, 0, 0, 0.3);
+  }
+}
+
 /* Custom scrollbar styles */
   .scrollbar-hide {
     -ms-overflow-style: none;
@@ -69,29 +99,180 @@ All colors MUST be HSL.
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  
+/* CRYSTAL PLAY BUTTON */
+.crystal-play-button {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #00c6ff, #0072ff, #004de6);
+  clip-path: polygon(25% 20%, 80% 50%, 25% 80%);
+  position: relative;
+  box-shadow: 
+    0 0 20px rgba(0, 123, 255, 0.6),
+    0 0 40px rgba(0, 170, 255, 0.4),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+  animation: crystalPulse 2s infinite ease-in-out;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+}
 
-/* Video player slider styles */
+.crystal-play-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.3), transparent 50%);
+  clip-path: polygon(25% 20%, 80% 50%, 25% 80%);
+  border-radius: 4px;
+}
+
+.crystal-play-button:hover {
+  transform: scale(1.1);
+  box-shadow: 
+    0 0 30px rgba(0, 123, 255, 0.8),
+    0 0 60px rgba(0, 170, 255, 0.6),
+    inset 0 0 30px rgba(255, 255, 255, 0.2);
+  animation: crystalPulseHover 1s infinite ease-in-out;
+}
+
+@keyframes crystalPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px rgba(0, 123, 255, 0.6),
+      0 0 40px rgba(0, 170, 255, 0.4),
+      inset 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px rgba(0, 123, 255, 0.8),
+      0 0 60px rgba(0, 170, 255, 0.6),
+      inset 0 0 30px rgba(255, 255, 255, 0.2);
+  }
+}
+
+@keyframes crystalPulseHover {
+  0%, 100% {
+    box-shadow: 
+      0 0 30px rgba(0, 123, 255, 0.8),
+      0 0 60px rgba(0, 170, 255, 0.6),
+      inset 0 0 30px rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 40px rgba(0, 170, 255, 1),
+      0 0 80px rgba(0, 170, 255, 0.8),
+      inset 0 0 40px rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* GRADIENT PROGRESS BARS */
+.gradient-progress-bar {
+  background: linear-gradient(90deg, #1e40af, #3b82f6, #60a5fa, #93c5fd);
+  background-size: 200% 100%;
+  animation: progressShine 2s linear infinite;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+@keyframes progressShine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Video player slider styles with gradient */
 .slider::-webkit-slider-thumb {
   appearance: none;
   height: 16px;
   width: 16px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: linear-gradient(45deg, #3b82f6, #1d4ed8);
   cursor: pointer;
   border: 2px solid #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+  transition: all 0.2s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
 }
 
 .slider::-moz-range-thumb {
   height: 16px;
   width: 16px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: linear-gradient(45deg, #3b82f6, #1d4ed8);
   cursor: pointer;
   border: 2px solid #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+    transition: all 0.2s ease;
+  }
   
+.slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
+}
+
+/* GRADIENT BUTTON STYLES */
+.btn-gradient-primary {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8, #1e40af);
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+  transition: all 0.3s ease;
+}
+
+.btn-gradient-primary:hover {
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+  transform: translateY(-2px);
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* GLOWING OUTLINES */
+.glow-outline {
+  border: 1px solid transparent;
+  background: linear-gradient(black, black) padding-box,
+              linear-gradient(45deg, #3b82f6, #1d4ed8, #60a5fa) border-box;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.glow-outline-hover:hover {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+}
+
+/* SHIMMER EFFECTS */
+.shimmer-blue {
+  background: linear-gradient(90deg, 
+    transparent,
+    rgba(59, 130, 246, 0.1),
+    rgba(29, 78, 216, 0.2),
+    rgba(59, 130, 246, 0.1),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmerBlue 2s infinite;
+}
+
+@keyframes shimmerBlue {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* SEARCH SUGGESTION STYLING */
+.search-suggestion {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(30, 64, 175, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
 /* Smooth scrolling for movie rows */
 .movie-row-scroll {
   scroll-behavior: smooth;
@@ -113,16 +294,33 @@ All colors MUST be HSL.
   overflow: hidden;
 }
 
-/* Gradient overlays */
+/* ENHANCED GRADIENT OVERLAYS */
 .gradient-overlay-left {
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.8), transparent);
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.1), transparent);
 }
 
 .gradient-overlay-right {
-  background: linear-gradient(to left, rgba(0, 0, 0, 0.8), transparent);
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.1), transparent);
 }
 
-/* Netflix-style hover effects */
+.gradient-overlay-blue {
+  background: linear-gradient(135deg, 
+    rgba(30, 64, 175, 0.1), 
+    rgba(59, 130, 246, 0.05), 
+    transparent
+  );
+}
+
+/* MOVIE CARD ENHANCEMENTS */
+.movie-card-gradient {
+  background: linear-gradient(135deg, 
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(30, 64, 175, 0.1) 50%,
+    rgba(0, 0, 0, 0.9) 100%
+  );
+}
+
+/* Netflix-style hover effects with gradients */
 .netflix-card-hover {
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -130,14 +328,24 @@ All colors MUST be HSL.
 .netflix-card-hover:hover {
   transform: scale(1.15);
   z-index: 20;
+  box-shadow: 0 25px 50px rgba(59, 130, 246, 0.2);
 }
 
-/* Custom focus styles */
+/* Custom focus styles with gradients */
 .focus-ring {
   @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black;
 }
 
-/* Loading animation */
+.focus-ring-gradient {
+  transition: all 0.2s ease;
+}
+
+.focus-ring-gradient:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+/* Loading animation with blue gradient */
 @keyframes shimmer {
   0% {
     background-position: -200px 0;
@@ -148,22 +356,24 @@ All colors MUST be HSL.
 }
 
 .shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
 }
 
-/* Hero section specific styles */
+/* Hero section with enhanced gradients */
 .hero-gradient {
   background: linear-gradient(
     135deg,
-    rgba(0, 0, 0, 0.9) 0%,
-    rgba(0, 0, 0, 0.7) 50%,
-    rgba(0, 0, 0, 0.9) 100%
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(30, 64, 175, 0.1) 30%,
+    rgba(0, 0, 0, 0.8) 60%,
+    rgba(59, 130, 246, 0.05) 80%,
+    rgba(0, 0, 0, 0.95) 100%
   );
 }
 
-/* Movie card specific styles */
+/* Enhanced movie card shadows with blue glow */
 .movie-card-shadow {
   box-shadow: 
     0 4px 6px -1px rgba(0, 0, 0, 0.3),
@@ -173,22 +383,88 @@ All colors MUST be HSL.
 .movie-card-shadow:hover {
   box-shadow: 
     0 20px 25px -5px rgba(0, 0, 0, 0.4),
-    0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    0 10px 10px -5px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(59, 130, 246, 0.3);
 }
 
-/* Custom button styles */
+/* NAVIGATION ENHANCEMENTS */
+.nav-gradient {
+  background: linear-gradient(90deg, 
+    rgba(0, 0, 0, 0.95),
+    rgba(30, 64, 175, 0.05),
+    rgba(0, 0, 0, 0.95)
+  );
+  backdrop-filter: blur(10px);
+}
+
+/* LOADING ANIMATIONS */
+.loading-gradient {
+  background: linear-gradient(90deg, 
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(29, 78, 216, 0.2) 50%,
+    rgba(59, 130, 246, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: loadingShine 1.5s infinite ease-in-out;
+}
+
+@keyframes loadingShine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Custom button styles with enhanced gradients */
 .btn-primary {
   @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
 }
 
 .btn-secondary {
   @apply bg-gray-700/80 hover:bg-gray-600/80 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 backdrop-blur-sm;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.btn-secondary:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+}
+
+/* SKIP INTRO BUTTON */
+.skip-intro-button {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(30, 64, 175, 0.2));
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+}
+
+.skip-intro-button:hover {
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.3), rgba(59, 130, 246, 0.2));
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+  transform: translateY(-2px);
+}
+
+/* TEXT GRADIENTS */
+.text-gradient-blue {
+  background: linear-gradient(135deg, #60a5fa, #3b82f6, #1d4ed8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Mobile optimizations */
 @media (max-width: 768px) {
   .movie-card-hover:hover {
     transform: scale(1.05);
+  }
+  
+  .crystal-play-button {
+    width: 40px;
+    height: 40px;
   }
 }
 
@@ -199,4 +475,5 @@ All colors MUST be HSL.
 
 .card-hover:hover {
   transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
 }

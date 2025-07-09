@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Search as SearchIcon, Filter, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import MovieCard from '@/components/MovieCard';
-import api, { Movie } from '@/services/api';
+import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
+import FloatingSocialButtons from '@/components/FloatingSocialButtons';
+import AdBanner from '@/components/AdBanner';
+import AnnouncementBar from '@/components/AnnouncementBar';
+import MovieModal from '@/components/MovieModal';
+import TVShowPlayer from '@/components/TVShowPlayer';
+import api, { Movie, TVShow } from '@/services/api';
 import { Loader2 } from 'lucide-react';
 
 interface Genre {
@@ -22,6 +30,8 @@ const Search = () => {
     year: '',
     rating: '',
   });
+  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
   useEffect(() => {
     fetchGenres();
@@ -69,17 +79,17 @@ const Search = () => {
   const searchMovies = async () => {
     if (!searchQuery.trim()) return;
 
-    try {
-      setLoading(true);
+      try {
+        setLoading(true);
       const response = await api.search(searchQuery);
       setMovies(response.data?.results || []);
       saveSearchHistory(searchQuery);
     } catch (error) {
       console.error('Error searching movies:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const handleSearchFromHistory = (query: string) => {
     setSearchQuery(query);
@@ -111,13 +121,20 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-black">
+      <AnnouncementBar />
+      <Navigation />
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-12">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Search</h1>
             <p className="text-xl text-gray-400">Find your favorite movies and shows</p>
-          </div>
+        </div>
+
+          {/* Top Ad */}
+          <div className="mb-8">
+            <AdBanner adKey="searchTopAd" className="max-w-4xl mx-auto" />
+      </div>
 
           {/* Search Bar */}
           <div className="relative mb-8">
@@ -165,8 +182,8 @@ const Search = () => {
                       {query}
                     </button>
                   ))}
-                </div>
-              </div>
+          </div>
+        </div>
             )}
           </div>
 
@@ -228,10 +245,10 @@ const Search = () => {
                   </select>
                 </div>
               </div>
-            </div>
-          )}
+          </div>
+        )}
 
-          {/* Search Results */}
+        {/* Search Results */}
           {loading ? (
             <div className="text-center py-12">
               <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
@@ -242,7 +259,7 @@ const Search = () => {
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-white">
                   Search Results for "{searchQuery}"
-                </h2>
+            </h2>
                 <p className="text-gray-400 mt-1">{movies.length} movies found</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -251,6 +268,14 @@ const Search = () => {
                     key={movie.id} 
                     movie={movie}
                     size="medium"
+                    onItemClick={(item) => {
+                      // Handle both movies and TV shows
+                      if ('title' in item) {
+                        setSelectedMovie(item as any);
+                      } else {
+                        setSelectedShow(item as any);
+                      }
+                    }}
                   />
                 ))}
               </div>
@@ -272,8 +297,35 @@ const Search = () => {
               <p className="text-gray-500">Enter a movie title, actor, or keyword to get started</p>
             </div>
           )}
+          
+          {/* Bottom Ad */}
+          <div className="mt-12">
+            <AdBanner adKey="searchBottomAd" className="max-w-4xl mx-auto" />
+          </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
+
+      {/* Movie Modal */}
+      {selectedMovie && (
+        <MovieModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+        />
+      )}
+
+      {/* TV Show Player */}
+      {selectedShow && (
+        <TVShowPlayer
+          show={selectedShow}
+          onClose={() => setSelectedShow(null)}
+        />
+      )}
+      
+      {/* Floating Social Buttons */}
+      <FloatingSocialButtons />
     </div>
   );
 };

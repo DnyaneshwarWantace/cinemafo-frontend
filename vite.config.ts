@@ -8,6 +8,14 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      // Proxy admin endpoints to local backend
+      '/api/admin': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
   build: {
     outDir: 'dist',

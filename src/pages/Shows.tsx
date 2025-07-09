@@ -5,6 +5,10 @@ import HeroSection from '@/components/HeroSection';
 import MovieRow from '@/components/MovieRow';
 import MovieCard from '@/components/MovieCard';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
+import FloatingSocialButtons from '@/components/FloatingSocialButtons';
+import AdBanner from '@/components/AdBanner';
+import AnnouncementBar from '@/components/AnnouncementBar';
 import api, { TVShow } from '@/services/api';
 import { Loader2, Tv, Film, Zap, Heart, Star } from 'lucide-react';
 import TVShowPlayer from "@/components/TVShowPlayer";
@@ -12,10 +16,6 @@ import TVShowPlayer from "@/components/TVShowPlayer";
 const Shows = () => {
   const [shows, setShows] = useState<TVShow[]>([]);
   const [heroShows, setHeroShows] = useState<TVShow[]>([]);
-  const [webSeries, setWebSeries] = useState<TVShow[]>([]);
-  const [crimeDramas, setCrimeDramas] = useState<TVShow[]>([]);
-  const [sciFiFantasy, setSciFiFantasy] = useState<TVShow[]>([]);
-  const [comedySeries, setComedySeries] = useState<TVShow[]>([]);
   const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>('');
   const [sortBy, setSortBy] = useState('popularity.desc');
@@ -30,20 +30,9 @@ const Shows = () => {
       try {
         setLoading(true);
         setHeroLoading(true);
-        const [
-          genresResponse, 
-          showsResponse, 
-          webSeriesResponse, 
-          crimeDramasResponse, 
-          sciFiFantasyResponse, 
-          comedySeriesResponse
-        ] = await Promise.all([
+        const [genresResponse, showsResponse] = await Promise.all([
           api.getTVGenres(),
-          api.getPopularShows(),
-          api.getWebSeries(),
-          api.getCrimeDramas(),
-          api.getSciFiFantasy(),
-          api.getComedySeries()
+          api.getPopularShows()
         ]);
         
         const popularResults = showsResponse.data?.results || [];
@@ -51,10 +40,6 @@ const Shows = () => {
         setGenres(genresResponse.data?.genres || []);
         setShows(popularResults);
         setHeroShows(popularResults.slice(0, 5)); // Set hero shows from popular
-        setWebSeries(webSeriesResponse.data?.results || []);
-        setCrimeDramas(crimeDramasResponse.data?.results || []);
-        setSciFiFantasy(sciFiFantasyResponse.data?.results || []);
-        setComedySeries(comedySeriesResponse.data?.results || []);
       } catch (err) {
         setError('Failed to load TV shows');
         console.error(err);
@@ -106,7 +91,7 @@ const Shows = () => {
     } catch (error) {
       console.error('Error fetching complete show details:', error);
       // Fallback to original show if fetch fails
-      setSelectedShow(item);
+    setSelectedShow(item);
     }
   };
 
@@ -134,6 +119,7 @@ const Shows = () => {
 
   return (
     <div className="min-h-screen bg-black">
+      <AnnouncementBar />
       <Navigation />
       
       {/* Hero Section */}
@@ -155,7 +141,7 @@ const Shows = () => {
           <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8">
             <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
               <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                {/* Genre Filter */}
+      {/* Genre Filter */}
                 <div className="flex items-center gap-2">
                   <Filter size={20} className="text-gray-400" />
                   <select
@@ -164,9 +150,9 @@ const Shows = () => {
                     className="bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
                   >
                     <option value="">All Genres</option>
-                    {genres.map((genre) => (
+          {genres.map((genre) => (
                       <option key={genre.id} value={genre.id.toString()}>
-                        {genre.name}
+              {genre.name}
                       </option>
                     ))}
                   </select>
@@ -213,16 +199,21 @@ const Shows = () => {
                 </button>
               </div>
             </div>
+        </div>
+
+          {/* Shows Ad */}
+          <div className="mb-8">
+            <AdBanner adKey="showsPageAd" className="max-w-4xl mx-auto" />
           </div>
 
           {/* Shows Grid */}
-          {loading ? (
+        {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {Array.from({ length: 20 }).map((_, index) => (
                 <div key={index} className="w-full h-96 bg-gray-800 rounded-lg animate-pulse" />
               ))}
-            </div>
-          ) : (
+          </div>
+        ) : (
             <div className={`grid gap-6 ${
               viewMode === 'grid' 
                 ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
@@ -233,52 +224,21 @@ const Shows = () => {
                   key={show.id} 
                   movie={{...show, title: show.name, release_date: show.first_air_date}} 
                   size={viewMode === 'list' ? 'large' : 'medium'}
-                  onItemClick={(movie) => handleShowClick({...show, name: movie.title || movie.name || show.name})}
+                  onItemClick={(movie) => handleShowClick({...show, name: ('title' in movie ? movie.title : movie.name) || show.name})}
                 />
               ))}
             </div>
           )}
+
+          {/* Bottom Shows Ad */}
+          <div className="mt-12">
+            <AdBanner adKey="showsPageBottomAd" className="max-w-4xl mx-auto" />
+          </div>
         </div>
       </div>
 
-      {/* Content Sections - Show as rows if not using grid/list view */}
-      <div className="relative z-10 space-y-12 pb-16">
-        {/* Web Series */}
-        {webSeries.length > 0 && (
-          <MovieRow
-            title="Web Series"
-            movies={webSeries.map(show => ({...show, title: show.name, release_date: show.first_air_date}))}
-            onItemClick={(movie) => handleShowClick({...webSeries.find(s => s.id === movie.id)!, name: movie.title})}
-          />
-        )}
-
-        {/* Crime Dramas */}
-        {crimeDramas.length > 0 && (
-          <MovieRow
-            title="Crime Dramas & Thrillers"
-            movies={crimeDramas.map(show => ({...show, title: show.name, release_date: show.first_air_date}))}
-            onItemClick={(movie) => handleShowClick({...crimeDramas.find(s => s.id === movie.id)!, name: movie.title})}
-          />
-        )}
-
-        {/* Sci-Fi & Fantasy */}
-        {sciFiFantasy.length > 0 && (
-          <MovieRow
-            title="Sci-Fi & Fantasy"
-            movies={sciFiFantasy.map(show => ({...show, title: show.name, release_date: show.first_air_date}))}
-            onItemClick={(movie) => handleShowClick({...sciFiFantasy.find(s => s.id === movie.id)!, name: movie.title})}
-          />
-        )}
-
-        {/* Comedy Series */}
-        {comedySeries.length > 0 && (
-          <MovieRow
-            title="Comedy Series"
-            movies={comedySeries.map(show => ({...show, title: show.name, release_date: show.first_air_date}))}
-            onItemClick={(movie) => handleShowClick({...comedySeries.find(s => s.id === movie.id)!, name: movie.title})}
-          />
-        )}
-      </div>
+      {/* Footer */}
+      <Footer />
 
       {/* TV Show Player */}
       {selectedShow && (
@@ -287,6 +247,9 @@ const Shows = () => {
           onClose={() => setSelectedShow(null)}
         />
       )}
+      
+      {/* Floating Social Buttons */}
+      <FloatingSocialButtons />
     </div>
   );
 };

@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Play, Plus, Star, ArrowLeft, Calendar, Clock, Globe } from 'lucide-react';
+import { Play, Plus, Star, ArrowLeft, Calendar, Clock, Globe, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
+import FloatingSocialButtons from '@/components/FloatingSocialButtons';
+import LoadingBar from '@/components/LoadingBar';
+import VideoPlayer from '@/components/VideoPlayer';
 import MovieRow from '@/components/MovieRow';
 import api, { Movie } from '@/services/api';
 
@@ -32,6 +39,8 @@ const MovieDetails = () => {
   const [credits, setCredits] = useState<MovieCredits | null>(null);
   const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -275,6 +284,18 @@ const MovieDetails = () => {
             onItemClick={(movie) => navigate(`/movie/${movie.id}`)}
           />
         </div>
+      )}
+
+      <Footer />
+      
+      {/* Floating Social Buttons */}
+      <FloatingSocialButtons />
+      
+      {isPlaying && selectedMovie && (
+        <VideoPlayer 
+          movie={selectedMovie}
+          onClose={() => setIsPlaying(false)}
+        />
       )}
     </div>
   );

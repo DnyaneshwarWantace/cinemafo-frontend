@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Filter, Grid, List } from 'lucide-react';
+import { Filter, Grid, List, Calendar, Star, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import MovieModal from '@/components/MovieModal';
 import MovieCard from '@/components/MovieCard';
 import MovieRow from '@/components/MovieRow';
 import HeroSection from '@/components/HeroSection';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
+import FloatingSocialButtons from '@/components/FloatingSocialButtons';
+import AdBanner from '@/components/AdBanner';
+import AnnouncementBar from '@/components/AnnouncementBar';
 import api, { Movie } from '@/services/api';
-import { Loader2, Calendar } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Loader2, Badge } from 'lucide-react';
 
 const Upcoming = () => {
   const [upcomingMovies, setUpcomingMovies] = useState<Movie[]>([]);
@@ -73,7 +77,7 @@ const Upcoming = () => {
     } catch (error) {
       console.error('Error fetching complete movie details:', error);
       // Fallback to original movie if fetch fails
-      setSelectedMovie(movie);
+    setSelectedMovie(movie);
     }
   };
 
@@ -113,21 +117,22 @@ const Upcoming = () => {
 
   return (
     <div className="min-h-screen bg-black text-foreground">
+      <AnnouncementBar />
       <Navigation />
       
       {/* Hero Section with upcoming movies */}
       <HeroSection 
         items={heroMovies}
         loading={heroLoading}
-        onItemClick={handleMovieClick}
-      />
+          onItemClick={handleMovieClick}
+        />
       
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-12">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-4">
-              <Calendar className="w-8 h-8 text-yellow-400" />
+          <Calendar className="w-8 h-8 text-yellow-400" />
               <h1 className="text-4xl md:text-5xl font-bold text-white">Upcoming Movies</h1>
               <Badge variant="secondary" className="ml-2 bg-gray-700/80 text-gray-300">
                 {upcomingMovies.length} Movies
@@ -180,7 +185,12 @@ const Upcoming = () => {
                   <List size={18} />
                 </button>
               </div>
-            </div>
+        </div>
+          </div>
+
+          {/* Upcoming Ad */}
+          <div className="mb-8">
+            <AdBanner adKey="upcomingPageAd" className="max-w-4xl mx-auto" />
           </div>
 
           {/* Movies Grid */}
@@ -201,27 +211,38 @@ const Upcoming = () => {
                   key={movie.id} 
                   movie={movie} 
                   size={viewMode === 'list' ? 'large' : 'medium'}
-                  onItemClick={handleMovieClick}
-                />
+            onItemClick={handleMovieClick}
+          />
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Calendar className="w-16 h-16 mx-auto text-gray-600 mb-4" />
-              <h3 className="text-xl font-semibold text-gray-400 mb-2">No Upcoming Movies</h3>
-              <p className="text-gray-500">Check back later for new releases!</p>
-            </div>
-          )}
+          <div className="text-center py-12">
+            <Calendar className="w-16 h-16 mx-auto text-gray-600 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-400 mb-2">No Upcoming Movies</h3>
+            <p className="text-gray-500">Check back later for new releases!</p>
+          </div>
+        )}
+
+          {/* Bottom Upcoming Ad */}
+          <div className="mt-12">
+            <AdBanner adKey="upcomingPageBottomAd" className="max-w-4xl mx-auto" />
+          </div>
         </div>
       </div>
-      
+
+      {/* Footer */}
+      <Footer />
+
       {/* Movie Modal */}
       {selectedMovie && (
         <MovieModal
-          onClose={handleCloseModal}
           movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
         />
       )}
+      
+      {/* Floating Social Buttons */}
+      <FloatingSocialButtons />
     </div>
   );
 };

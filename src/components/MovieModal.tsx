@@ -6,6 +6,7 @@ import MovieCard from './MovieCard';
 import MovieRow from './MovieRow';
 import Navigation from './Navigation';
 import api, { Movie, TVShow } from '@/services/api';
+import AdBanner from './AdBanner';
 
 interface MovieModalProps {
   movie: Movie | TVShow;
@@ -145,8 +146,8 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
                   onError={(e) => {
                     e.currentTarget.src = '/placeholder-poster.jpg';
                   }}
-                />
-              </div>
+                  />
+                </div>
 
               {/* Movie Details */}
               <div className="flex-1 max-w-3xl mt-8 lg:mt-0">
@@ -194,37 +195,40 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
                   </div>
                 )}
 
-                {/* Overview */}
-                <p className="text-lg text-gray-200 mb-8 leading-relaxed">
-                  {movie.overview || 'No overview available for this movie.'}
-                </p>
+                {/* Description Section */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white mb-4">Description</h3>
+                  <p className="text-lg text-gray-200 leading-relaxed">
+                    {movie.overview || 'No overview available for this movie.'}
+                  </p>
+                </div>
 
-                {/* Cast Section - Moved here and improved */}
-                  {mainCast.length > 0 && (
+                {/* Cast Section */}
+                {mainCast.length > 0 && (
                   <div className="mb-8">
                     <h3 className="text-xl font-bold text-white mb-4">Starring</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {mainCast.map((actor) => (
                         <div key={actor.id} className="text-center">
                           <div className="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden bg-gray-800">
-                              {actor.profile_path ? (
-                                <img
+                            {actor.profile_path ? (
+                              <img
                                 src={`${profileBaseUrl}${actor.profile_path}`}
-                                  alt={actor.name}
+                                alt={actor.name}
                                 className="w-full h-full object-cover"
-                                />
-                              ) : (
+                              />
+                            ) : (
                               <div className="w-full h-full bg-gray-700 flex items-center justify-center">
                                 <span className="text-gray-400 text-xs">No Photo</span>
                               </div>
                             )}
-                            </div>
+                          </div>
                           <h4 className="text-white font-medium text-sm mb-1">{actor.name}</h4>
                           <p className="text-gray-400 text-xs">{actor.character}</p>
                         </div>
-                          ))}
-                        </div>
-                      </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 {/* Action Buttons */}
@@ -312,6 +316,13 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
           <MovieRow title="More Like This" movies={[]} loading={true} />
         </div>
       )}
+
+      {/* Player Page Ad */}
+      <div className="bg-black py-8">
+        <div className="max-w-4xl mx-auto px-4 md:px-12">
+          <AdBanner adKey="playerPageAd" className="mb-8" />
+        </div>
+      </div>
     </div>
   );
 };

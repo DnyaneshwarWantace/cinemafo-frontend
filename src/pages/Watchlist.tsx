@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import FloatingSocialButtons from '@/components/FloatingSocialButtons';
+import AnnouncementBar from '@/components/AnnouncementBar';
 import MovieModal from '@/components/MovieModal';
 import TVShowPlayer from '@/components/TVShowPlayer';
 import { Trash2, Play, Calendar, Star } from 'lucide-react';
@@ -51,6 +53,7 @@ const Watchlist = () => {
 
   return (
     <div className="min-h-screen bg-black">
+      <AnnouncementBar />
       <Navigation />
       
       <div className="pt-20 pb-8">
@@ -188,6 +191,9 @@ const Watchlist = () => {
       </div>
 
       <Footer />
+
+      {/* Floating Social Buttons */}
+      <FloatingSocialButtons />
 
       {/* Modals */}
       {selectedItem && selectedType === 'movie' && (

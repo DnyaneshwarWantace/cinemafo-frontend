@@ -5,6 +5,7 @@ import VideoPlayer from '@/components/VideoPlayer';
 import MovieCard from './MovieCard';
 import MovieRow from './MovieRow';
 import Navigation from './Navigation';
+import AdBanner from './AdBanner';
 import api, { TVShow, Movie } from '@/services/api';
 
 interface Episode {
@@ -109,7 +110,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
       const response = await api.getPopularShows();
       const filtered = response.data?.results?.filter((s: any) => s.id !== show.id).slice(0, 12) || [];
       setSimilarShows(filtered);
-    } catch (error) {
+      } catch (error) {
       console.error('Error loading similar shows:', error);
       setSimilarShows([]);
     } finally {
@@ -280,12 +281,15 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                   </div>
                 )}
 
-                {/* Overview */}
-                <p className="text-lg text-gray-200 mb-8 leading-relaxed">
-                  {displayShow.overview || 'No overview available for this show.'}
-                </p>
+                {/* Overview - Always visible */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold text-white mb-4">Overview</h3>
+                  <p className="text-lg text-gray-200 leading-relaxed">
+                    {displayShow.overview || 'No overview available for this show.'}
+                  </p>
+                </div>
 
-                {/* Cast Section - Moved here and improved */}
+                {/* Cast Section - Always visible */}
                 {mainCast.length > 0 && (
                   <div className="mb-8">
                     <h3 className="text-xl font-bold text-white mb-4">Starring</h3>
@@ -330,12 +334,12 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                         ? 'bg-green-600/80 text-white hover:bg-green-700/80' 
                         : 'bg-gray-700/80 text-white hover:bg-gray-600/80'
                     }`}
-                  >
+              >
                     {inWatchlist ? <Check size={24} /> : <Plus size={24} />}
                     {inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
                   </button>
-                </div>
-
+            </div>
+            
                 {/* Creator */}
                 {creator && (
                   <div className="text-gray-300 mb-2">
@@ -356,45 +360,52 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                       <span className="font-medium">Current Season:</span> {selectedSeason.name || `Season ${selectedSeason.season_number}`}
                       <span className="ml-4">
                         <span className="font-medium">Episodes:</span> {selectedSeason.episode_count || 10}
-                      </span>
+                </span>
                       {selectedSeason.air_date && (
                         <div className="mt-1">
                           <span className="font-medium">Aired:</span> {new Date(selectedSeason.air_date).getFullYear()}
                         </div>
                       )}
                     </div>
-                  )}
+                )}
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
-      </div>
+
+      {/* Player Page Ad */}
+      <div className="bg-black py-8">
+        <div className="max-w-4xl mx-auto px-4 md:px-12">
+          <AdBanner adKey="playerPageAd" className="mb-8" />
+        </div>
+            </div>
 
       {/* Episodes Section */}
       {selectedSeason && episodes.length > 0 && (
         <div className="bg-black py-16">
           <div className="max-w-7xl mx-auto px-4 md:px-12">
-            {/* Season Selector */}
+          {/* Season Selector */}
             {displayShow.seasons && displayShow.seasons.length > 1 && (
               <div className="mb-8">
                 <h3 className="text-xl font-bold text-white mb-4">Seasons</h3>
                 <div className="flex flex-wrap gap-2">
                   {displayShow.seasons.filter(s => s.season_number > 0).map((season) => (
                     <button
-                      key={season.season_number}
+                  key={season.season_number}
                       onClick={() => setSelectedSeason(season)}
                       className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                         selectedSeason?.season_number === season.season_number
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                       }`}
-                    >
-                      Season {season.season_number}
+                >
+                  Season {season.season_number}
                     </button>
-                  ))}
-                </div>
-              </div>
+              ))}
+            </div>
+          </div>
             )}
 
             {/* Season Details */}
@@ -402,7 +413,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
               <div className="mb-8">
                 <h3 className="text-xl font-bold text-white mb-4">
                   {selectedSeason.name || `Season ${selectedSeason.season_number}`}
-                </h3>
+            </h3>
                 {selectedSeason.overview && (
                   <p className="text-gray-300 mb-4">{selectedSeason.overview}</p>
                 )}
@@ -420,30 +431,30 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
               <div className="space-y-4">
                 {episodes.map((episode) => (
                   <div
-                    key={episode.episode_number}
+                      key={episode.episode_number}
                     className="flex bg-gray-900/80 rounded-lg overflow-hidden hover:bg-gray-800/80 transition-colors cursor-pointer group"
                     onClick={() => handleEpisodeClick(episode)}
-                  >
-                    {/* Episode Thumbnail */}
+                    >
+                      {/* Episode Thumbnail */}
                     <div className="w-32 h-20 bg-gray-800 flex items-center justify-center flex-shrink-0 relative">
-                      {episode.still_path ? (
-                        <img
-                          src={`https://image.tmdb.org/t/p/w300${episode.still_path}`}
-                          alt={episode.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
+                        {episode.still_path ? (
+                          <img
+                            src={`https://image.tmdb.org/t/p/w300${episode.still_path}`}
+                            alt={episode.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
                         <div className="text-gray-400 text-center">
                           <Play size={20} className="mx-auto mb-1" />
                           <p className="text-xs">EP {episode.episode_number}</p>
-                        </div>
-                      )}
+                          </div>
+                        )}
                       {/* Play overlay on hover */}
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Play size={24} className="text-white" />
+                        </div>
                       </div>
-                    </div>
-                    
+
                     {/* Episode Details */}
                     <div className="flex-1 p-4 min-w-0">
                       <div className="flex items-start justify-between mb-2">
@@ -455,7 +466,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                           <div className="flex items-center gap-1">
                             <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                             <span>{episode.vote_average || displayShow.vote_average}</span>
-                          </div>
+                        </div>
                         </div>
                       </div>
                       <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed">
@@ -494,7 +505,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
       {loadingSimilar && similarShows.length === 0 && (
         <div className="bg-black pb-16 pt-8">
           <MovieRow title="More Like This" movies={[]} loading={true} />
-        </div>
+      </div>
       )}
     </div>
   );

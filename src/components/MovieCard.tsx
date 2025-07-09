@@ -1,45 +1,50 @@
 import React, { useState, memo } from 'react';
-import { Star, Play, Plus, Film } from 'lucide-react';
-
-interface Movie {
-  id: number;
-  title: string;
-  poster_path: string;
-  backdrop_path: string;
-  vote_average: number;
-  release_date: string;
-  overview: string;
-  genre_ids?: number[];
-  name?: string;
-  first_air_date?: string;
-}
+import { Star, Play, Plus, Check, Film } from 'lucide-react';
+import { Movie, TVShow } from '@/services/api';
+import { useWatchlist } from '@/hooks/useWatchlist';
 
 interface MovieCardProps {
-  movie: Movie;
+  movie: Movie | TVShow;
   size?: 'small' | 'medium' | 'large';
-  onItemClick?: (movie: Movie) => void;
+  onItemClick?: (movie: Movie | TVShow) => void;
 }
 
 const MovieCard: React.FC<MovieCardProps> = memo(({ movie, size = 'medium', onItemClick }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
 
   const imageBaseUrl = 'https://image.tmdb.org/t/p/w500';
-  const title = movie.title || movie.name || 'Unknown Title';
-  const releaseDate = movie.release_date || movie.first_air_date || '';
-  const year = releaseDate ? new Date(releaseDate).getFullYear() : 'TBA';
-  const rating = Math.round(movie.vote_average * 10) / 10;
 
   const cardSizes = {
-    small: 'w-48 h-72',
-    medium: 'w-64 h-96',
-    large: 'w-80 h-[480px]'
+    small: 'w-32 h-48',
+    medium: 'w-48 h-72',
+    large: 'w-64 h-96'
   };
+
+  // Handle both movies (title/release_date) and TV shows (name/first_air_date)
+  const title = 'title' in movie ? movie.title : movie.name;
+  const releaseDate = 'release_date' in movie ? movie.release_date : movie.first_air_date;
+  const year = releaseDate ? new Date(releaseDate).getFullYear() : 'N/A';
+  const rating = movie.vote_average ? Number(movie.vote_average.toFixed(1)) : 0;
+  const movieType = 'title' in movie ? 'movie' : 'tv';
+  const inWatchlist = isInWatchlist(movie.id);
 
   const handleClick = () => {
     if (onItemClick) {
       onItemClick(movie);
+    }
+  };
+
+  const handleWatchlistToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    if (inWatchlist) {
+      removeFromWatchlist(movie.id);
+    } else {
+      addToWatchlist(movie, movieType);
     }
   };
 
@@ -114,14 +119,15 @@ const MovieCard: React.FC<MovieCardProps> = memo(({ movie, size = 'medium', onIt
                 Play
               </button>
               <button 
-                className="flex items-center gap-1 bg-gray-700/90 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-gray-600/90 transition-colors backdrop-blur-sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Add to list functionality
-                }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors backdrop-blur-sm ${
+                  inWatchlist 
+                    ? 'bg-green-600/90 text-white hover:bg-green-500/90' 
+                    : 'bg-gray-700/90 text-white hover:bg-gray-600/90'
+                }`}
+                onClick={handleWatchlistToggle}
               >
-                <Plus size={12} />
-                List
+                {inWatchlist ? <Check size={12} /> : <Plus size={12} />}
+                {inWatchlist ? 'Added' : 'List'}
               </button>
             </div>
           </div>
