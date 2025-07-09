@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       // Proxy admin endpoints to local backend
       '/api/admin': {
-        target: 'http://localhost:5000',
+        target: 'https://cinemafo.lol',
         changeOrigin: true,
         secure: false,
       }
