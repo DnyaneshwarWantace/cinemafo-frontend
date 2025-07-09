@@ -27,16 +27,20 @@ const Navigation = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-gray-800/30 transition-all duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link to="/" className="flex-shrink-0 group">
-            <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent transition-all duration-300 group-hover:from-blue-300 group-hover:to-blue-500">
-              CINEMA.FO
-            </div>
-          </Link>
+          {/* Logo - Left corner with proper spacing */}
+          <div className="flex items-center">
+            <Link to="/" className="flex-shrink-0 group">
+              <img 
+                src="/logo.svg" 
+                alt="CINEMA.FO" 
+                className="h-8 sm:h-10 md:h-12 w-auto transition-all duration-300 group-hover:scale-105 filter group-hover:brightness-110"
+              />
+            </Link>
+          </div>
 
-          {/* Navigation Items */}
+          {/* Navigation Items & Search - Center */}
           <div className="hidden md:flex items-center space-x-8">
             <div className="flex items-baseline space-x-2">
               {navItems.map((item) => {
@@ -89,7 +93,7 @@ const Navigation = () => {
             </form>
           </div>
 
-          {/* Discord Icon */}
+          {/* Discord Icon - Right side */}
           <div className="flex items-center">
             <a
               href="https://discord.gg/cinema"

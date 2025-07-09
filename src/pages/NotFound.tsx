@@ -107,7 +107,7 @@ const NotFound: React.FC = () => {
       </div>
 
       </div>
-      
+
       {/* Footer */}
       <Footer />
       

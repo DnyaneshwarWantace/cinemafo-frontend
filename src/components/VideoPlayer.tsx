@@ -70,11 +70,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [skipIntroStartTime] = useState(10); // Show button after 10 seconds
   const [skipIntroEndTime] = useState(100); // Hide button after 100 seconds (90 seconds duration)
   const [introSkipTime] = useState(90); // Skip to 90 seconds when clicked
+  const [hasSkippedIntro, setHasSkippedIntro] = useState(false); // Track if user has skipped intro
+  const [skipIntroCountdown, setSkipIntroCountdown] = useState(0); // Countdown timer
+  const [skipIntroAutoHide, setSkipIntroAutoHide] = useState(false); // Auto-hide state
 
   // Skip intro logic - improved to prevent re-showing
   useEffect(() => {
+    // Don't show skip intro if user has already skipped it
+    if (hasSkippedIntro) return;
+    
     if (currentTime >= skipIntroStartTime && currentTime <= skipIntroEndTime && !showSkipIntro) {
       setShowSkipIntro(true);
+      setSkipIntroAutoHide(false); // Reset auto-hide when button appears
     } else if ((currentTime < skipIntroStartTime || currentTime > skipIntroEndTime) && showSkipIntro) {
       setShowSkipIntro(false);
     }
@@ -83,18 +90,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (currentTime > introSkipTime && showSkipIntro) {
       setShowSkipIntro(false);
     }
-  }, [currentTime, skipIntroStartTime, skipIntroEndTime, showSkipIntro, introSkipTime]);
+    
+    // Update countdown timer
+    if (showSkipIntro && currentTime <= skipIntroEndTime) {
+      const remaining = Math.max(0, skipIntroEndTime - currentTime);
+      setSkipIntroCountdown(Math.ceil(remaining));
+    }
+  }, [currentTime, skipIntroStartTime, skipIntroEndTime, showSkipIntro, introSkipTime, hasSkippedIntro]);
 
   const handleSkipIntro = useCallback(() => {
     if (videoRef.current) {
       videoRef.current.currentTime = introSkipTime;
       setShowSkipIntro(false);
-      // Also hide for a longer period to prevent immediate re-showing
-      setTimeout(() => {
-        setShowSkipIntro(false);
-      }, 5000);
+      setHasSkippedIntro(true); // Mark that user has skipped intro
     }
   }, [introSkipTime]);
+
+  // Auto-hide skip intro button after 5 seconds
+  useEffect(() => {
+    if (showSkipIntro && !skipIntroAutoHide) {
+      const timer = setTimeout(() => {
+        setSkipIntroAutoHide(true);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showSkipIntro, skipIntroAutoHide]);
 
   // Video controls
   const togglePlayPause = useCallback(() => {
@@ -186,6 +207,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           e.preventDefault();
           toggleMute();
           break;
+        case 'KeyS':
+          e.preventDefault();
+          if (showSkipIntro) {
+            handleSkipIntro();
+          }
+          break;
         case 'Escape':
           e.preventDefault();
           if (isFullscreen) {
@@ -199,7 +226,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlayPause, skipBackward, skipForward, toggleFullscreen, toggleMute, onClose]);
+  }, [togglePlayPause, skipBackward, skipForward, toggleFullscreen, toggleMute, onClose, showSkipIntro, handleSkipIntro]);
 
   // Fullscreen detection
   useEffect(() => {
@@ -606,19 +633,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           />
         )}
         
-        {/* Center Play Button */}
-        {showCenterPlayButton && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={togglePlayPause}
-              className="w-20 h-20 bg-black/60 hover:bg-black/80 text-white rounded-full pointer-events-auto"
-            >
-              <Play className="w-10 h-10" />
-            </Button>
-          </div>
-        )}
+
         
         {/* Skip Forward Animation */}
         {showForwardAnimation && (
@@ -646,27 +661,45 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         {/* Skip Intro Button */}
         {showSkipIntro && currentSource?.type === 'hls' && (
-          <div className="absolute bottom-24 right-6 pointer-events-auto animate-fade-in">
+          <div 
+            className={`absolute top-1/2 right-8 transform -translate-y-1/2 pointer-events-auto z-50 transition-all duration-500 animate-fade-in ${
+              skipIntroAutoHide ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'
+            } hover:opacity-100 hover:translate-x-0`}
+            onMouseEnter={() => setSkipIntroAutoHide(false)}
+          >
             <button
               onClick={handleSkipIntro}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl border border-blue-500/50"
+              className="group flex items-center gap-3 bg-black/80 hover:bg-black/90 backdrop-blur-md text-white px-6 py-4 rounded-xl font-semibold shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-blue-500/25 border border-white/20 hover:border-blue-400/50 skip-intro-pulse"
             >
-              <Zap className="w-5 h-5" />
-              Skip Intro
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                <span className="text-lg">Skip Intro</span>
+              </div>
+              <div className="flex items-center gap-1 text-sm text-gray-300 group-hover:text-white transition-colors">
+                <span>→</span>
+                <span className="font-mono">{Math.floor(introSkipTime / 60)}:{(introSkipTime % 60).toString().padStart(2, '0')}</span>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
+                <span>(S)</span>
+                <span className="text-blue-400">•</span>
+                <span>{skipIntroCountdown}s</span>
+              </div>
             </button>
           </div>
         )}
         
         {/* Pause Screen Overlay with Logo */}
         {!isPlaying && currentSource?.type === 'hls' && (
-          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center pointer-events-none">
             <div className="text-center mb-8">
               {/* Logo */}
-              <div className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent mb-4">
-                CINEMA.FO
-              </div>
+              <img 
+                src="/logo.svg" 
+                alt="CINEMA.FO" 
+                className="h-16 sm:h-20 md:h-24 lg:h-32 w-auto mb-6 transition-all duration-300 filter brightness-110"
+              />
               {/* Movie Title */}
-              <h2 className="text-white text-xl md:text-2xl font-semibold">{title}</h2>
+              <h2 className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold px-4">{title}</h2>
             </div>
           </div>
         )}

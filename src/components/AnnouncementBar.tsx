@@ -40,7 +40,7 @@ const AnnouncementBar = () => {
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
       
       <div className="relative max-w-full mx-auto py-3 px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center">
           <div className="text-center">
             <p 
               className="text-sm md:text-base font-medium leading-relaxed animate-pulse"
