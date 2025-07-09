@@ -2,16 +2,17 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+const AD_BASE_URL = 'http://localhost:5000/api/admin'; // For admin/ad endpoints
 
-// Create separate axios instances for admin and regular endpoints
+// Create separate axios instances for different endpoints
 const adminAxios = axios.create({
-  baseURL: '', // Empty baseURL to use the proxy
+  baseURL: AD_BASE_URL,
   timeout: 10000,
 });
 
-// Create axios instance for public settings (also uses proxy)
-const publicAxios = axios.create({
-  baseURL: '', // Empty baseURL to use the proxy
+// Create axios instance for TMDB endpoints
+const tmdbAxios = axios.create({
+  baseURL: TMDB_BASE_URL,
   timeout: 10000,
 });
 
@@ -251,7 +252,7 @@ export interface SiteSettings {
 // Authentication API
 const authApi = {
   login: async (username: string, password: string) => {
-    const response = await adminAxios.post('/api/admin/login', { username, password });
+    const response = await adminAxios.post('/login', { username, password });
     const { token } = response.data;
     localStorage.setItem('adminToken', token);
     return response.data;
@@ -270,45 +271,45 @@ const authApi = {
 const settings = {
   getPublicSettings: async () => {
     console.log('Fetching public settings...');
-    const publicResponse = await publicAxios.get('/api/admin/public/settings');
+    const publicResponse = await adminAxios.get('/public/settings');
     console.log('Public settings response:', publicResponse.data);
     return publicResponse.data;
   },
   
   // Admin settings methods
   getAllSettings: async () => {
-    const allResponse = await adminAxios.get('/api/admin/settings');
+    const allResponse = await adminAxios.get('/settings');
     return allResponse.data;
   },
 
   updateAppearance: async (settings: Partial<SiteSettings['appearance']>) => {
-    const appearanceResponse = await adminAxios.put('/api/admin/settings/appearance', settings);
+    const appearanceResponse = await adminAxios.put('/settings/appearance', settings);
     return appearanceResponse.data;
   },
 
   updateContent: async (settings: Partial<SiteSettings['content']>) => {
-    const contentResponse = await adminAxios.put('/api/admin/settings/content', settings);
+    const contentResponse = await adminAxios.put('/settings/content', settings);
     return contentResponse.data;
   },
 
   updateAds: async (settings: Partial<SiteSettings['ads']>) => {
-    const adsResponse = await adminAxios.put('/api/admin/settings/ads', settings);
+    const adsResponse = await adminAxios.put('/settings/ads', settings);
     return adsResponse.data;
   },
 
   updateSettings: async (settings: Partial<SiteSettings>) => {
-    const updateResponse = await adminAxios.put('/api/admin/settings', settings);
+    const updateResponse = await adminAxios.put('/settings', settings);
     return updateResponse.data;
   },
 
   // Legacy methods for backward compatibility
   updateAnnouncement: async (settings: { enabled: boolean; text: string; backgroundColor: string; textColor: string }) => {
-    const announcementResponse = await adminAxios.put('/api/admin/settings/announcement', settings);
+    const announcementResponse = await adminAxios.put('/settings/announcement', settings);
     return announcementResponse.data;
   },
 
   updateSocialButtons: async (settings: { enabled: boolean; discordUrl: string; telegramUrl: string }) => {
-    const socialResponse = await adminAxios.put('/api/admin/settings/social-buttons', settings);
+    const socialResponse = await adminAxios.put('/settings/social-buttons', settings);
     return socialResponse.data;
   }
 };
