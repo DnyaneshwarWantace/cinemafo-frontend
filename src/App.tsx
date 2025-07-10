@@ -11,7 +11,6 @@ import MovieDetails from './pages/MovieDetails';
 import Shows from './pages/Shows';
 import Search from './pages/Search';
 import NotFound from './pages/NotFound';
-import Upcoming from './pages/Upcoming';
 import Watchlist from './pages/Watchlist';
 import AdminPanel from './components/admin/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -34,7 +33,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-black">
-      {!isAdminPage && <Navigation />}
+      {!isAdminPage && <Navigation inModalView={false} />}
       <main className="w-full">
         {children}
       </main>
@@ -56,7 +55,6 @@ function App() {
                 <Route path="/movies" element={<Movies />} />
                 <Route path="/movie/:id" element={<MovieDetails />} />
                 <Route path="/shows" element={<Shows />} />
-                <Route path="/upcoming" element={<Upcoming />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/watchlist" element={<Watchlist />} />
                 <Route path="/admin" element={

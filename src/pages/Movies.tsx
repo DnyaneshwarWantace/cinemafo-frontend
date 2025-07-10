@@ -3,7 +3,6 @@ import { Filter, Grid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MovieCard from '@/components/MovieCard';
 import MovieRow from '@/components/MovieRow';
-import HeroSection from '@/components/HeroSection';
 import MovieModal from '@/components/MovieModal';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
@@ -22,13 +21,11 @@ const Movies = () => {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [movies, setMovies] = useState<Movie[]>([]);
-  const [heroMovies, setHeroMovies] = useState<Movie[]>([]);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
   const [upcomingMovies, setUpcomingMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
-  const [heroLoading, setHeroLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -78,7 +75,6 @@ const Movies = () => {
 
   const fetchInitialMovies = async () => {
     setLoading(true);
-    setHeroLoading(true);
     setError(null);
     try {
       const [trending, popular, topRated, upcoming] = await Promise.all([
@@ -102,14 +98,12 @@ const Movies = () => {
       setPopularMovies(popularResults);
       setTopRatedMovies(topRatedResults);
       setUpcomingMovies(actuallyUpcoming);
-      setHeroMovies(trendingResults.slice(0, 5)); // Set hero movies from trending
       setMovies(popularResults); // Default to popular movies
     } catch (error) {
       console.error('Error fetching movies:', error);
       setError('Failed to load movies. Please try again later.');
     }
     setLoading(false);
-    setHeroLoading(false);
   };
 
   const fetchFilteredMovies = async (page: number, reset: boolean = false) => {
@@ -217,13 +211,6 @@ const Movies = () => {
     <div className="min-h-screen bg-black">
       <AnnouncementBar />
       <Navigation />
-      
-      {/* Hero Section */}
-      <HeroSection 
-        items={heroMovies}
-        loading={heroLoading}
-          onItemClick={handleMovieClick}
-        />
       
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-12">

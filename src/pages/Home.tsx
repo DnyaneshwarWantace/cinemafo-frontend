@@ -27,7 +27,6 @@ const Home = () => {
     { title: 'Trending Now', movies: [], loading: false, loaded: false },
     { title: 'Popular Movies', movies: [], loading: false, loaded: false },
     { title: 'Top Rated', movies: [], loading: false, loaded: false },
-    { title: 'Coming Soon', movies: [], loading: false, loaded: false },
     { title: 'Trending TV Shows', movies: [], loading: false, loaded: false },
     { title: 'Popular TV Shows', movies: [], loading: false, loaded: false },
   ]);
@@ -77,18 +76,11 @@ const Home = () => {
           const topRated = await api.getTopRatedMovies();
           movies = topRated.data?.results || [];
           break;
-        case 3: // Coming Soon
-          const upcoming = await api.getUpcomingMovies();
-        const today = new Date();
-          movies = upcoming.data?.results?.filter(movie => 
-          new Date(movie.release_date) > today
-          ) || [];
-          break;
-        case 4: // Trending TV Shows
+        case 3: // Trending TV Shows
           const trendingShows = await api.getTrendingShows();
           movies = trendingShows.data?.results || [];
           break;
-        case 5: // Popular TV Shows
+        case 4: // Popular TV Shows
           const popularShows = await api.getPopularShows();
           movies = popularShows.data?.results || [];
           break;
@@ -226,7 +218,7 @@ const Home = () => {
                 <AdBanner adKey="mainPageAd2" className="max-w-4xl mx-auto" />
               </div>
             )}
-            {index === 4 && ( // After Trending TV Shows
+            {index === 3 && ( // After Trending TV Shows
               <div className="px-4 md:px-12 mt-8">
                 <AdBanner adKey="mainPageAd3" className="max-w-4xl mx-auto" />
               </div>

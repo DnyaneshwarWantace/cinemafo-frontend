@@ -183,9 +183,11 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   if (isPlaying) {
     return (
       <VideoPlayer
-        tmdbId={displayShow.id}
+        tmdbId={show.id} // Use original show ID instead of displayShow.id
         title={title}
         type="tv"
+        season={selectedSeason?.season_number || 1}
+        episode={selectedEpisode?.episode_number || 1}
         onClose={() => setIsPlaying(false)}
       />
     );
@@ -194,7 +196,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 bg-black overflow-y-auto">
       {/* Navigation Bar */}
-      <Navigation />
+      <Navigation inModalView={true} />
       
       {/* Hero Section - Added proper top padding */}
       <div className="relative pt-20">
@@ -511,4 +513,4 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   );
 };
 
-export default TVShowPlayer; 
+export default TVShowPlayer;

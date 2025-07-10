@@ -1,18 +1,33 @@
 import React, { useState } from 'react';
 import { Search, Home, Film, Tv, X, Calendar, Bookmark } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/services/api';
 
-const Navigation = () => {
+interface NavigationProps {
+  inModalView?: boolean;
+}
+
+const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Get announcement bar settings to adjust navigation position
+  const { data: settings } = useQuery({
+    queryKey: ['publicSettings'],
+    queryFn: async () => {
+      return await api.settings.getPublicSettings();
+    },
+  });
+
+  const isAnnouncementEnabled = settings?.appearance?.announcementBar?.enabled ?? false;
   
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
     { name: 'Movies', path: '/movies', icon: Film },
     { name: 'Shows', path: '/shows', icon: Tv },
-    { name: 'Upcoming', path: '/upcoming', icon: Calendar },
     { name: 'Watchlist', path: '/watchlist', icon: Bookmark },
   ];
 
@@ -25,10 +40,21 @@ const Navigation = () => {
     }
   };
 
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      e.preventDefault();
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      setIsSearchFocused(false);
+    }
+  };
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-gray-800/30 transition-all duration-300">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+    <nav className={`fixed left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-gray-800/30 transition-all duration-300 h-[80px] ${
+      isAnnouncementEnabled && !inModalView ? 'top-[48px]' : 'top-0'
+    }`}>
+      <div className="w-full h-full px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-full">
           {/* Logo - Left corner with proper spacing */}
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 group">
@@ -76,6 +102,7 @@ const Navigation = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setIsSearchFocused(true)}
                     onBlur={() => setIsSearchFocused(false)}
+                    onKeyDown={handleSearchKeyDown}
                     placeholder="Search movies..."
                     className="w-full bg-white/10 backdrop-blur-sm text-white pl-10 pr-10 py-2.5 rounded-full border border-white/20 focus:border-blue-500 focus:outline-none text-sm placeholder-gray-400 transition-all duration-300 focus:bg-white/15"
                   />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search as SearchIcon, Filter, X } from 'lucide-react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MovieCard from '@/components/MovieCard';
 import Navigation from '@/components/Navigation';
@@ -18,7 +19,8 @@ interface Genre {
 }
 
 const Search = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [movies, setMovies] = useState<Movie[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,17 +35,30 @@ const Search = () => {
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
+  // Initial load - fetch genres and search history
   useEffect(() => {
     fetchGenres();
     loadSearchHistory();
   }, []);
 
+  // Initial load - search if query param exists
+  useEffect(() => {
+    const queryParam = searchParams.get('q');
+    if (queryParam) {
+      setSearchQuery(queryParam);
+      searchMovies(queryParam);
+    }
+  }, []);
+
+  // Update URL when search query changes
   useEffect(() => {
     const delayedSearch = setTimeout(() => {
       if (searchQuery.trim()) {
-        searchMovies();
+        setSearchParams({ q: searchQuery });
+        searchMovies(searchQuery);
         setShowHistory(false);
       } else {
+        setSearchParams({});
         setMovies([]);
         setShowHistory(searchHistory.length > 0);
       }
@@ -76,14 +91,14 @@ const Search = () => {
     localStorage.setItem('searchHistory', JSON.stringify(newHistory));
   };
 
-  const searchMovies = async () => {
-    if (!searchQuery.trim()) return;
+  const searchMovies = async (query: string = searchQuery) => {
+    if (!query.trim()) return;
 
       try {
         setLoading(true);
-      const response = await api.search(searchQuery);
+      const response = await api.search(query);
       setMovies(response.data?.results || []);
-      saveSearchHistory(searchQuery);
+      saveSearchHistory(query);
     } catch (error) {
       console.error('Error searching movies:', error);
       } finally {
@@ -122,7 +137,7 @@ const Search = () => {
   return (
     <div className="min-h-screen bg-black">
       <AnnouncementBar />
-      <Navigation />
+      <Navigation inModalView={false} />
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-12">
           {/* Header */}
@@ -330,4 +345,4 @@ const Search = () => {
   );
 };
 
-export default Search; 
+export default Search;

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Filter, Grid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import HeroSection from '@/components/HeroSection';
 import MovieRow from '@/components/MovieRow';
 import MovieCard from '@/components/MovieCard';
 import Navigation from '@/components/Navigation';
@@ -15,21 +14,18 @@ import TVShowPlayer from "@/components/TVShowPlayer";
 
 const Shows = () => {
   const [shows, setShows] = useState<TVShow[]>([]);
-  const [heroShows, setHeroShows] = useState<TVShow[]>([]);
   const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string>('');
   const [sortBy, setSortBy] = useState('popularity.desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
   const [loading, setLoading] = useState(true);
-  const [heroLoading, setHeroLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
         setLoading(true);
-        setHeroLoading(true);
         const [genresResponse, showsResponse] = await Promise.all([
           api.getTVGenres(),
           api.getPopularShows()
@@ -39,13 +35,11 @@ const Shows = () => {
         
         setGenres(genresResponse.data?.genres || []);
         setShows(popularResults);
-        setHeroShows(popularResults.slice(0, 5)); // Set hero shows from popular
       } catch (err) {
         setError('Failed to load TV shows');
         console.error(err);
       } finally {
         setLoading(false);
-        setHeroLoading(false);
       }
     };
 
@@ -121,13 +115,6 @@ const Shows = () => {
     <div className="min-h-screen bg-black">
       <AnnouncementBar />
       <Navigation />
-      
-      {/* Hero Section */}
-      <HeroSection 
-        items={heroShows}
-        loading={heroLoading}
-        onItemClick={handleShowClick}
-      />
 
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-12">

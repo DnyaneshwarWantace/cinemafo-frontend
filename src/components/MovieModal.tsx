@@ -106,7 +106,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 bg-black overflow-y-auto">
       {/* Navigation Bar */}
-      <Navigation />
+      <Navigation inModalView={true} />
       
       {/* Hero Section - Added proper top padding */}
       <div className="relative pt-20">

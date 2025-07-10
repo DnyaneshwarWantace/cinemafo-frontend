@@ -40,8 +40,6 @@ interface AdminSettings {
     moviesPageBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
     showsPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
     showsPageBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    upcomingPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    upcomingPageBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
     playerPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
   };
 }
@@ -60,8 +58,24 @@ const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<AdminSettings | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const queryClient = useQueryClient();
+
+  // Check auth status on mount and when URL changes
+  useEffect(() => {
+    const checkAuth = () => {
+      const isAuth = api.auth.isAuthenticated();
+      setIsAuthenticated(isAuth);
+      if (!isAuth && !window.location.search.includes('login=true')) {
+        window.location.href = '/admin?login=true';
+      }
+    };
+    
+    checkAuth();
+    window.addEventListener('popstate', checkAuth);
+    return () => window.removeEventListener('popstate', checkAuth);
+  }, []);
 
   // Fetch all settings
   const { data: settingsData, isLoading, error: settingsError } = useQuery({
@@ -91,7 +105,12 @@ const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     if (settingsError) {
+      if ((settingsError as any).response?.status === 401) {
+        setError('Your session has expired. Please log in again.');
+        setIsAuthenticated(false);
+      } else {
       setError('Failed to load settings. Please try refreshing the page.');
+      }
       console.error('Settings error:', settingsError);
     }
   }, [settingsError]);
@@ -241,18 +260,29 @@ const AdminPanel: React.FC = () => {
 
   const handleLogin = async () => {
     try {
+      setIsLoggingIn(true);
+      setError(null);
       await api.auth.login(username, password);
         setIsAuthenticated(true);
-      setError(null);
+      // Remove login=true from URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('login');
+      window.history.replaceState({}, '', url.toString());
+      // Refetch settings
+      queryClient.invalidateQueries({ queryKey: ['siteSettings'] });
     } catch (err) {
       setError('Login failed. Please check your credentials.');
       console.error('Login error:', err);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
   const handleLogout = () => {
     api.auth.logout();
     setIsAuthenticated(false);
+    queryClient.clear();
+    window.location.href = '/admin?login=true';
   };
 
   const handleDebugSettings = () => {
@@ -335,7 +365,7 @@ const AdminPanel: React.FC = () => {
     } else if (category === 'shows') {
       categorySlots = ['showsPageAd', 'showsPageBottomAd'];
     } else if (category === 'other') {
-      categorySlots = ['searchTopAd', 'searchBottomAd', 'upcomingPageAd', 'upcomingPageBottomAd', 'playerPageAd'];
+      categorySlots = ['searchTopAd', 'searchBottomAd', 'playerPageAd'];
     }
 
     const availableSlot = categorySlots.find(slot => !settings.ads[slot]?.enabled);
@@ -607,7 +637,13 @@ const AdminPanel: React.FC = () => {
             <p className="text-gray-300">Admin Dashboard</p>
           </div>
           
-          <div className="space-y-6">
+          <div className="space-y-6 mt-8">
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+            
             <div>
               <label className="block text-white text-sm font-medium mb-2">Username</label>
               <input
@@ -616,6 +652,7 @@ const AdminPanel: React.FC = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all"
                 placeholder="Enter username"
+                disabled={isLoggingIn}
               />
             </div>
             
@@ -628,12 +665,14 @@ const AdminPanel: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-all pr-12"
                   placeholder="Enter password"
-                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  onKeyPress={(e) => e.key === 'Enter' && !isLoggingIn && handleLogin()}
+                  disabled={isLoggingIn}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  disabled={isLoggingIn}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -642,9 +681,17 @@ const AdminPanel: React.FC = () => {
             
             <button
               onClick={handleLogin}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              disabled={isLoggingIn || !username || !password}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium py-3 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-lg flex items-center justify-center space-x-2"
             >
-              Access Dashboard
+              {isLoggingIn ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                  <span>Logging in...</span>
+                </>
+              ) : (
+                <span>Access Dashboard</span>
+              )}
             </button>
           </div>
         </div>
@@ -835,8 +882,6 @@ const AdminPanel: React.FC = () => {
                         moviesPageBottomAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=11', clickUrl: 'https://example.com' },
                         showsPageAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=8', clickUrl: 'https://example.com' },
                         showsPageBottomAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=12', clickUrl: 'https://example.com' },
-                        upcomingPageAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=9', clickUrl: 'https://example.com' },
-                        upcomingPageBottomAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=13', clickUrl: 'https://example.com' },
                         playerPageAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=10', clickUrl: 'https://example.com' }
                       }
                     };
@@ -1295,8 +1340,6 @@ const AdminPanel: React.FC = () => {
                   {[
                     { key: 'searchTopAd', label: 'Search Top Ad', position: 'Above search results' },
                     { key: 'searchBottomAd', label: 'Search Bottom Ad', position: 'Below search results' },
-                    { key: 'upcomingPageAd', label: 'Upcoming Top Ad', position: 'Above upcoming movies' },
-                    { key: 'upcomingPageBottomAd', label: 'Upcoming Bottom Ad', position: 'Below upcoming movies' },
                     { key: 'playerPageAd', label: 'Player Ad', position: 'In video player modal' }
                   ].map((ad) => (
                     <div key={ad.key} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-orange-400/30 transition-all">

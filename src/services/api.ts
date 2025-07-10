@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const AD_BASE_URL = 'https://cinemafo.lol/api/admin'; // For admin/ad endpoints
+const AD_BASE_URL = 'http://localhost:5000/api/admin'; // For admin/ad endpoints
 
 // Create separate axios instances for different endpoints
 const adminAxios = axios.create({
@@ -27,7 +27,27 @@ adminAxios.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
+
+// Handle 401 responses
+adminAxios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Clear invalid token
+      localStorage.removeItem('adminToken');
+      delete adminAxios.defaults.headers.common['Authorization'];
+      
+      // Redirect to admin login if not already there
+      if (window.location.pathname === '/admin' && !window.location.search.includes('login=true')) {
+        window.location.href = '/admin?login=true';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Client-side cache for movie details
 const movieCache = new Map<string, { data: any; timestamp: number }>();
@@ -252,18 +272,56 @@ export interface SiteSettings {
 // Authentication API
 const authApi = {
   login: async (username: string, password: string) => {
+    try {
     const response = await adminAxios.post('/login', { username, password });
     const { token } = response.data;
+      if (!token) {
+        throw new Error('No token received from server');
+      }
     localStorage.setItem('adminToken', token);
+      // Set the token in axios headers immediately
+      adminAxios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      localStorage.removeItem('adminToken');
+      delete adminAxios.defaults.headers.common['Authorization'];
+      throw error;
+    }
   },
   
   logout: () => {
     localStorage.removeItem('adminToken');
+    delete adminAxios.defaults.headers.common['Authorization'];
   },
   
   isAuthenticated: () => {
-    return !!localStorage.getItem('adminToken');
+    const token = localStorage.getItem('adminToken');
+    if (!token) return false;
+    
+    try {
+      // Check if token is expired by decoding it
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      
+      const { exp } = JSON.parse(jsonPayload);
+      if (exp * 1000 < Date.now()) {
+        // Token is expired
+        localStorage.removeItem('adminToken');
+        delete adminAxios.defaults.headers.common['Authorization'];
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking token:', error);
+      localStorage.removeItem('adminToken');
+      delete adminAxios.defaults.headers.common['Authorization'];
+      return false;
+    }
   }
 };
 

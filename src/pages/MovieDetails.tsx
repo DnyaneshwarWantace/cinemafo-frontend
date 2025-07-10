@@ -133,6 +133,7 @@ const MovieDetails = () => {
 
   return (
     <div className="min-h-screen bg-black">
+      <Navigation inModalView={false} />
       {/* Hero Section */}
       <div className="relative pt-20">
         {/* Background Image */}
@@ -301,4 +302,4 @@ const MovieDetails = () => {
   );
 };
 
-export default MovieDetails; 
+export default MovieDetails;

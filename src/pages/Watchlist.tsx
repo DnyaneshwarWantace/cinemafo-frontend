@@ -54,7 +54,7 @@ const Watchlist = () => {
   return (
     <div className="min-h-screen bg-black">
       <AnnouncementBar />
-      <Navigation />
+      <Navigation inModalView={false} />
       
       <div className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 md:px-12">
@@ -213,4 +213,4 @@ const Watchlist = () => {
   );
 };
 
-export default Watchlist; 
+export default Watchlist;

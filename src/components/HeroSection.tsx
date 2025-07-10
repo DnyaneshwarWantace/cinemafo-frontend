@@ -39,8 +39,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items = [], loading = false, 
   // Early return for loading or empty states
   if (loading || !items || items.length === 0) {
     return (
-      <div className="relative h-screen bg-gradient-to-r from-gray-900 to-gray-800 animate-pulse">
-        <div className="absolute inset-0 bg-black/50" />
+      <div className="relative h-screen pt-[128px] bg-gradient-to-r from-gray-900 to-gray-800 animate-pulse">
+        <div className="absolute inset-0 top-[128px] bg-black/50" />
         <div className="absolute bottom-0 left-0 right-0 p-4 md:p-12">
           <div className="max-w-2xl">
             <div className="h-16 bg-gray-700 rounded mb-4" />
@@ -63,7 +63,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items = [], loading = false, 
   // Safety check for currentMovie
   if (!currentMovie) {
     return (
-      <div className="relative h-screen bg-black flex items-center justify-center">
+      <div className="relative h-screen pt-[128px] bg-black flex items-center justify-center">
         <div className="text-white text-center">
           <p className="text-xl">No movies available</p>
         </div>
@@ -107,9 +107,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ items = [], loading = false, 
   };
 
   return (
-    <div className="relative h-screen overflow-hidden">
+    <div className="relative h-screen pt-[128px] overflow-hidden">
       {/* Background Image */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 top-[128px]">
         {backdropPath ? (
           <img
             src={`${imageBaseUrl}${backdropPath}`}

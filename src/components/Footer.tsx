@@ -16,19 +16,21 @@ const Footer = () => {
   const aboutUs = settings?.content?.aboutUs;
   const contactEmail = settings?.content?.contactEmail;
 
-  console.log('[Footer] Settings:', settings);
-  console.log('[Footer] Disclaimer:', disclaimer);
-  console.log('[Footer] About Us:', aboutUs);
-
   return (
     <footer className="bg-gradient-to-t from-gray-900 to-black border-t border-gray-800 mt-16">
       <div className="max-w-7xl mx-auto px-4 md:px-12 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Logo and Description */}
+          {/* Description */}
           <div className="md:col-span-2">
-            <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent mb-4">
-              CINEMA.FO
+            {/* Logo */}
+            <div className="mb-6">
+              <img 
+                src="/logo.svg" 
+                alt="CINEMA.FO" 
+                className="h-12 w-auto"
+              />
             </div>
+            
             {aboutUs && (
               <p className="text-gray-400 text-sm leading-relaxed mb-6">
                 {aboutUs}
@@ -76,17 +78,6 @@ const Footer = () => {
                   </a>
                 </li>
               )}
-              <li>
-                <a 
-                  href="/admin"
-                  className="text-gray-500 hover:text-blue-400 transition-colors text-xs flex items-center gap-2"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-                  </svg>
-                  Admin Login
-                </a>
-              </li>
             </ul>
           </div>
         </div>

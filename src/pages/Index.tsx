@@ -242,7 +242,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-black">
       <LoadingBar isLoading={isLoading} />
-      <Navigation />
+      <Navigation inModalView={false} />
       
       {/* Hero Section */}
       <HeroSection items={trendingMovies?.data?.results?.slice(0, 5) || []} onItemClick={handleMovieClick} />
