@@ -972,7 +972,7 @@ const AdminPanel: React.FC = () => {
                     <p className="text-2xl font-bold text-white">
                       {Object.entries(settings?.ads || {})
                         .filter(([key]) => key.includes('movies') || key.includes('shows'))
-                        .filter(([, ad]) => ad?.enabled).length}/4
+                        .filter(([, ad]) => ad?.enabled).length}/2
                     </p>
                     <p className="text-green-200 text-xs">Active Ads</p>
                   </div>
@@ -989,7 +989,7 @@ const AdminPanel: React.FC = () => {
                     <p className="text-2xl font-bold text-white">
                       {Object.entries(settings?.ads || {})
                         .filter(([key]) => key.includes('search') || key.includes('upcoming') || key.includes('player'))
-                        .filter(([, ad]) => ad?.enabled).length}/5
+                        .filter(([, ad]) => ad?.enabled).length}/3
                     </p>
                     <p className="text-purple-200 text-xs">Active Ads</p>
                   </div>
@@ -1331,7 +1331,7 @@ const AdminPanel: React.FC = () => {
                       <span className="text-orange-300 text-sm">
                         {Object.entries(settings?.ads || {})
                           .filter(([key]) => key.includes('search') || key.includes('upcoming') || key.includes('player'))
-                          .filter(([, ad]) => ad?.enabled).length} / 5 Active
+                          .filter(([, ad]) => ad?.enabled).length}/3
                       </span>
                     </div>
                   </div>

@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const AD_BASE_URL = 'http://localhost:5000/api/admin'; // For admin/ad endpoints
+const AD_BASE_URL = 'https://cinemafo.lol/api/admin'; // For admin/ad endpoints
 
 // Create separate axios instances for different endpoints
 const adminAxios = axios.create({
@@ -261,6 +261,17 @@ export interface SiteSettings {
     };
   };
   ads: {
+    mainPageAd1: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    mainPageAd2: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    mainPageAd3: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    mainPageAd4: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    searchTopAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    searchBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    moviesPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    moviesPageBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    showsPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    showsPageBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    playerPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
     [key: string]: {
       enabled: boolean;
       imageUrl: string;
