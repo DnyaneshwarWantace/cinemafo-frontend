@@ -269,38 +269,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const generateStreamingSources = async () => {
       const sources: StreamingSource[] = [];
       
-      // Niggaflix streaming sources
+      // Niggaflix streaming sources via backend
       if (type === 'movie') {
-        const checkUrl = `http://checker.niggaflix.xyz/verify/movie/${tmdbId}`;
-        const finalUrl = `http://niggaflix.xyz/movies/${tmdbId}/index.m3u8`;
-        
         try {
-          // Perform a HEAD request to check if the file exists
-          await axios.head(checkUrl);
-          // If the request is successful, add the stream URL
-          sources.push({
-            type: 'hls',
-            url: finalUrl,
-            name: 'Niggaflix HLS',
-            language: 'en'
-          });
+          const response = await axios.get(`/stream/movie/${tmdbId}`);
+          if (response.data.stream) {
+            sources.push({
+              type: 'hls',
+              url: response.data.stream.url,
+              name: response.data.stream.name || 'Niggaflix HLS',
+              language: response.data.stream.language || 'en'
+            });
+          }
         } catch (error) {
           console.log('Niggaflix movie not available:', error);
         }
       } else if (type === 'tv' && season && episode) {
-        const checkUrl = `http://checker.niggaflix.xyz/verify/tv/${tmdbId}/${season}/${episode}`;
-        const finalUrl = `http://niggaflix.xyz/tv/${tmdbId}/${season}/${episode}/index.m3u8`;
-        
         try {
-          // Perform a HEAD request to check if the file exists
-          await axios.head(checkUrl);
-          // If the request is successful, add the stream URL
-          sources.push({
-            type: 'hls',
-            url: finalUrl,
-            name: 'Niggaflix HLS',
-            language: 'en'
-          });
+          const response = await axios.get(`/stream/tv/${tmdbId}/${season}/${episode}`);
+          if (response.data.stream) {
+            sources.push({
+              type: 'hls',
+              url: response.data.stream.url,
+              name: response.data.stream.name || 'Niggaflix HLS',
+              language: response.data.stream.language || 'en'
+            });
+          }
         } catch (error) {
           console.log('Niggaflix TV episode not available:', error);
         }

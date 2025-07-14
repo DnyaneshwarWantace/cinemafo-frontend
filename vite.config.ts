@@ -23,6 +23,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    'import.meta.env.VITE_BACKEND_URL': JSON.stringify(process.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'),
+    'import.meta.env.VITE_BACKEND_URL': JSON.stringify(process.env.VITE_BACKEND_URL || 'http://localhost:5000/api'),
   }
 }));
