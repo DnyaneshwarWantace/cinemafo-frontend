@@ -10,20 +10,19 @@ interface HeroSliderProps {
 
 const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
+    if (items.length <= 1) return;
+    
     const interval = setInterval(() => {
-      handleNext();
+      setCurrentIndex((prev) => (prev === items.length - 1 ? 0 : prev + 1));
     }, 3000);
+    
     return () => clearInterval(interval);
-  }, [currentIndex]);
+  }, [items.length]);
 
   const handleNext = () => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
     setCurrentIndex((prev) => (prev === items.length - 1 ? 0 : prev + 1));
-    setTimeout(() => setIsTransitioning(false), 500);
   };
 
   const formatReleaseDate = (dateString: string) => {
@@ -52,9 +51,6 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
           src={`https://image.tmdb.org/t/p/original${currentItem.backdrop_path}`}
           alt={title}
           className="w-full h-full object-cover object-center md:object-center lg:object-center transition-transform duration-500"
-          style={{
-            transform: isTransitioning ? 'scale(1.05)' : 'scale(1)',
-          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/50 to-transparent" />
@@ -141,11 +137,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
                 className={`w-12 h-1 rounded-full transition-all duration-300 ${
                   index === currentIndex ? 'bg-white' : 'bg-gray-500 hover:bg-gray-400'
             }`}
-            onClick={() => {
-              setCurrentIndex(index);
-              setIsTransitioning(true);
-              setTimeout(() => setIsTransitioning(false), 500);
-            }}
+            onClick={() => setCurrentIndex(index)}
           />
         ))}
           </div>

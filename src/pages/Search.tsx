@@ -8,6 +8,7 @@ import TVShowPlayer from '@/components/TVShowPlayer';
 import AdBanner from '@/components/AdBanner';
 import api, { Movie, TVShow } from '@/services/api';
 import { Loader2 } from 'lucide-react';
+import useAdminSettings from '@/hooks/useAdminSettings';
 
 const Search = () => {
   const [query, setQuery] = useState('');
@@ -114,6 +115,7 @@ const Search = () => {
   };
 
   const hasActiveFilters = filters.genre !== 'all' || filters.year || filters.rating || filters.sortBy !== 'relevance';
+  const { settings: adminSettings } = useAdminSettings();
 
   return (
     <div className="min-h-screen bg-background pt-20">
@@ -125,14 +127,16 @@ const Search = () => {
         </div>
 
         {/* Top Ad */}
-        <div className="mb-8">
-          <AdBanner 
-            adKey="searchPageAd" 
-            imageUrl="https://picsum.photos/400/200?random=search-top"
-            clickUrl="https://example.com"
-            enabled={true}
-          />
-      </div>
+        {adminSettings?.ads?.searchTopAd?.enabled && (
+          <div className="mb-8">
+            <AdBanner 
+              adKey="searchTopAd"
+              imageUrl={adminSettings.ads.searchTopAd.imageUrl}
+              clickUrl={adminSettings.ads.searchTopAd.clickUrl}
+              enabled={adminSettings.ads.searchTopAd.enabled}
+            />
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/80 rounded-lg border border-gray-800">
@@ -306,14 +310,16 @@ const Search = () => {
         )}
 
         {/* Bottom Ad */}
-        <div className="mt-12">
-          <AdBanner 
-            adKey="searchPageBottomAd" 
-            imageUrl="https://picsum.photos/400/200?random=search-bottom"
-            clickUrl="https://example.com"
-            enabled={true}
+        {adminSettings?.ads?.searchBottomAd?.enabled && (
+          <div className="mt-12">
+            <AdBanner 
+              adKey="searchBottomAd"
+              imageUrl={adminSettings.ads.searchBottomAd.imageUrl}
+              clickUrl={adminSettings.ads.searchBottomAd.clickUrl}
+              enabled={adminSettings.ads.searchBottomAd.enabled}
             />
           </div>
+        )}
       </div>
 
       {/* Movie Modal */}

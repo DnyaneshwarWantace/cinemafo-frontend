@@ -1,155 +1,184 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Home, Film, Tv, Search, Menu, X } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
-import useAdminSettings from '@/hooks/useAdminSettings';
+import { Search, Home, Film, Tv, X, Calendar, Bookmark } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/services/api';
 
-const Navigation = () => {
-  const navigate = useNavigate();
+interface NavigationProps {
+  inModalView?: boolean;
+}
+
+const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const location = useLocation();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { settings: adminSettings } = useAdminSettings();
 
-  const handleDiscordClick = () => {
-    window.open('https://discord.gg/your-discord-server', '_blank');
-  };
+  // Check if announcement bar is enabled (simplified)
+  const isAnnouncementEnabled = true;
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
-
-  const navItems = [
-    { path: '/', name: 'Home', icon: Home },
-    { path: '/movies', name: 'Movies', icon: Film },
-    { path: '/shows', name: 'Shows', icon: Tv },
-    { path: '/search', name: 'Search', icon: Search },
-  ];
-
-  const handleNavClick = (path: string) => {
-    navigate(path);
-    setIsMobileMenuOpen(false);
-  };
-
-  // Check if announcement bar is enabled
-  const hasAnnouncementBar = adminSettings?.appearance?.announcementBar?.enabled;
-
-  // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
-      if (hasAnnouncementBar) {
-        // If announcement bar is enabled, check if scrolled past it (48px height)
-        setIsScrolled(window.scrollY > 48);
+      const announcementClosed = localStorage.getItem('announcementClosed') === 'true';
+      if (announcementClosed) {
+        setIsScrolled(true); // Always at top when announcement is closed
       } else {
-        // If no announcement bar, check if scrolled at all
-        setIsScrolled(window.scrollY > 0);
+        setIsScrolled(window.scrollY > 48);
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [hasAnnouncementBar]);
+  }, []);
+
+  // Listen for announcement bar close
+  useEffect(() => {
+    const handleAnnouncementClosed = () => {
+      setIsScrolled(true);
+    };
+
+    const handleStorageChange = () => {
+      const announcementClosed = localStorage.getItem('announcementClosed');
+      if (announcementClosed === 'true') {
+        setIsScrolled(true);
+      }
+    };
+
+    window.addEventListener('announcementClosed', handleAnnouncementClosed);
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('announcementClosed', handleAnnouncementClosed);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  const navItems = [
+    { name: 'Home', path: '/', icon: Home },
+    { name: 'Movies', path: '/movies', icon: Film },
+    { name: 'Shows', path: '/shows', icon: Tv },
+    { name: 'Watchlist', path: '/watchlist', icon: Bookmark },
+  ];
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      setIsSearchFocused(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      e.preventDefault();
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      setIsSearchFocused(false);
+    }
+  };
 
   return (
-    <nav className={`bg-transparent backdrop-blur-0 border-b-0 sticky top-0 w-full z-50 transition-all duration-300 ${
-      isScrolled ? 'bg-black/95 backdrop-blur-md shadow-lg' : 'bg-transparent'
+    <nav className={`fixed left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-gray-800/30 transition-all duration-150 h-[80px] ${
+      isAnnouncementEnabled && !inModalView && !isScrolled ? 'top-[48px]' : 'top-0'
     }`}>
-      <div className={`absolute inset-0 transition-all duration-300 ${
-        isScrolled ? 'bg-gradient-to-b from-black/95 to-black/80' : 'bg-gradient-to-b from-black/80 via-black/20 to-transparent'
-      }`}></div>
-      <div className="w-full px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo and Nav */}
-          <div className="flex items-center space-x-4 md:space-x-8">
-            <div 
-              className="cursor-pointer hover:scale-105 transition-transform"
-              onClick={() => navigate('/')}
-            >
+      <div className="w-full h-full px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-full">
+          {/* Logo - Left corner with proper spacing */}
+          <div className="flex items-center">
+            <Link to="/" className="flex-shrink-0 group">
               <img 
                 src="/logo.svg" 
-                alt="Cinema.fo" 
-                className="h-8 w-auto md:h-12 drop-shadow-lg"
+                alt="CINEMA.FO" 
+                className="h-8 sm:h-10 md:h-12 w-auto transition-all duration-300 group-hover:scale-105 filter group-hover:brightness-110"
               />
+            </Link>
             </div>
-            {/* Desktop Navigation Links */}
-            <div className="hidden md:flex items-center space-x-2">
+
+          {/* Navigation Items & Search - Center */}
+          <div className="hidden md:flex items-center space-x-8">
+            <div className="flex items-baseline space-x-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
+                const isActive = location.pathname === item.path;
                 return (
-                  <Button 
-                    key={item.path}
-                    variant="ghost" 
-                    className={`text-white/90 hover:text-blue-400 font-medium px-3 md:px-4 py-2 rounded-lg transition-all duration-200 text-sm md:text-base ${
-                      isActive(item.path) ? 'text-blue-400' : 'hover:scale-105'
+                  <Link
+                    key={item.name}
+                    to={item.path}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 hover:scale-105 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
+                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
                     }`}
-                    onClick={() => handleNavClick(item.path)}
                   >
-                    <Icon className="w-4 h-4 mr-2" />
+                    <Icon size={16} />
                     {item.name}
-                  </Button>
+                  </Link>
                 );
               })}
             </div>
+
+            {/* Search Bar */}
+            <form onSubmit={handleSearchSubmit} className="relative">
+              <div className={`flex items-center transition-all duration-300 ${
+                isSearchFocused ? 'w-80' : 'w-64'
+              }`}>
+                <div className="relative w-full">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                    onKeyDown={handleSearchKeyDown}
+                    placeholder="Search movies..."
+                    className="w-full bg-white/10 backdrop-blur-sm text-white pl-10 pr-10 py-2.5 rounded-full border border-white/20 focus:border-blue-500 focus:outline-none text-sm placeholder-gray-400 transition-all duration-300 focus:bg-white/15"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </form>
           </div>
 
-          {/* Right side - Discord and Mobile Menu */}
-          <div className="flex items-center space-x-2 md:space-x-4">
-            {/* Discord Icon - Desktop */}
-            <Button 
-              variant="ghost" 
-              onClick={handleDiscordClick}
-              className="hidden md:flex text-white/90 hover:text-blue-400 p-2 md:p-3 rounded-full hover:scale-110 transition-all duration-200"
+          {/* Discord Icon - Right side */}
+          <div className="flex items-center">
+            <a
+              href="https://discord.gg/cinema"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-300 hover:text-white p-3 rounded-lg hover:bg-white/10 transition-all duration-300 hover:scale-105 flex items-center gap-2"
             >
-              <svg className="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+              <svg 
+                width="20" 
+                height="20" 
+                viewBox="0 0 24 24" 
+                fill="currentColor"
+                className="transition-colors duration-300"
+              >
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
               </svg>
-            </Button>
-
-            {/* Mobile Menu Button */}
-            <Button
-              variant="ghost"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden text-white/90 hover:text-blue-400 p-2 rounded-lg hover:scale-110 transition-all duration-200"
-            >
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-          </div>
+              <span className="text-sm font-medium">Discord</span>
+            </a>
         </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-black/95 backdrop-blur-md border-t border-gray-800">
-            <div className="px-4 py-4 space-y-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Button
-                    key={item.path}
-                    variant="ghost"
-                    className={`w-full justify-start text-white/90 hover:text-blue-400 font-medium px-4 py-3 rounded-lg transition-all duration-200 ${
-                      isActive(item.path) ? 'text-blue-400 bg-blue-400/10' : 'hover:bg-white/10'
-                    }`}
-                    onClick={() => handleNavClick(item.path)}
-                  >
-                    <Icon className="w-5 h-5 mr-3" />
-                    {item.name}
-                  </Button>
-                );
-              })}
-              {/* Discord in mobile menu */}
-              <Button
-                variant="ghost"
-                onClick={handleDiscordClick}
-                className="w-full justify-start text-white/90 hover:text-blue-400 font-medium px-4 py-3 rounded-lg transition-all duration-200 hover:bg-white/10"
-              >
-                <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <button className="text-gray-300 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-all duration-300">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
-                Discord
-              </Button>
-            </div>
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </nav>
   );

@@ -1,58 +1,47 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useEffect } from 'react';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navigation from './components/Navigation';
+import AnnouncementBar from './components/AnnouncementBar';
+import FloatingSocialButtons from './components/FloatingSocialButtons';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 import Movies from './pages/Movies';
 import Shows from './pages/Shows';
 import Search from './pages/Search';
-import AdminPanel from './components/admin/AdminPanel';
 import NotFound from './pages/NotFound';
+import Watchlist from './pages/Watchlist';
+import AdminPanel from './components/admin/AdminPanel';
+import ErrorBoundary from './components/ErrorBoundary';
 
-import Footer from './components/Footer';
-import FloatingSocialButtons from './components/FloatingSocialButtons';
-import AnnouncementBar from './components/AnnouncementBar';
-import { Toaster } from "@/components/ui/toaster";
-import useAdminSettings from './hooks/useAdminSettings';
-
-// Create a client
 const queryClient = new QueryClient();
 
 // Layout component to conditionally render Navigation
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
-  const { settings: adminSettings } = useAdminSettings();
+
+  // Trigger admin settings event on app load to ensure ads show
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('adminSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      window.dispatchEvent(new CustomEvent('adminSettingsChanged', { detail: settings }));
+    }
+  }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Announcement Bar - Always on top */}
-      {!isAdminPage && adminSettings && (
-        <AnnouncementBar 
-          text={adminSettings.appearance?.announcementBar?.text || ''}
-          enabled={adminSettings.appearance?.announcementBar?.enabled || false}
-          backgroundColor={adminSettings.appearance?.announcementBar?.backgroundColor || '#3b82f6'}
-          textColor={adminSettings.appearance?.announcementBar?.textColor || '#ffffff'}
-        />
-      )}
-      
-      {/* Navigation - Below announcement bar, sticky */}
-      {!isAdminPage && <Navigation />}
-      
-      {/* Main content - No fixed padding needed since navbar is sticky */}
+    <div className="min-h-screen bg-black">
+      {!isAdminPage && <AnnouncementBar />}
+      {!isAdminPage && <Navigation inModalView={false} />}
       <main className="w-full">
         {children}
       </main>
-      
+      {!isAdminPage && <FloatingSocialButtons />}
       {!isAdminPage && <Footer />}
-      {!isAdminPage && adminSettings && (
-        <FloatingSocialButtons 
-          enabled={adminSettings.appearance?.floatingSocialButtons?.enabled || true}
-          discordLink={adminSettings.appearance?.floatingSocialButtons?.discordUrl || 'https://discord.gg/cinema-fo'}
-          telegramLink={adminSettings.appearance?.floatingSocialButtons?.telegramUrl || 'https://t.me/cinema-fo'}
-        />
-      )}
-      <Toaster />
     </div>
   );
 };
@@ -60,18 +49,29 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/movies" element={<Movies />} />
-            <Route path="/shows" element={<Shows />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
-      </Router>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Layout>
+            <main className="min-h-screen bg-black">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/movies" element={<Movies />} />
+                <Route path="/shows" element={<Shows />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/watchlist" element={<Watchlist />} />
+                <Route path="/admin" element={
+                  <ErrorBoundary>
+                    <AdminPanel />
+                  </ErrorBoundary>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </main>
+          </Layout>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

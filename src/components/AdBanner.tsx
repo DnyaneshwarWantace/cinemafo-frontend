@@ -16,13 +16,11 @@ const AdBanner: React.FC<AdBannerProps> = ({
   enabled, 
   className = '' 
 }) => {
-  const [isVisible, setIsVisible] = useState(true);
   const [clickCount, setClickCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!enabled || !imageUrl || !clickUrl) {
-      setIsVisible(false);
       return;
     }
 
@@ -34,7 +32,7 @@ const AdBanner: React.FC<AdBannerProps> = ({
     }
   }, [enabled, imageUrl, clickUrl, adKey]);
 
-  if (!enabled || !imageUrl || !clickUrl || !isVisible) {
+  if (!enabled || !imageUrl || !clickUrl) {
     return null;
   }
 
@@ -55,27 +53,16 @@ const AdBanner: React.FC<AdBannerProps> = ({
     }
   };
 
-  const handleClose = () => {
-    setIsVisible(false);
-    console.log(`[AdBanner ${adKey}] Ad closed by user`);
-  };
-
   if (error) {
     return (
       <div className={`bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative ${className}`} role="alert">
         <span className="block sm:inline">Ad failed to load: {error}</span>
-        <button
-          onClick={handleClose}
-          className="absolute top-0 bottom-0 right-0 px-4 py-3"
-        >
-          <X className="w-4 h-4" />
-        </button>
       </div>
     );
   }
 
   return (
-    <div className={`relative max-w-xs md:max-w-sm lg:max-w-md mx-auto ${className}`}>
+    <div className={`relative max-w-sm md:max-w-md lg:max-w-lg mx-auto ${className}`}>
       {/* Sponsored label */}
       <div className="absolute top-1 left-1 z-10">
         <span className="bg-black/70 text-white text-xs px-1.5 py-0.5 rounded text-[10px]">
@@ -83,18 +70,11 @@ const AdBanner: React.FC<AdBannerProps> = ({
         </span>
       </div>
 
-      {/* Close button */}
-      <button
-        onClick={handleClose}
-        className="absolute top-1 right-1 z-10 bg-black/70 text-white p-0.5 rounded-full hover:bg-black/90 transition-colors"
-        aria-label="Close ad"
-      >
-        <X className="w-3 h-3" />
-      </button>
+
 
       {/* Ad image */}
       <div 
-        className="cursor-pointer relative overflow-hidden rounded-lg w-full h-20"
+        className="cursor-pointer relative overflow-hidden rounded-lg w-full h-32"
         onClick={handleAdClick}
         title="Click to visit advertiser"
       >

@@ -42,7 +42,7 @@ const NotFound = () => {
             className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
           >
             <Home className="w-4 h-4 mr-2" />
-            Return to Home
+          Return to Home
           </Button>
         </div>
       </div>

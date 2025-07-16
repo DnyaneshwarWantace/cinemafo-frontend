@@ -34,8 +34,8 @@ const Footer = () => {
             <div className="max-w-2xl mx-auto text-center">
               <p className="text-gray-300 text-sm md:text-base leading-relaxed">
                 {aboutUs}
-              </p>
-            </div>
+            </p>
+          </div>
           )}
           
           {/* Disclaimer */}
@@ -64,7 +64,7 @@ const Footer = () => {
             </div>
           )}
         </div>
-
+        
         {/* Copyright */}
         <div className="border-t border-gray-700 mt-6 md:mt-8 pt-6 md:pt-8 text-center">
           <p className="text-gray-400 text-xs md:text-sm">
