@@ -1,329 +1,561 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Plus, Star, ArrowLeft, Calendar, Clock, Globe, Check } from 'lucide-react';
-import { useWatchlist } from '@/hooks/useWatchlist';
-import VideoPlayer from '@/components/VideoPlayer';
-import MovieCard from './MovieCard';
-import MovieRow from './MovieRow';
-import Navigation from './Navigation';
-import api, { Movie, TVShow } from '@/services/api';
-import AdBanner from './AdBanner';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Play, Star, Calendar, Clock, Loader2, Film, Users, Globe, Info, DollarSign, 
+  Award, Building2, MapPin, Languages, Tags, ArrowLeft, ChevronLeft, ChevronRight
+} from "lucide-react";
+import VideoPlayer from "./VideoPlayer";
+import TVShowPlayer from "./TVShowPlayer";
+import AdBanner from "./AdBanner";
+import api, { Movie, TVShow, cacheUtils } from "@/services/api";
 
 interface MovieModalProps {
-  movie: Movie | TVShow;
+  movie: Movie;
   onClose: () => void;
 }
 
-const MovieModal: React.FC<MovieModalProps> = ({ movie, onClose }) => {
-  const { isInWatchlist, toggleWatchlist } = useWatchlist();
-  const inWatchlist = isInWatchlist(movie.id);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [similarMovies, setSimilarMovies] = useState<Movie[]>([]);
-  const [loadingSimilar, setLoadingSimilar] = useState(false);
+const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose }) => {
+  const [movie, setMovie] = useState<Movie>(initialMovie);
+  const [loading, setLoading] = useState(false);
+  const [showFullMovie, setShowFullMovie] = useState(false);
+  const [showTVShowPlayer, setShowTVShowPlayer] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [relatedMovies, setRelatedMovies] = useState<Movie[]>([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
 
+  // No need to check for detailed data anymore - backend provides complete data
+  console.log(`✅ Movie ${initialMovie.id} loaded with complete data from backend`);
+  
+  // Animation effect for opening
   useEffect(() => {
-    // Handle escape key
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    
-    document.addEventListener('keydown', handleEscape);
-    
-    // Load similar movies
-    loadSimilarMovies();
-    
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [onClose, movie.id]);
+    const timer = setTimeout(() => setIsOpen(true), 10);
+    return () => clearTimeout(timer);
+  }, []);
 
-  const loadSimilarMovies = async () => {
-    try {
-      setLoadingSimilar(true);
-      const response = await api.getSimilarMovies(movie.id);
-      setSimilarMovies(response.data?.results?.slice(0, 12) || []);
+  // Fetch related movies
+  useEffect(() => {
+    const fetchRelatedMovies = async () => {
+      try {
+        setLoadingRelated(true);
+        // Use the recommendations from movie details if available, otherwise fetch similar movies
+        if (movie.recommendations && movie.recommendations.length > 0) {
+          // Convert recommendations to Movie format
+          const recommendationsAsMovies = movie.recommendations.map(rec => ({
+            ...rec,
+            overview: '',
+            backdrop_path: '',
+            release_date: '',
+            vote_count: 0,
+            genres: [],
+            name: rec.title
+          })) as Movie[];
+          setRelatedMovies(recommendationsAsMovies.slice(0, 6));
+        } else {
+          // Fallback to popular movies in the same genre
+          const genreId = movie.genres?.[0]?.id;
+          if (genreId) {
+            const response = await api.getMoviesByGenre(genreId);
+            const similarMovies = response.data.results
+              .filter((m: Movie) => m.id !== movie.id)
+              .slice(0, 6);
+            setRelatedMovies(similarMovies);
+          } else {
+            // Final fallback to popular movies
+            const response = await api.getPopularMovies();
+            const popularMovies = response.data.results
+              .filter((m: Movie) => m.id !== movie.id)
+              .slice(0, 6);
+            setRelatedMovies(popularMovies);
+          }
+        }
     } catch (error) {
-      console.error('Error loading similar movies:', error);
-      setSimilarMovies([]);
+        console.error('Error fetching related movies:', error);
+        setRelatedMovies([]);
     } finally {
-      setLoadingSimilar(false);
+        setLoadingRelated(false);
     }
   };
 
-  const handleBackClick = () => {
-    onClose();
-  };
+    fetchRelatedMovies();
+  }, [movie.id, movie.recommendations, movie.genres]);
+
+
 
   const handleWatchNow = () => {
-    setIsPlaying(true);
+    const releaseDate = movie.release_date || movie.first_air_date;
+    
+    if (!releaseDate) {
+      console.warn('No release date available for this content');
+      return;
+    }
+
+    const releaseDateObj = new Date(releaseDate);
+    const now = new Date();
+    
+    if (releaseDateObj > now) {
+      console.log('Content is not yet released:', releaseDate);
+      return;
+    }
+
+    const isTVShow = movie.media_type === 'tv' || (movie.name && !movie.title);
+    
+    if (isTVShow) {
+      onClose();
+      setShowTVShowPlayer(true);
+    } else {
+      setShowFullMovie(true);
+    }
   };
 
-  const handleToggleWatchlist = () => {
-    const type = 'title' in movie ? 'movie' : 'tv';
-    toggleWatchlist(movie, type);
+  // Handle ESC key press to close modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      };
+  }, []);
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setTimeout(() => onClose(), 300);
   };
 
-  const imageBaseUrl = 'https://image.tmdb.org/t/p/original';
-  const posterBaseUrl = 'https://image.tmdb.org/t/p/w500';
-  const profileBaseUrl = 'https://image.tmdb.org/t/p/w185';
-  
-  // Handle both movie and TV show data
-  const title = ('title' in movie ? movie.title : movie.name) || 'Unknown Title';
-  const releaseDate = ('release_date' in movie ? movie.release_date : movie.first_air_date);
-  const year = releaseDate ? new Date(releaseDate).getFullYear() : 'N/A';
-  const rating = Math.round(movie.vote_average * 10) / 10;
-  const runtime = movie.runtime ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m` : '';
-  
-  // Check if this is an upcoming movie (release date in future)
-  const isUpcoming = releaseDate && new Date(releaseDate) > new Date();
-  const isMovie = 'title' in movie;
-  const isShow = 'name' in movie && !isMovie;
+  const formatReleaseDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
-  // Use real data from the movie object or provide fallbacks
-  const director = movie.crew?.find(person => person.job === 'Director');
-  const mainCast = movie.cast?.slice(0, 8) || [];
-  
-  // Debug log to see what data we're getting
-  console.log('Movie data:', movie);
-  console.log('Cast data:', movie.cast);
-  console.log('Crew data:', movie.crew);
-  console.log('Is upcoming:', isUpcoming);
-  console.log('Is show:', isShow);
+  const formatRuntime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+  };
 
-  // If playing, show video player
-  if (isPlaying) {
+  const formatMoney = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Memoized computed values
+  const director = useMemo(() => {
+    if (!movie.crew) return null;
+    return movie.crew.find(member => member.job === 'Director');
+  }, [movie.crew]);
+
+  const mainCast = useMemo(() => {
+    if (!movie.cast) return [];
+    return movie.cast.slice(0, 6);
+  }, [movie.cast]);
+
+  const isUpcoming = useMemo(() => {
+    const releaseDate = new Date(movie.release_date || movie.first_air_date);
+    return releaseDate > new Date();
+  }, [movie.release_date, movie.first_air_date]);
+
+  if (loading) {
     return (
-      <VideoPlayer
-        tmdbId={movie.id}
-        title={title}
-        type={isMovie ? 'movie' : 'tv'}
-        onClose={() => setIsPlaying(false)}
-      />
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="bg-background rounded-lg p-8">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+      </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black overflow-y-auto">
-      {/* Navigation Bar */}
-      <Navigation inModalView={true} />
-      
-      {/* Hero Section - Added proper top padding */}
-      <div className="relative pt-20">
-        {/* Background Image */}
-        <div className="h-screen relative overflow-hidden">
-          <img
-            src={`${imageBaseUrl}${movie.backdrop_path || movie.poster_path}`}
-            alt={title}
+    <>
+      {/* Backdrop */}
+      <div 
+        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+          isOpen ? 'opacity-100' : 'opacity-0'
+        }`}
+        onClick={handleClose}
+      >
+        {/* Background with backdrop image */}
+        <div className="absolute inset-0">
+              <img
+            src={`https://image.tmdb.org/t/p/original${movie.backdrop_path || movie.poster_path}`}
+              alt={movie.title || movie.name}
               className="w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
               />
           <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+        </div>
+      </div>
+
+      {/* Modal Content */}
+      <div 
+        className={`fixed bottom-0 left-0 right-0 z-50 h-screen bg-transparent transition-transform duration-300 ease-out ${
+          isOpen ? 'translate-y-0' : 'translate-y-full'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header with Back Button */}
+        <div className="absolute top-0 left-0 right-0 z-20 h-16 bg-gradient-to-b from-black/80 to-transparent">
+          <button
+            onClick={handleClose}
+            className="absolute top-4 left-4 bg-black/80 hover:bg-black text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm border border-white/20 shadow-lg"
+            aria-label="Close modal"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
             </div>
 
-        {/* Back Button */}
-        <button
-          onClick={handleBackClick}
-          className="absolute top-24 left-4 md:left-12 z-10 flex items-center gap-2 bg-black/50 hover:bg-black/70 text-white px-4 py-2 rounded-full transition-all duration-200 backdrop-blur-sm"
-        >
-          <ArrowLeft size={20} />
-          Back
-        </button>
-
             {/* Content */}
-        <div className="absolute inset-0 flex items-center pt-48 pb-32">
-          <div className="max-w-7xl mx-auto px-4 md:px-12 w-full">
-            <div className="flex flex-col lg:flex-row gap-8 items-start">
-              {/* Movie Poster */}
+        <ScrollArea className="h-full">
+          {/* Content */}
+          <div className="p-4 md:p-6 pt-24 relative z-10">
+            <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
+              {/* Poster Image */}
               <div className="flex-shrink-0">
-                <img
-                  src={`${posterBaseUrl}${movie.poster_path}`}
-                  alt={title}
-                  className="w-72 lg:w-80 rounded-lg shadow-2xl"
-                  onError={(e) => {
-                    e.currentTarget.src = '/placeholder-poster.jpg';
-                  }}
+                  <img
+                    src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                    alt={movie.title || movie.name}
+                  className="w-64 h-96 object-cover rounded-lg shadow-2xl"
                   />
                 </div>
 
-              {/* Movie Details */}
-              <div className="flex-1 max-w-3xl mt-8 lg:mt-0">
-                <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
-                  {title}
-                </h1>
+                {/* Main Info */}
+                <div className="flex-1">
+                <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white">
+                    {movie.title || movie.name}
+                  </h2>
 
                   {movie.tagline && (
-                  <p className="text-xl text-gray-300 mb-6 italic">"{movie.tagline}"</p>
-                )}
-
-                {/* Movie Info */}
-                <div className="flex flex-wrap items-center gap-4 mb-6 text-gray-300">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={18} />
-                    <span>{year}</span>
-                  </div>
-                  {runtime && (
-                    <div className="flex items-center gap-2">
-                      <Clock size={18} />
-                      <span>{runtime}</span>
-                    </div>
+                  <p className="text-gray-300 italic mb-4 text-sm md:text-base">"{movie.tagline}"</p>
                   )}
-                  <div className="flex items-center gap-2">
-                    <Star className="text-yellow-400 fill-yellow-400" size={18} />
-                    <span className="font-medium">{rating}/10</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Globe size={18} />
-                    <span>{movie.spoken_languages?.[0]?.name || 'English'}</span>
-                  </div>
-                </div>
 
-                {/* Genres */}
-                {movie.genres && movie.genres.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {movie.genres.map((genre) => (
-                      <span
-                        key={genre.id}
-                        className="bg-gray-800/80 text-white px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm"
-                      >
+                  {/* Primary Metadata */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {movie.vote_average > 0 && (
+                    <Badge variant="secondary" className="flex items-center gap-1 bg-yellow-600/80 text-white">
+                        <Star className="w-3 h-3 text-yellow-400" />
+                        {movie.vote_average.toFixed(1)}
+                        {movie.vote_count > 0 && (
+                          <span className="text-xs">({movie.vote_count.toLocaleString()} votes)</span>
+                        )}
+                      </Badge>
+                    )}
+                  <Badge variant="outline" className="flex items-center gap-1 bg-gray-800/80 text-white border-gray-600">
+                      <Calendar className="w-3 h-3" />
+                      {formatReleaseDate(movie.release_date || movie.first_air_date)}
+                    </Badge>
+                {movie.runtime && (
+                    <Badge variant="outline" className="flex items-center gap-1 bg-gray-800/80 text-white border-gray-600">
+                        <Clock className="w-3 h-3" />
+                        {formatRuntime(movie.runtime)}
+                      </Badge>
+                    )}
+                    {movie.genres?.map((genre: any) => (
+                    <Badge key={genre.id} variant="secondary" className="bg-gray-800/80 text-white">
                         {genre.name}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
-                )}
 
-                {/* Description Section */}
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-white mb-4">Description</h3>
-                  <p className="text-lg text-gray-200 leading-relaxed">
-                    {movie.overview || 'No overview available for this movie.'}
-                  </p>
-                </div>
+                  {/* Overview */}
+                <p className="text-gray-200 mb-6 text-sm md:text-base leading-relaxed">{movie.overview}</p>
 
-                {/* Cast Section */}
-                {mainCast.length > 0 && (
-                  <div className="mb-8">
-                    <h3 className="text-xl font-bold text-white mb-4">Starring</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {mainCast.map((actor) => (
-                        <div key={actor.id} className="text-center">
-                          <div className="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden bg-gray-800">
-                            {actor.profile_path ? (
-                              <img
-                                src={`${profileBaseUrl}${actor.profile_path}`}
-                                alt={actor.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                                <span className="text-gray-400 text-xs">No Photo</span>
-                              </div>
-                            )}
-                          </div>
-                          <h4 className="text-white font-medium text-sm mb-1">{actor.name}</h4>
-                          <p className="text-gray-400 text-xs">{actor.character}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                  {/* Show different buttons based on content type */}
-                  {isUpcoming ? (
-                    <div className="inline-flex items-center gap-3 bg-gray-600 text-white px-8 py-4 rounded-md text-lg font-semibold cursor-not-allowed opacity-75">
-                      <Calendar size={24} />
-                      Releases {new Date(releaseDate!).toLocaleDateString()}
-                </div>
-                  ) : isShow ? (
-          <button
-                      onClick={handleWatchNow}
-                      className="inline-flex items-center gap-3 bg-white text-black px-8 py-4 rounded-md text-lg font-semibold hover:bg-gray-200 transition-all duration-200 hover:scale-105 transform"
-          >
-                      <Play size={24} />
-                      Watch Episodes
-          </button>
-                  ) : (
-            <button
-                      onClick={handleWatchNow}
-                      className="inline-flex items-center gap-3 bg-white text-black px-8 py-4 rounded-md text-lg font-semibold hover:bg-gray-200 transition-all duration-200 hover:scale-105 transform"
-                    >
-                      <Play size={24} />
-                      Watch Now
-            </button>
-          )}
-          
-              <button
-                    onClick={handleToggleWatchlist}
-                    className={`inline-flex items-center gap-3 px-8 py-4 rounded-md text-lg font-semibold transition-all duration-200 hover:scale-105 transform backdrop-blur-sm ${
-                      inWatchlist 
-                        ? 'bg-green-600/80 text-white hover:bg-green-700/80' 
-                        : 'bg-gray-700/80 text-white hover:bg-gray-600/80'
-                    }`}
-                  >
-                    {inWatchlist ? <Check size={24} /> : <Plus size={24} />}
-                    {inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
-                          </button>
-                </div>
-
-                {/* Director */}
-                {director && (
-                  <div className="text-gray-300">
-                    <span className="font-medium">Directed by:</span> {director.name}
-            </div>
-          )}
-
-                {/* TV Show specific info */}
-                {isShow && (movie as TVShow).number_of_seasons && (
-                  <div className="text-gray-300 mt-2">
-                    <span className="font-medium">Seasons:</span> {(movie as TVShow).number_of_seasons}
-                  </div>
+                  {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                    {isUpcoming ? (
+                    <Button disabled className="flex items-center gap-2 bg-gray-600 text-white px-6 py-3 rounded-md text-base font-semibold cursor-not-allowed opacity-75">
+                        <Calendar className="w-4 h-4" />
+                        Coming {formatReleaseDate(movie.release_date || movie.first_air_date)}
+                      </Button>
+                    ) : (
+                    <Button onClick={handleWatchNow} className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-md text-base font-semibold hover:bg-gray-200 transition-all duration-200 hover:scale-105 transform">
+                        <Film className="w-4 h-4" />
+                        Watch Now
+                      </Button>
                 )}
               </div>
+              
+                  {/* Detailed Information Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    {director && (
+                    <div className="flex items-center gap-2 text-gray-300">
+                        <Film className="w-4 h-4" />
+                      <span>Director: {director.name}</span>
+                      </div>
+                    )}
+                    {movie.status && (
+                    <div className="flex items-center gap-2 text-gray-300">
+                        <Info className="w-4 h-4" />
+                      <span>
+                          {movie.status === 'Released' 
+                            ? `Released on ${formatReleaseDate(movie.release_date)}` 
+                            : movie.status}
+                        </span>
+                      </div>
+                    )}
+                    {movie.original_language && (
+                    <div className="flex items-center gap-2 text-gray-300">
+                        <Globe className="w-4 h-4" />
+                      <span>Original Language: {movie.original_language.toUpperCase()}</span>
+                      </div>
+                    )}
+                    {movie.budget > 0 && (
+                    <div className="flex items-center gap-2 text-gray-300">
+                        <DollarSign className="w-4 h-4" />
+                      <span>Budget: {formatMoney(movie.budget)}</span>
+                      </div>
+                    )}
+                    {movie.revenue > 0 && (
+                    <div className="flex items-center gap-2 text-gray-300">
+                        <Award className="w-4 h-4" />
+                      <span>Revenue: {formatMoney(movie.revenue)}</span>
+                      </div>
+                    )}
+                    {movie.production_companies?.[0] && (
+                    <div className="flex items-center gap-2 text-gray-300">
+                        <Building2 className="w-4 h-4" />
+                      <span>Studio: {movie.production_companies[0].name}</span>
+                      </div>
+                    )}
+                    {movie.production_countries?.length > 0 && (
+                    <div className="flex items-center gap-2 text-gray-300">
+                        <MapPin className="w-4 h-4" />
+                      <span>
+                          Countries: {movie.production_countries?.map(c => c.name).join(', ') || 'N/A'}
+                        </span>
+                      </div>
+                    )}
+                    {movie.spoken_languages?.length > 0 && (
+                    <div className="flex items-center gap-2 text-gray-300">
+                        <Languages className="w-4 h-4" />
+                      <span>
+                          Languages: {movie.spoken_languages?.map(l => l.name).join(', ') || 'N/A'}
+                        </span>
+            </div>
+                    )}
+          </div>
+
+                  {/* Cast Section */}
+                  {mainCast.length > 0 && (
+                    <>
+                    <Separator className="my-6 bg-gray-700" />
+                      <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
+                          <Users className="w-5 h-5" />
+                          Cast
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {mainCast.map(actor => (
+                            <div key={actor.id} className="flex items-center gap-3">
+                              {actor.profile_path ? (
+                                <img
+                                  src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
+                                  alt={actor.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                              <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center">
+                                <Users className="w-6 h-6 text-gray-400" />
+                                </div>
+                              )}
+                              <div>
+                              <p className="font-medium text-sm text-white">{actor.name}</p>
+                              <p className="text-xs text-gray-400">{actor.character}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Keywords */}
+                  {movie.keywords?.length > 0 && (
+                    <>
+                    <Separator className="my-6 bg-gray-700" />
+                      <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
+                          <Tags className="w-5 h-5" />
+                          Keywords
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {movie.keywords.map(keyword => (
+                          <Badge key={keyword.id} variant="outline" className="text-xs bg-gray-800/80 text-white border-gray-600">
+                              {keyword.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+              </div>
+            </div>
+
+            {/* Ad Banner */}
+            <Separator className="my-6 bg-gray-700" />
+            <div className="mb-6">
+              <AdBanner 
+                adKey="movieModalAd" 
+                imageUrl="https://picsum.photos/400/200?random=movie-modal"
+                clickUrl="https://example.com"
+                enabled={true}
+              />
+            </div>
+          
+            {/* Related Movies - Full Width */}
+            <Separator className="my-6 bg-gray-700" />
+            <div className="w-full">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
+                <Film className="w-5 h-5" />
+                Related Movies
+              </h3>
+              {loadingRelated ? (
+                <div className="flex gap-4 overflow-x-auto">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] animate-pulse">
+                      <div className="aspect-[2/3] bg-gray-700 rounded-lg mb-2" />
+                      <div className="h-4 bg-gray-700 rounded w-3/4" />
+                    </div>
+                  ))}
+                </div>
+              ) : relatedMovies.length > 0 ? (
+                <div className="w-full relative group">
+                  {/* Scroll Buttons */}
+              <button
+                    onClick={() => {
+                      const container = document.getElementById('related-movies-carousel');
+                      if (container) {
+                        container.scrollLeft -= container.offsetWidth - 100;
+                      }
+                    }}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/70"
+                    aria-label="Scroll left"
+              >
+                    <ChevronLeft className="w-6 h-6 text-white" />
+              </button>
+              
+                  <button
+                    onClick={() => {
+                      const container = document.getElementById('related-movies-carousel');
+                      if (container) {
+                        container.scrollLeft += container.offsetWidth - 100;
+                      }
+                    }}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/70"
+                    aria-label="Scroll right"
+                  >
+                    <ChevronRight className="w-6 h-6 text-white" />
+                  </button>
+                  
+                  {/* Movie Cards Container */}
+                  <div
+                    id="related-movies-carousel"
+                    className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth"
+                    style={{ 
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none'
+                    }}
+                  >
+                    {relatedMovies.map((relatedMovie) => (
+                      <div
+                        key={relatedMovie.id}
+                        className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] snap-start cursor-pointer group/item"
+                        onClick={() => {
+                          setMovie(relatedMovie);
+                          setRelatedMovies([]);
+                          setLoadingRelated(false);
+                        }}
+                      >
+                        <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
+                          <img
+                            src={`https://image.tmdb.org/t/p/w500${relatedMovie.poster_path}`}
+                            alt={relatedMovie.title || relatedMovie.name}
+                            className="w-full h-full object-cover transform group-hover/item:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+                          {/* Play Button Overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover/item:opacity-100">
+                            <div className="bg-black/60 rounded-full p-4 flex items-center justify-center">
+                              <Play className="w-8 h-8 text-white" />
+                            </div>
+                          </div>
+                          {/* Rating Badge */}
+                          {relatedMovie.vote_average > 0 && (
+                            <div className="absolute top-2 right-2 bg-black/80 text-yellow-400 px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
+                              <Star className="w-3 h-3" />
+                              {relatedMovie.vote_average.toFixed(1)}
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                            <div>
+                              <h3 className="text-white font-semibold text-sm line-clamp-2">
+                                {relatedMovie.title || relatedMovie.name}
+                              </h3>
+                              <p className="text-gray-300 text-xs mt-1">
+                                {formatReleaseDate(relatedMovie.release_date || relatedMovie.first_air_date)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                </div>
+                      ))}
+                    </div>
+
+                  <style dangerouslySetInnerHTML={{
+                    __html: `
+                      .scrollbar-hide::-webkit-scrollbar {
+                        display: none;
+                      }
+                    `
+                  }} />
+                </div>
+              ) : (
+                <p className="text-gray-400 text-center py-4">No related movies available.</p>
+              )}
             </div>
           </div>
-        </div>
-      </div>
+        </ScrollArea>
+          </div>
+          
 
-      {/* Similar Movies Section */}
-      {similarMovies.length > 0 && (
-        <div className="bg-black pb-16 pt-8">
-          <MovieRow 
-            title="More Like This" 
-            movies={similarMovies} 
-            loading={loadingSimilar}
-            onItemClick={(clickedMovie) => {
-              onClose(); // Close current modal
-              // Need to trigger parent to open new modal
-              setTimeout(() => {
-                // This will be handled by parent component
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('openMovieModal', { detail: clickedMovie }));
-                }
-              }, 100);
-            }}
-          />
-        </div>
+
+      {/* TV Show Player */}
+      {showTVShowPlayer && movie.media_type === 'tv' && (
+        <TVShowPlayer
+          show={{
+            ...movie,
+            name: movie.name || movie.title,
+            first_air_date: movie.first_air_date || movie.release_date
+          } as TVShow}
+          onClose={() => setShowTVShowPlayer(false)}
+        />
       )}
 
-      {/* Loading Similar Movies */}
-      {loadingSimilar && similarMovies.length === 0 && (
-        <div className="bg-black pb-16 pt-8">
-          <MovieRow title="More Like This" movies={[]} loading={true} />
-        </div>
+      {/* Full Movie Player */}
+      {showFullMovie && (
+        <VideoPlayer
+          tmdbId={movie.id}
+          type="movie"
+          title={movie.title || movie.name}
+          onClose={() => setShowFullMovie(false)}
+        />
       )}
-
-      {/* Player Page Ad */}
-      <div className="bg-black py-8">
-        <div className="max-w-4xl mx-auto px-4 md:px-12">
-          <AdBanner adKey="playerPageAd" className="mb-8" />
-        </div>
-      </div>
-    </div>
+    </>
   );
 };
 

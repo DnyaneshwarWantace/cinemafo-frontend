@@ -1,53 +1,6 @@
 import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const AD_BASE_URL = 'https://cinemafo.lol/api/admin'; // For admin/ad endpoints
-
-// Create separate axios instances for different endpoints
-const adminAxios = axios.create({
-  baseURL: AD_BASE_URL,
-  timeout: 10000,
-});
-
-// Create axios instance for TMDB endpoints
-const tmdbAxios = axios.create({
-  baseURL: TMDB_BASE_URL,
-  timeout: 10000,
-});
-
-// Configure regular axios defaults for movie endpoints
-axios.defaults.baseURL = BASE_URL;
-axios.defaults.timeout = 10000;
-
-// Add token to admin requests if available
-adminAxios.interceptors.request.use((config) => {
-  const token = localStorage.getItem('adminToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
-
-// Handle 401 responses
-adminAxios.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Clear invalid token
-      localStorage.removeItem('adminToken');
-      delete adminAxios.defaults.headers.common['Authorization'];
-      
-      // Redirect to admin login if not already there
-      if (window.location.pathname === '/admin' && !window.location.search.includes('login=true')) {
-        window.location.href = '/admin?login=true';
-      }
-    }
-    return Promise.reject(error);
-  }
-);
 
 // Client-side cache for movie details
 const movieCache = new Map<string, { data: any; timestamp: number }>();
@@ -237,154 +190,8 @@ export interface Episode {
   vote_average: number;
 }
 
-export interface SiteSettings {
-  appearance: {
-    announcementBar: {
-      enabled: boolean;
-      text: string;
-      backgroundColor: string;
-      textColor: string;
-    };
-    floatingSocialButtons: {
-      enabled: boolean;
-      discordUrl: string;
-      telegramUrl: string;
-    };
-  };
-  content: {
-    disclaimer: string;
-    aboutUs: string;
-    contactEmail: string;
-    socialLinks: {
-      discord: string;
-      telegram: string;
-    };
-  };
-  ads: {
-    mainPageAd1: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    mainPageAd2: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    mainPageAd3: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    mainPageAd4: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    searchTopAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    searchBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    moviesPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    moviesPageBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    showsPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    showsPageBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    playerPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    [key: string]: {
-      enabled: boolean;
-      imageUrl: string;
-      clickUrl: string;
-    };
-  };
-}
-
-// Authentication API
-const authApi = {
-  login: async (username: string, password: string) => {
-    try {
-    const response = await adminAxios.post('/login', { username, password });
-    const { token } = response.data;
-      if (!token) {
-        throw new Error('No token received from server');
-      }
-    localStorage.setItem('adminToken', token);
-      // Set the token in axios headers immediately
-      adminAxios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    return response.data;
-    } catch (error) {
-      console.error('Login error:', error);
-      localStorage.removeItem('adminToken');
-      delete adminAxios.defaults.headers.common['Authorization'];
-      throw error;
-    }
-  },
-  
-  logout: () => {
-    localStorage.removeItem('adminToken');
-    delete adminAxios.defaults.headers.common['Authorization'];
-  },
-  
-  isAuthenticated: () => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) return false;
-    
-    try {
-      // Check if token is expired by decoding it
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-      
-      const { exp } = JSON.parse(jsonPayload);
-      if (exp * 1000 < Date.now()) {
-        // Token is expired
-        localStorage.removeItem('adminToken');
-        delete adminAxios.defaults.headers.common['Authorization'];
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error checking token:', error);
-      localStorage.removeItem('adminToken');
-      delete adminAxios.defaults.headers.common['Authorization'];
-      return false;
-    }
-  }
-};
-
-// Settings API
-const settings = {
-  getPublicSettings: async () => {
-    console.log('Fetching public settings...');
-    const publicResponse = await adminAxios.get('/public/settings');
-    console.log('Public settings response:', publicResponse.data);
-    return publicResponse.data;
-  },
-  
-  // Admin settings methods
-  getAllSettings: async () => {
-    const allResponse = await adminAxios.get('/settings');
-    return allResponse.data;
-  },
-
-  updateAppearance: async (settings: Partial<SiteSettings['appearance']>) => {
-    const appearanceResponse = await adminAxios.put('/settings/appearance', settings);
-    return appearanceResponse.data;
-  },
-
-  updateContent: async (settings: Partial<SiteSettings['content']>) => {
-    const contentResponse = await adminAxios.put('/settings/content', settings);
-    return contentResponse.data;
-  },
-
-  updateAds: async (settings: Partial<SiteSettings['ads']>) => {
-    const adsResponse = await adminAxios.put('/settings/ads', settings);
-    return adsResponse.data;
-  },
-
-  updateSettings: async (settings: Partial<SiteSettings>) => {
-    const updateResponse = await adminAxios.put('/settings', settings);
-    return updateResponse.data;
-  },
-
-  // Legacy methods for backward compatibility
-  updateAnnouncement: async (settings: { enabled: boolean; text: string; backgroundColor: string; textColor: string }) => {
-    const announcementResponse = await adminAxios.put('/settings/announcement', settings);
-    return announcementResponse.data;
-  },
-
-  updateSocialButtons: async (settings: { enabled: boolean; discordUrl: string; telegramUrl: string }) => {
-    const socialResponse = await adminAxios.put('/settings/social-buttons', settings);
-    return socialResponse.data;
-  }
-};
-
 const api = {
-  // Movies - All with caching and complete details
+  // Movies - All with caching
   getTrendingMovies: (language?: string) => {
     const cacheKey = getCacheKey('trending_movies', undefined, { language });
     const cached = getFromCache(cacheKey);
@@ -395,7 +202,6 @@ const api = {
     
     return axios.get(`${BASE_URL}/movies/trending`, { params: { language } })
       .then(response => {
-        // The backend already provides complete data with cast, crew, etc.
         setCache(cacheKey, response.data);
         return response;
       });
@@ -411,7 +217,6 @@ const api = {
     
     return axios.get(`${BASE_URL}/movies/popular`, { params: { language } })
       .then(response => {
-        // The backend already provides complete data with cast, crew, etc.
         setCache(cacheKey, response.data);
         return response;
       });
@@ -427,7 +232,6 @@ const api = {
     
     return axios.get(`${BASE_URL}/movies/top-rated`, { params: { language } })
       .then(response => {
-        // The backend already provides complete data with cast, crew, etc.
         setCache(cacheKey, response.data);
         return response;
       });
@@ -443,7 +247,6 @@ const api = {
     
     return axios.get(`${BASE_URL}/movies/upcoming`, { params: { language } })
       .then(response => {
-        // The backend already provides complete data with cast, crew, etc.
         setCache(cacheKey, response.data);
         return response;
       });
@@ -491,24 +294,6 @@ const api = {
       .then(response => {
         setCache(cacheKey, response.data);
         return response;
-      })
-      .catch(error => {
-        console.error('Error fetching movie details:', error);
-        // Return mock data if API fails
-        const mockData = {
-          id: movieId,
-          title: "Movie Details Unavailable",
-          overview: "Movie details are currently unavailable. Please try again later.",
-          poster_path: null,
-          backdrop_path: null,
-          release_date: "2024-01-01",
-          vote_average: 7.0,
-          runtime: 120,
-          genres: [{ id: 1, name: "Action" }],
-          cast: [],
-          crew: []
-        };
-        return { data: mockData };
       });
   },
 
@@ -756,36 +541,6 @@ const api = {
         return response;
       });
   },
-
-  // Similar movies - using popular movies as fallback since similar endpoint doesn't exist
-  getSimilarMovies: (movieId: number, language?: string) => {
-    const cacheKey = getCacheKey('similar_movies', movieId, { language });
-    const cached = getFromCache(cacheKey);
-    
-    if (cached) {
-      return Promise.resolve({ data: cached });
-    }
-    
-    // Since similar movies endpoint doesn't exist, return popular movies as fallback
-    return axios.get(`${BASE_URL}/movies/popular`, { params: { language } })
-      .then(response => {
-        // Filter out the current movie and take first 20
-        const similarMovies = response.data.results?.filter((movie: any) => movie.id !== movieId).slice(0, 20) || [];
-        const data = { ...response.data, results: similarMovies };
-        setCache(cacheKey, data);
-        return { data };
-      })
-      .catch(error => {
-        console.error('Error fetching similar movies:', error);
-        // Return empty results if API fails
-        const mockData = { results: [], total_pages: 0, total_results: 0 };
-        return { data: mockData };
-      });
-  },
-
-  // Site Settings - REMOVED (use api.settings.getPublicSettings() instead)
-  auth: authApi,
-  settings
 };
 
 export default api; 

@@ -6,12 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Play, Star, Calendar, Clock, Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import HeroSection from "@/components/HeroSection";
+import HeroSlider from "@/components/HeroSlider";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import FloatingSocialButtons from "@/components/FloatingSocialButtons";
 import MovieModal from "@/components/MovieModal";
 import LoadingBar from "@/components/LoadingBar";
+import AdBanner from "@/components/AdBanner";
 import api from "@/services/api";
 
 const genres = [
@@ -225,29 +225,25 @@ const Index = () => {
     );
   };
 
-  // Handle custom events from "More Like This" clicks
-  useEffect(() => {
-    const handleOpenMovieModal = (event: any) => {
-      const movie = event.detail;
-      handleMovieClick(movie);
-    };
-
-    window.addEventListener('openMovieModal', handleOpenMovieModal);
-
-    return () => {
-      window.removeEventListener('openMovieModal', handleOpenMovieModal);
-    };
-  }, []);
-
   return (
     <div className="min-h-screen bg-black">
       <LoadingBar isLoading={isLoading} />
-      <Navigation inModalView={false} />
+      <Navigation />
       
-      {/* Hero Section */}
-      <HeroSection items={trendingMovies?.data?.results?.slice(0, 5) || []} onItemClick={handleMovieClick} />
+      {/* Hero Slider */}
+      <HeroSlider items={trendingMovies?.data?.results?.slice(0, 5) || []} onItemClick={handleMovieClick} />
 
       <div className="container mx-auto px-4 py-8 pt-20">
+        {/* Home Page Ad */}
+        <div className="mb-8">
+          <AdBanner 
+            adKey="homePageAd" 
+            imageUrl="https://picsum.photos/400/200?random=home-page"
+            clickUrl="https://example.com"
+            enabled={true}
+          />
+        </div>
+
         {/* Simple Netflix-style Discover Filters */}
         <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/80 rounded-lg border border-gray-800">
           <div className="flex gap-4 items-center flex-wrap">
@@ -327,12 +323,19 @@ const Index = () => {
             <MovieSection title="Trending TV Shows" movies={trendingTv?.data?.results || []} />
           </>
         )}
+
+        {/* Bottom Ad */}
+        <div className="mt-12">
+          <AdBanner 
+            adKey="homePageBottomAd" 
+            imageUrl="https://picsum.photos/400/200?random=home-bottom"
+            clickUrl="https://example.com"
+            enabled={true}
+          />
+        </div>
       </div>
 
       <Footer />
-      
-      {/* Floating Social Buttons */}
-      <FloatingSocialButtons />
       
       {selectedMovie && (
         <MovieModal 

@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
-import axios from 'axios';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
-import { X, Play, Pause, Volume2, VolumeX, Settings, Maximize, Minimize, Languages, SkipForward, SkipBack, ArrowLeft, Zap } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX, Settings, Maximize, Minimize, Languages, SkipForward, SkipBack, ArrowLeft, Zap, RefreshCw } from 'lucide-react';
 
 interface VideoPlayerProps {
   tmdbId: number;
@@ -29,6 +28,14 @@ interface StreamingSource {
   language?: string;
 }
 
+interface QualityLevel {
+  height: number;
+  width: number;
+  bitrate: number;
+  index: number;
+  url: string | string[];
+}
+
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
   tmdbId, 
   type, 
@@ -42,7 +49,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const hlsRef = useRef<Hls | null>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
   const playerContainerRef = useRef<HTMLDivElement>(null);
-  const skipIntroTimeoutRef = useRef<NodeJS.Timeout>();
+  const initializedRef = useRef(false);
+  const currentSourceUrlRef = useRef<string>('');
+  // skipIntroTimeoutRef removed for now
   
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -63,60 +72,151 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showCenterPlayButton, setShowCenterPlayButton] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [quality, setQuality] = useState('1080p');
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'quality' | 'speed' | 'audio'>('quality');
+  const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
+  const [currentQuality, setCurrentQuality] = useState<number>(-1); // -1 means auto
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   
-  // Skip intro functionality
-  const [showSkipIntro, setShowSkipIntro] = useState(false);
-  const [skipIntroStartTime] = useState(10); // Show button after 10 seconds
-  const [skipIntroEndTime] = useState(100); // Hide button after 100 seconds (90 seconds duration)
-  const [introSkipTime] = useState(90); // Skip to 90 seconds when clicked
-  const [hasSkippedIntro, setHasSkippedIntro] = useState(false); // Track if user has skipped intro
-  const [skipIntroCountdown, setSkipIntroCountdown] = useState(0); // Countdown timer
-  const [skipIntroAutoHide, setSkipIntroAutoHide] = useState(false); // Auto-hide state
+  // Skip intro functionality removed
 
-  // Skip intro logic - improved to prevent re-showing
-  useEffect(() => {
-    // Don't show skip intro if user has already skipped it
-    if (hasSkippedIntro) return;
-    
-    if (currentTime >= skipIntroStartTime && currentTime <= skipIntroEndTime && !showSkipIntro) {
-      setShowSkipIntro(true);
-      setSkipIntroAutoHide(false); // Reset auto-hide when button appears
-    } else if ((currentTime < skipIntroStartTime || currentTime > skipIntroEndTime) && showSkipIntro) {
-      setShowSkipIntro(false);
-    }
-    
-    // Hide skip intro if we've already skipped past the intro time
-    if (currentTime > introSkipTime && showSkipIntro) {
-      setShowSkipIntro(false);
-    }
-    
-    // Update countdown timer
-    if (showSkipIntro && currentTime <= skipIntroEndTime) {
-      const remaining = Math.max(0, skipIntroEndTime - currentTime);
-      setSkipIntroCountdown(Math.ceil(remaining));
-    }
-  }, [currentTime, skipIntroStartTime, skipIntroEndTime, showSkipIntro, introSkipTime, hasSkippedIntro]);
+  // Fetch stream URLs from backend with encrypted niggaflix URLs
+  const fetchStreamUrls = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  const handleSkipIntro = useCallback(() => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = introSkipTime;
-      setShowSkipIntro(false);
-      setHasSkippedIntro(true); // Mark that user has skipped intro
-    }
-  }, [introSkipTime]);
-
-  // Auto-hide skip intro button after 5 seconds
-  useEffect(() => {
-    if (showSkipIntro && !skipIntroAutoHide) {
-      const timer = setTimeout(() => {
-        setSkipIntroAutoHide(true);
-      }, 5000);
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
       
-      return () => clearTimeout(timer);
+      // Try multiple endpoints in order of preference
+      const endpoints = type === 'movie' 
+        ? [
+            `/official/movie/${tmdbId}`,
+            `/niggaflix/movie/${tmdbId}`,
+            `/stream/movie/${tmdbId}`
+          ]
+        : [
+            `/official/tv/${tmdbId}/${season}/${episode}`,
+            `/niggaflix/tv/${tmdbId}/${season}/${episode}`,
+            `/stream/tv/${tmdbId}/${season}/${episode}`
+          ];
+
+      let streamUrl = null;
+      let endpointUsed = '';
+
+      // Try each endpoint until one works
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`🎬 Trying endpoint: ${baseUrl}${endpoint}`);
+          
+          const response = await fetch(`${baseUrl}${endpoint}`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+            },
+            signal: AbortSignal.timeout(8000) // 8 second timeout
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            
+            if (data.stream && data.stream.url) {
+              streamUrl = data.stream.url;
+              endpointUsed = endpoint;
+              console.log(`✅ Stream URL found from ${endpoint}: ${streamUrl}`);
+              break;
+            }
+          }
+        } catch (error) {
+          console.log(`❌ Endpoint ${endpoint} failed:`, error);
+          continue;
+        }
+      }
+      
+      if (streamUrl) {
+        // Create sources array with encrypted niggaflix URL as primary
+        const sources: StreamingSource[] = [
+          {
+            type: 'hls',
+            url: streamUrl,
+            name: `Niggaflix Stream (${endpointUsed})`,
+            language: 'en'
+          }
+        ];
+
+        // Add fallback iframe sources
+        if (type === 'movie') {
+          sources.push({
+            type: 'iframe',
+            url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
+            name: 'VidSrc Player (Fallback)',
+            language: 'multi'
+          });
+        } else if (type === 'tv' && season && episode) {
+          sources.push({
+            type: 'iframe',
+            url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`,
+            name: 'VidSrc Player (Fallback)',
+            language: 'multi'
+          });
+        }
+
+        setStreamingSources(sources);
+        setCurrentSource(sources[0]);
+        return;
+      } else {
+        throw new Error('No stream URL found from any endpoint');
+      }
+    } catch (error) {
+      console.error('❌ All backend endpoints failed:', error);
+      
+      // Fallback to iframe sources only
+      const fallbackSources: StreamingSource[] = [];
+      
+      if (type === 'movie') {
+        fallbackSources.push({
+          type: 'iframe',
+          url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
+          name: 'VidSrc Player (Fallback)',
+          language: 'multi'
+        });
+      } else if (type === 'tv' && season && episode) {
+        fallbackSources.push({
+          type: 'iframe',
+          url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`,
+          name: 'VidSrc Player (Fallback)',
+          language: 'multi'
+        });
+      }
+
+      if (fallbackSources.length > 0) {
+        console.log('🔄 Using fallback sources:', fallbackSources);
+        setStreamingSources(fallbackSources);
+        setCurrentSource(fallbackSources[0]);
+      } else {
+        setError('No streaming sources available');
+      }
+    } finally {
+      setLoading(false);
     }
-  }, [showSkipIntro, skipIntroAutoHide]);
+  }, [tmdbId, type, season, episode]);
+
+  // Initialize sources on mount - only run once
+  useEffect(() => {
+    // Only fetch if we haven't already initialized
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      fetchStreamUrls();
+    }
+    
+    // Cleanup function to reset initialization when component unmounts
+    return () => {
+      initializedRef.current = false;
+    };
+  }, []); // Empty dependency array - only run once on mount
+
+  // Skip intro functionality removed
 
   // Video controls
   const togglePlayPause = useCallback(() => {
@@ -210,9 +310,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           break;
         case 'KeyS':
           e.preventDefault();
-          if (showSkipIntro) {
-            handleSkipIntro();
-          }
+          // Skip intro functionality removed
           break;
         case 'Escape':
           e.preventDefault();
@@ -227,7 +325,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlayPause, skipBackward, skipForward, toggleFullscreen, toggleMute, onClose, showSkipIntro, handleSkipIntro]);
+  }, [togglePlayPause, skipBackward, skipForward, toggleFullscreen, toggleMute, onClose]);
 
   // Fullscreen detection
   useEffect(() => {
@@ -264,126 +362,99 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
-  // Generate streaming sources - Add dependency to prevent rapid re-generation
-  useEffect(() => {
-    const generateStreamingSources = async () => {
-      const sources: StreamingSource[] = [];
-      
-      // Niggaflix streaming sources via backend
-      if (type === 'movie') {
-        try {
-          const response = await axios.get(`/stream/movie/${tmdbId}`);
-          if (response.data.stream) {
-            sources.push({
-              type: 'hls',
-              url: response.data.stream.url,
-              name: response.data.stream.name || 'Niggaflix HLS',
-              language: response.data.stream.language || 'en'
-            });
-          }
-        } catch (error) {
-          console.log('Niggaflix movie not available:', error);
-        }
-      } else if (type === 'tv' && season && episode) {
-        try {
-          const response = await axios.get(`/stream/tv/${tmdbId}/${season}/${episode}`);
-          if (response.data.stream) {
-            sources.push({
-              type: 'hls',
-              url: response.data.stream.url,
-              name: response.data.stream.name || 'Niggaflix HLS',
-              language: response.data.stream.language || 'en'
-            });
-          }
-        } catch (error) {
-          console.log('Niggaflix TV episode not available:', error);
-        }
-      }
-      
-      // Iframe fallback sources (keep existing fallbacks)
-      if (type === 'movie') {
-        sources.push({
-          type: 'iframe',
-          url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
-          name: 'VidSrc Player',
-          language: 'multi'
-        });
-      } else if (type === 'tv' && season && episode) {
-        sources.push({
-          type: 'iframe',
-          url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`,
-          name: 'VidSrc Player',
-          language: 'multi'
-        });
-      }
-      
-      // Only update if sources actually changed
-      if (streamingSources.length === 0 || JSON.stringify(streamingSources) !== JSON.stringify(sources)) {
-        setStreamingSources(sources);
-        if (!currentSource && sources.length > 0) {
-          setCurrentSource(sources[0]);
-        }
-      }
-    };
-
-    generateStreamingSources();
-  }, [tmdbId, type, season, episode, streamingSources, currentSource]); // Added back dependencies to fix linter errors
-
-  // Initialize HLS player - Add cleanup and prevent rapid initialization
+  // Initialize HLS player with quality levels
   useEffect(() => {
     if (!currentSource || currentSource.type !== 'hls' || !videoRef.current) return;
+    
+    // Check if the source URL has actually changed
+    if (currentSourceUrlRef.current === currentSource.url) {
+      console.log('Source URL unchanged, skipping HLS initialization');
+      return;
+    }
+    
+    currentSourceUrlRef.current = currentSource.url;
+    
+    // Prevent multiple HLS instances
+    if (hlsRef.current) {
+      console.log('HLS instance already exists, destroying previous instance');
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
 
     const video = videoRef.current;
-    
-    // Clean up existing HLS instance first
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-
     setIsHLSSupported(Hls.isSupported());
         
         if (Hls.isSupported()) {
           const hls = new Hls({
             enableWorker: true,
-        lowLatencyMode: false, // Disable low latency to prevent rapid switching
         backBufferLength: 90,
             maxBufferLength: 30,
         maxMaxBufferLength: 600,
             maxBufferSize: 60 * 1000 * 1000,
-            maxBufferHole: 0.5,
-        manifestLoadingTimeOut: 10000,
-        manifestLoadingMaxRetry: 2, // Reduced retries
+        maxBufferHole: 1,
+        highBufferWatchdogPeriod: 2,
+        nudgeOffset: 0.2,
+        nudgeMaxRetry: 6,
+        maxFragLookUpTolerance: 0.25,
+        liveSyncDurationCount: 3,
+        liveMaxLatencyDurationCount: 10,
+        manifestLoadingTimeOut: 20000,
+        manifestLoadingMaxRetry: 4,
         manifestLoadingRetryDelay: 1000,
-        levelLoadingTimeOut: 10000,
-        levelLoadingMaxRetry: 2, // Reduced retries
+        levelLoadingTimeOut: 20000,
+        levelLoadingMaxRetry: 4,
         levelLoadingRetryDelay: 1000,
-        fragLoadingTimeOut: 20000,
-        fragLoadingMaxRetry: 3, // Reduced retries
+        fragLoadingTimeOut: 40000,
+        fragLoadingMaxRetry: 6,
         fragLoadingRetryDelay: 1000,
-        startLevel: -1, // Let HLS choose the best level
-        capLevelToPlayerSize: true,
-        debug: false // Disable debug to reduce console spam
+        startFragPrefetch: true,
+        testBandwidth: true,
+        progressive: true,
+        lowLatencyMode: false,
+        // Enable automatic quality switching by default
+        startLevel: -1,
+        capLevelToPlayerSize: true
           });
 
           hlsRef.current = hls;
+      
+      // Load source only once
+      console.log('Loading HLS source:', currentSource.url);
       hls.loadSource(currentSource.url);
       hls.attachMedia(video);
       
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
         console.log('HLS manifest parsed successfully');
         setLoading(false);
         setError(null);
-        
-        // Only autoplay if not already playing
-        if (video.paused) {
-          video.play().catch((playError) => {
-            console.warn('Autoplay failed:', playError);
-            setIsPlaying(false);
+        video.play().catch((playError) => {
+          console.warn('Autoplay failed:', playError);
+        });
+
+        // Get available quality levels
+        const levels = hls.levels.map((level, index) => ({
+          height: level.height,
+          width: level.width,
+          bitrate: level.bitrate,
+          index: index,
+          url: Array.isArray(level.url) ? level.url[0] : level.url
+        }));
+
+        // For now, if no quality levels are available, add a fake 1080p option
+        if (levels.length === 0) {
+          levels.push({
+            height: 1080,
+            width: 1920,
+            bitrate: 5000000,
+            index: 0,
+            url: currentSource.url
           });
         }
+        
+        setQualityLevels(levels);
+        setCurrentQuality(-1); // Start with auto quality
 
-            // Get available audio tracks
+        // Get available audio tracks
         const tracks = hls.audioTracks.map((track, index) => ({
           id: index,
           name: track.name || `Track ${index + 1}`,
@@ -393,118 +464,135 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
               setAudioTracks(tracks);
         
-        // Set default audio track only if none selected
-        if (selectedAudioTrack === -1 && tracks.length > 0) {
-          const defaultTrack = tracks.find(track => track.default) || tracks[0];
+        // Set default audio track
+              const defaultTrack = tracks.find(track => track.default);
+              if (defaultTrack) {
           setSelectedAudioTrack(defaultTrack.id);
+              } else if (tracks.length > 0) {
+          setSelectedAudioTrack(tracks[0].id);
         }
+      });
+      
+      // Handle quality level loading
+      hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+        setCurrentQuality(data.level);
       });
       
       hls.on(Hls.Events.ERROR, (event, data) => {
         console.error('HLS error event:', event, data);
         
-            if (data.fatal) {
-              switch (data.type) {
-                case Hls.ErrorTypes.NETWORK_ERROR:
-              console.log('Fatal network error, trying to recover...');
-              hls.startLoad();
-                  break;
-                case Hls.ErrorTypes.MEDIA_ERROR:
-              console.log('Fatal media error, trying to recover...');
-              hls.recoverMediaError();
-                  break;
-                default:
-              console.log('Fatal error, destroying HLS instance');
-              hls.destroy();
-              setError('Video playback failed. Please try a different source.');
-                  break;
-              }
+        // Handle non-fatal errors (like segment loading failures)
+        if (!data.fatal) {
+          console.log('Non-fatal HLS error, continuing playback');
+          return;
+        }
+        
+        // Handle fatal errors
+        console.log('Fatal HLS error, attempting fallback');
+        
+        // Try to switch to iframe fallback
+          const iframeSource = streamingSources.find(s => s.type === 'iframe');
+          if (iframeSource) {
+            console.log('Switching to iframe fallback:', iframeSource.url);
+            setCurrentSource(iframeSource);
+            setError(null);
+            setLoading(true);
+          
+          // Cleanup HLS instance
+          if (hlsRef.current) {
+            hlsRef.current.destroy();
+            hlsRef.current = null;
+          }
+          } else {
+            setError('Video source unavailable. Please try again later.');
+            setLoading(false);
+        }
+      });
+
+      // Video event listeners
+      video.addEventListener('loadedmetadata', () => {
+        setDuration(video.duration);
+      });
+      
+      video.addEventListener('timeupdate', () => {
+        setCurrentTime(video.currentTime);
+      });
+      
+      video.addEventListener('play', () => setIsPlaying(true));
+      video.addEventListener('pause', () => setIsPlaying(false));
+      
+      video.addEventListener('error', (videoError) => {
+        console.error('Video element error:', videoError);
+        const iframeSource = streamingSources.find(s => s.type === 'iframe');
+        if (iframeSource) {
+          console.log('Video error, switching to iframe fallback');
+          setCurrentSource(iframeSource);
+          setError(null);
+          setLoading(true);
+          
+          // Cleanup HLS instance
+          if (hlsRef.current) {
+            hlsRef.current.destroy();
+            hlsRef.current = null;
+          }
+        } else {
+          setError('Video playback failed. Please try again later.');
+          setLoading(false);
+        }
+      });
+      
+      return () => {
+        // Clean up event listeners
+        if (video) {
+          video.removeEventListener('loadedmetadata', () => setDuration(video.duration));
+          video.removeEventListener('timeupdate', () => setCurrentTime(video.currentTime));
+          video.removeEventListener('play', () => setIsPlaying(true));
+          video.removeEventListener('pause', () => setIsPlaying(false));
+          video.removeEventListener('error', (videoError) => {
+            console.error('Video element error:', videoError);
+            const iframeSource = streamingSources.find(s => s.type === 'iframe');
+            if (iframeSource) {
+              setCurrentSource(iframeSource);
+              setError(null);
+              setLoading(true);
+            } else {
+              setError('Video playback failed. Please try again later.');
+              setLoading(false);
             }
           });
-      
-      // Clean up on unmount
-      return () => {
+        }
+        
         if (hls) {
           hls.destroy();
+          hlsRef.current = null;
         }
       };
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // Safari native HLS support
       video.src = currentSource.url;
-      setLoading(false);
       video.play().catch((playError) => {
-        console.warn('Autoplay failed:', playError);
-        setIsPlaying(false);
-      });
-    } else {
-      setError('HLS not supported in this browser');
-    }
-  }, [currentSource]); // Only depend on currentSource
-
-  // Video event listeners
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-          const handleLoadedMetadata = () => {
-      setDuration(video.duration);
-    };
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime);
-    };
-
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
-
-    const handleError = (videoError: Event) => {
-      console.error('Video element error:', videoError);
-      if (currentSource?.type === 'hls') {
-        // Try iframe fallback on video error
+        console.warn('Safari HLS autoplay failed:', playError);
+        // Only switch to iframe if playback fails
         const iframeSource = streamingSources.find(s => s.type === 'iframe');
         if (iframeSource) {
           setCurrentSource(iframeSource);
           setError(null);
           setLoading(true);
-        } else {
-          setError('Video playback failed. Please try again.');
-          setLoading(false);
         }
-      }
-    };
-
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
-    video.addEventListener('error', handleError);
-
-    return () => {
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-      video.removeEventListener('error', handleError);
-    };
-  }, [currentSource, streamingSources]);
-
-  // Handle loading state for iframe sources
-  useEffect(() => {
-    if (currentSource?.type === 'iframe') {
-      setLoading(true);
+      });
+      setLoading(false);
       setError(null);
-      
-      // Set a timeout for iframe loading
-      const iframeTimeout = setTimeout(() => {
-        // If still loading after 10 seconds, assume iframe loaded successfully
-        setLoading(false);
-      }, 10000);
-      
+        }
+    
+    // Cleanup function
       return () => {
-        clearTimeout(iframeTimeout);
-      };
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
     }
-  }, [currentSource]);
+      currentSourceUrlRef.current = '';
+    };
+  }, [currentSource?.url]); // Only re-run when the source URL changes
 
   // Audio track selection
   const handleAudioTrackChange = (trackId: string) => {
@@ -590,20 +678,169 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowSettings(false);
   };
 
-  const handleQualityChange = (qualityOption: string) => {
-    setQuality(qualityOption);
-    setShowSettings(false);
-    // In a real implementation, you would change the video source here
-    console.log('Quality changed to:', qualityOption);
+  // Handle quality change
+  const handleQualityChange = (levelIndex: number) => {
+    if (!hlsRef.current) return;
+    
+    const hls = hlsRef.current;
+    
+    if (levelIndex === -1) {
+      // Auto quality
+      hls.currentLevel = -1;
+      hls.nextLevel = -1;
+    } else {
+      // Manual quality selection
+      hls.currentLevel = levelIndex;
+      hls.nextLevel = levelIndex;
+    }
+    
+    setCurrentQuality(levelIndex);
+    setShowSettingsMenu(false);
   };
 
-  const speedOptions = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
-  const qualityOptions = ['360p', '480p', '720p', '1080p', '1440p', '2160p'];
+  // Format quality label
+  const getQualityLabel = (height: number) => {
+    if (height <= 360) return '360p';
+    if (height <= 480) return '480p';
+    if (height <= 720) return '720p';
+    if (height <= 1080) return '1080p';
+    if (height <= 1440) return '1440p';
+    return '4K';
+  };
 
-  // Mock video source - in real implementation, this would come from your backend
-  const videoSrc = type === 'tv' 
-    ? `https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4`
-    : `https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4`;
+  // Settings menu auto-close timeout
+  useEffect(() => {
+    if (showSettingsMenu) {
+      const timer = setTimeout(() => {
+        setShowSettingsMenu(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showSettingsMenu]);
+
+  // Handle click outside settings menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const settingsMenu = document.querySelector('.settings-menu');
+      const settingsButton = document.querySelector('.settings-button');
+      
+      if (settingsMenu && 
+          !settingsMenu.contains(event.target as Node) && 
+          !settingsButton?.contains(event.target as Node)) {
+        setShowSettingsMenu(false);
+      }
+    };
+
+    if (showSettingsMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showSettingsMenu]);
+
+  // Settings menu UI
+  const renderSettingsMenu = () => {
+    if (!showSettingsMenu) return null;
+
+    return (
+      <div 
+        className="settings-menu absolute bottom-20 right-4 bg-black/90 backdrop-blur-xl rounded-xl border border-white/10 p-4 w-64 space-y-4 z-50"
+        onClick={(e) => e.stopPropagation()}
+        onMouseEnter={() => {
+          // Reset auto-close timer when user interacts with menu
+          const timer = setTimeout(() => {
+            setShowSettingsMenu(false);
+          }, 5000);
+          return () => clearTimeout(timer);
+        }}
+      >
+        {/* Settings Tabs */}
+        <div className="flex space-x-2 border-b border-white/10 pb-2">
+          <button
+            onClick={() => setSettingsTab('quality')}
+            className={`px-3 py-1 rounded-lg text-sm ${settingsTab === 'quality' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
+          >
+            Quality
+          </button>
+          <button
+            onClick={() => setSettingsTab('speed')}
+            className={`px-3 py-1 rounded-lg text-sm ${settingsTab === 'speed' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
+          >
+            Speed
+          </button>
+          {audioTracks.length > 0 && (
+            <button
+              onClick={() => setSettingsTab('audio')}
+              className={`px-3 py-1 rounded-lg text-sm ${settingsTab === 'audio' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              Audio
+            </button>
+          )}
+        </div>
+
+        {/* Quality Settings */}
+        {settingsTab === 'quality' && (
+          <div className="space-y-2">
+            <button
+              onClick={() => handleQualityChange(-1)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${currentQuality === -1 ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+            >
+              <span>Auto</span>
+              {currentQuality === -1 && <span className="text-blue-400">✓</span>}
+            </button>
+            {qualityLevels.map((level) => (
+              <button
+                key={level.index}
+                onClick={() => handleQualityChange(level.index)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${currentQuality === level.index ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+              >
+                <span>{getQualityLabel(level.height)}</span>
+                {currentQuality === level.index && <span className="text-blue-400">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Playback Speed Settings */}
+        {settingsTab === 'speed' && (
+          <div className="space-y-2">
+            {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
+              <button
+                key={speed}
+                onClick={() => {
+                  handleSpeedChange(speed);
+                  setShowSettingsMenu(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${playbackSpeed === speed ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+              >
+                <span>{speed === 1 ? 'Normal' : `${speed}x`}</span>
+                {playbackSpeed === speed && <span className="text-blue-400">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Audio Track Settings */}
+        {settingsTab === 'audio' && (
+          <div className="space-y-2">
+            {audioTracks.map((track) => (
+              <button
+                key={track.id}
+                onClick={() => {
+                  handleAudioTrackChange(track.id.toString());
+                  setShowSettingsMenu(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${selectedAudioTrack === track.id ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+              >
+                <span>{track.name} ({track.language})</span>
+                {selectedAudioTrack === track.id && <span className="text-blue-400">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div 
@@ -652,8 +889,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           />
         )}
         
-
-        
         {/* Skip Forward Animation */}
         {showForwardAnimation && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -678,34 +913,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
         )}
         
-        {/* Skip Intro Button */}
-        {showSkipIntro && currentSource?.type === 'hls' && (
-          <div 
-            className={`absolute top-1/2 right-8 transform -translate-y-1/2 pointer-events-auto z-50 transition-all duration-500 animate-fade-in ${
-              skipIntroAutoHide ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'
-            } hover:opacity-100 hover:translate-x-0`}
-            onMouseEnter={() => setSkipIntroAutoHide(false)}
-          >
-            <button
-              onClick={handleSkipIntro}
-              className="group flex items-center gap-3 bg-black/80 hover:bg-black/90 backdrop-blur-md text-white px-6 py-4 rounded-xl font-semibold shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-blue-500/25 border border-white/20 hover:border-blue-400/50 skip-intro-pulse"
-            >
-              <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
-                <span className="text-lg">Skip Intro</span>
-              </div>
-              <div className="flex items-center gap-1 text-sm text-gray-300 group-hover:text-white transition-colors">
-                <span>→</span>
-                <span className="font-mono">{Math.floor(introSkipTime / 60)}:{(introSkipTime % 60).toString().padStart(2, '0')}</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
-                <span>(S)</span>
-                <span className="text-blue-400">•</span>
-                <span>{skipIntroCountdown}s</span>
-              </div>
-            </button>
-          </div>
-        )}
+        {/* Skip Intro Button removed */}
         
         {/* Pause Screen Overlay with Logo */}
         {!isPlaying && currentSource?.type === 'hls' && (
@@ -727,7 +935,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {loading && (
           <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-white">Loading video...</p>
             </div>
           </div>
@@ -737,16 +945,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {error && (
           <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
             <div className="text-center max-w-md">
-              <p className="text-red-400 mb-4">{error}</p>
+                              <p className="text-blue-400 mb-4">{error}</p>
+              <div className="flex gap-4 justify-center">
               <Button 
                 onClick={() => {
-                  setError(null);
-                  setLoading(true);
+                    setRetryCount(prev => prev + 1);
+                    fetchStreamUrls();
                 }}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Retry
+                  className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Retry ({retryCount})
+                </Button>
+                <Button onClick={onClose} className="bg-blue-600 hover:bg-blue-700">
+                  Close
               </Button>
+              </div>
             </div>
           </div>
         )}
@@ -764,125 +978,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             >
               <ArrowLeft size={20} />
               Back
-      </button>
+            </button>
 
             {/* Movie Title - Top Center */}
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 text-center pointer-events-auto">
-              <h1 className="text-white text-xl font-bold">{title}</h1>
-              <div className="flex items-center justify-center gap-2 mt-1">
-                <Badge variant="secondary" className="bg-red-600 text-white">
-                  {currentSource.name}
-                </Badge>
-                {currentSource.language && (
-                  <Badge variant="outline" className="text-white border-white">
-                    {currentSource.language.toUpperCase()}
-                  </Badge>
-                )}
+                <h1 className="text-white text-xl font-bold">{title}</h1>
               </div>
-            </div>
-            
+              
             {/* Top Right Controls */}
-            <div 
-              className="absolute top-4 right-4 flex items-center gap-2 pointer-events-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Quality Selector */}
-              <select
-                value={quality}
-                onChange={(e) => handleQualityChange(e.target.value)}
-                className="bg-black/70 text-white border border-gray-600 rounded px-3 py-2 text-sm hover:bg-black/90 transition-colors"
-              >
-                <option value="480p">480p</option>
-                <option value="720p">720p</option>
-                <option value="1080p">1080p</option>
-                <option value="4K">4K</option>
-              </select>
-
-              {/* Speed Selector */}
-              <select
-                value={playbackSpeed}
-                onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
-                className="bg-black/70 text-white border border-gray-600 rounded px-3 py-2 text-sm hover:bg-black/90 transition-colors"
-              >
-                <option value="0.5">0.5x</option>
-                <option value="0.75">0.75x</option>
-                <option value="1">Normal</option>
-                <option value="1.25">1.25x</option>
-                <option value="1.5">1.5x</option>
-                <option value="2">2x</option>
-              </select>
-
-              {/* Source Selector */}
-              <div 
-                onClick={(e) => e.stopPropagation()}
-                onMouseEnter={() => setShowControls(true)}
-                onMouseLeave={() => {}}
-              >
-                <Select 
-                  value={streamingSources.indexOf(currentSource).toString()} 
-                  onValueChange={handleSourceChange}
-                  onOpenChange={(open) => {
-                    if (open) {
-                      console.log('Source selector opened');
-                    }
-                  }}
-                >
-                  <SelectTrigger 
-                    className="w-40 bg-black/70 border-white/20 text-white hover:bg-black/90"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('Source selector clicked');
-                    }}
-                  >
-                    <SelectValue placeholder="Select Source" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[250]">
-                    {streamingSources.map((source, index) => (
-                      <SelectItem key={index} value={index.toString()}>
-                        {source.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-      {/* Audio Track Selector */}
-              {audioTracks.length > 0 && (
                 <div 
+              className="absolute top-4 right-4 flex items-center gap-2 pointer-events-auto"
                   onClick={(e) => e.stopPropagation()}
-                  onMouseEnter={() => setShowControls(true)}
-                  onMouseLeave={() => {}}
-                >
-                  <Select 
-                    value={selectedAudioTrack.toString()} 
-                    onValueChange={handleAudioTrackChange}
-                    onOpenChange={(open) => {
-                      if (open) {
-                        console.log('Audio track selector opened');
-                      }
-                    }}
-                  >
-                    <SelectTrigger 
-                      className="w-40 bg-black/70 border-white/20 text-white hover:bg-black/90"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        console.log('Audio track selector clicked');
-                      }}
-                    >
-                      <Languages className="w-4 h-4" />
-                      <SelectValue placeholder="Audio Track" />
-              </SelectTrigger>
-                    <SelectContent className="z-[250]">
-                {audioTracks.map((track) => (
-                        <SelectItem key={track.id} value={track.id.toString()}>
-                    {track.name} ({track.language})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-              )}
-        </div>
+            >
+              {/* Empty for now - removed duplicate controls */}
+                </div>
+
+            {/* Settings Menu */}
+            {renderSettingsMenu()}
             
             {/* Bottom Controls */}
             <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
@@ -899,14 +1011,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   ></div>
                   
                   {/* Invisible range input for interaction */}
-                  <input
-                    type="range"
-                    min="0"
-                    max={duration || 0}
-                    value={currentTime}
-                    onChange={handleSeek}
+                <input
+                  type="range"
+                  min="0"
+                  max={duration || 0}
+                  value={currentTime}
+                  onChange={handleSeek}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
+                />
                 </div>
                 <div className="flex justify-between text-sm text-gray-300 mt-1">
                   <span>{formatTime(currentTime)}</span>
@@ -953,6 +1065,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     >
                       {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                     </Button>
+                    <div className="relative w-20 h-2">
+                      {/* Background track */}
+                      <div className="absolute inset-0 bg-gray-700 rounded-lg"></div>
+                      
+                      {/* Gradient progress fill */}
+                      <div 
+                        className="absolute left-0 top-0 h-full gradient-progress-bar rounded-lg transition-all duration-200"
+                        style={{ width: `${(volume * 100)}%` }}
+                      ></div>
+                      
+                      {/* Invisible range input for interaction */}
                     <input
                       type="range"
                       min="0"
@@ -960,9 +1083,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       step="0.1"
                       value={volume}
                       onChange={handleVolumeChange}
-                      className="w-20 h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
                   </div>
+                </div>
 
                   {/* Time Display */}
                   <div className="text-white text-sm">
@@ -971,12 +1095,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  {/* Quality Display in Bottom Controls */}
+                  {/* Quality Display */}
                   <div className="text-white text-sm bg-black/50 px-2 py-1 rounded">
-                    {quality}
+                    {currentQuality === -1 ? 'AUTO' : getQualityLabel(qualityLevels[currentQuality]?.height || 1080)}
                   </div>
                   
-                  {/* Speed Display in Bottom Controls */}
+                  {/* Speed Display */}
                   <div className="text-white text-sm bg-black/50 px-2 py-1 rounded">
                     {playbackSpeed}x
                   </div>
@@ -985,20 +1109,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setShowSettings(!showSettings)}
-                    className="text-white hover:bg-white/20"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSettingsMenu(!showSettingsMenu);
+                    }}
+                    className="settings-button text-white hover:bg-white/20"
                   >
                     <Settings className="w-5 h-5" />
                   </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleFullscreen}
-                    className="text-white hover:bg-white/20"
-                  >
-                    {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-                  </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleFullscreen}
+                  className="text-white hover:bg-white/20"
+                >
+                  {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+                </Button>
                 </div>
               </div>
             </div>
@@ -1016,6 +1143,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <X className="w-6 h-6" />
           </Button>
         )}
+
+        {/* Settings Menu */}
+        {renderSettingsMenu()}
       </div>
 
       {/* Custom Styles are handled via global CSS */}

@@ -1,242 +1,181 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import HeroSection from '../components/HeroSection';
-import MovieRow from '../components/MovieRow';
-import MovieModal from '../components/MovieModal';
-import TVShowPlayer from '../components/TVShowPlayer';
-import AnnouncementBar from '../components/AnnouncementBar';
-import FloatingSocialButtons from '../components/FloatingSocialButtons';
-import ContinueWatching from '../components/ContinueWatching';
-import AdBanner from '../components/AdBanner';
-import Footer from '../components/Footer';
+import React, { useEffect, useState } from 'react';
 import api, { Movie, TVShow } from '@/services/api';
-
-interface MovieRowData {
-  title: string;
-  movies: (Movie | TVShow)[];
-  loading: boolean;
-  loaded: boolean;
-  genreId?: number;
-}
+import MovieCarousel from '@/components/MovieCarousel';
+import MovieModal from '@/components/MovieModal';
+import TVShowPlayer from '@/components/TVShowPlayer';
+import HeroSlider from '@/components/HeroSlider';
+import AdBanner from '@/components/AdBanner';
+import { Loader2 } from 'lucide-react';
+import useAdminSettings from '@/hooks/useAdminSettings';
 
 const Home = () => {
-  const [heroMovies, setHeroMovies] = useState<(Movie | TVShow)[]>([]);
-  const [heroLoading, setHeroLoading] = useState(true);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
-  const [movieRows, setMovieRows] = useState<MovieRowData[]>([
-    { title: 'Trending Now', movies: [], loading: false, loaded: false },
-    { title: 'Popular Movies', movies: [], loading: false, loaded: false },
-    { title: 'Top Rated', movies: [], loading: false, loaded: false },
-    { title: 'Trending TV Shows', movies: [], loading: false, loaded: false },
-    { title: 'Popular TV Shows', movies: [], loading: false, loaded: false },
-  ]);
-
-  const observerRef = useRef<IntersectionObserver>();
-  const loadedRowsRef = useRef<Set<number>>(new Set());
-
-  // Load hero section immediately
-  useEffect(() => {
-    loadHeroMovies();
-  }, []);
-
-  const loadHeroMovies = async () => {
-    try {
-      setHeroLoading(true);
-      const trending = await api.getTrendingMovies();
-      setHeroMovies(trending.data?.results?.slice(0, 5) || []);
-    } catch (error) {
-      console.error('Error fetching hero movies:', error);
-    } finally {
-      setHeroLoading(false);
-    }
-  };
-
-  const loadMovieRow = useCallback(async (index: number) => {
-    if (loadedRowsRef.current.has(index)) return;
-    
-    loadedRowsRef.current.add(index);
-    
-    setMovieRows(prev => prev.map((row, i) => 
-      i === index ? { ...row, loading: true } : row
-    ));
-
-    try {
-      let movies: (Movie | TVShow)[] = [];
-      
-      switch (index) {
-        case 0: // Trending Now
-          const trending = await api.getTrendingMovies();
-          movies = trending.data?.results || [];
-          break;
-        case 1: // Popular Movies
-          const popular = await api.getPopularMovies();
-          movies = popular.data?.results || [];
-          break;
-        case 2: // Top Rated
-          const topRated = await api.getTopRatedMovies();
-          movies = topRated.data?.results || [];
-          break;
-        case 3: // Trending TV Shows
-          const trendingShows = await api.getTrendingShows();
-          movies = trendingShows.data?.results || [];
-          break;
-        case 4: // Popular TV Shows
-          const popularShows = await api.getPopularShows();
-          movies = popularShows.data?.results || [];
-          break;
-      }
-
-      setMovieRows(prev => prev.map((row, i) => 
-        i === index ? { ...row, movies, loading: false, loaded: true } : row
-      ));
-    } catch (error) {
-      console.error(`Error fetching movies for row ${index}:`, error);
-      setMovieRows(prev => prev.map((row, i) => 
-        i === index ? { ...row, loading: false, loaded: true } : row
-      ));
-    }
-  }, []);
-
-  const createObserver = useCallback(() => {
-    if (observerRef.current) observerRef.current.disconnect();
-
-    observerRef.current = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const index = parseInt(entry.target.getAttribute('data-row-index') || '0');
-          loadMovieRow(index);
-        }
-      });
-    }, {
-      rootMargin: '100px 0px', // Load when element is 100px away from viewport
-      threshold: 0.1
-    });
-  }, [loadMovieRow]);
+  const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
+  const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
+  const [trendingShows, setTrendingShows] = useState<TVShow[]>([]);
+  const [popularShows, setPopularShows] = useState<TVShow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { settings: adminSettings } = useAdminSettings();
 
   useEffect(() => {
-    createObserver();
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
+    const fetchContent = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [
+          trendingMoviesRes,
+          popularMoviesRes,
+          trendingShowsRes,
+          popularShowsRes
+        ] = await Promise.all([
+          api.getTrendingMovies(),
+          api.getPopularMovies(),
+          api.getTrendingShows(),
+          api.getPopularShows()
+        ]);
+
+        setTrendingMovies(trendingMoviesRes.data?.results || []);
+        setPopularMovies(popularMoviesRes.data?.results || []);
+        setTrendingShows(trendingShowsRes.data?.results || []);
+        setPopularShows(popularShowsRes.data?.results || []);
+      } catch (err) {
+        console.error('Error fetching content:', err);
+        setError('Failed to load content. Please try again later.');
+      } finally {
+        setLoading(false);
       }
     };
-  }, [createObserver]);
 
-  // Handle custom events from "More Like This" clicks
-  useEffect(() => {
-    const handleOpenMovieModal = (event: any) => {
-      const movie = event.detail;
-      handleContentClick(movie);
-    };
-
-    const handleOpenShowModal = (event: any) => {
-      const show = event.detail;
-      handleContentClick(show);
-    };
-
-    window.addEventListener('openMovieModal', handleOpenMovieModal);
-    window.addEventListener('openShowModal', handleOpenShowModal);
-
-    return () => {
-      window.removeEventListener('openMovieModal', handleOpenMovieModal);
-      window.removeEventListener('openShowModal', handleOpenShowModal);
-    };
+    fetchContent();
   }, []);
 
-  const observeElement = useCallback((element: HTMLDivElement | null, index: number) => {
-    if (element && observerRef.current && !loadedRowsRef.current.has(index)) {
-      element.setAttribute('data-row-index', index.toString());
-      observerRef.current.observe(element);
-    }
-  }, []);
-
-  const handleContentClick = async (content: Movie | TVShow) => {
-    try {
+  const handleContentClick = (content: Movie | TVShow) => {
     // If it has a title, it's a movie; if it has a name, it's a show
-      if ('title' in content) {
-        // Fetch complete movie details with cast/crew if not already present
-        if (!content.cast || !content.crew) {
-          console.log('Fetching complete movie details for:', content.title);
-          const completeMovie = await api.getMovieDetails(content.id);
-          setSelectedMovie(completeMovie.data);
-        } else {
-          setSelectedMovie(content as Movie);
-        }
-      } else {
-        // For TV shows, fetch complete details if needed
-        if (!content.cast || !content.crew) {
-          console.log('Fetching complete show details for:', content.name);
-          const completeShow = await api.getShowDetails(content.id);
-          setSelectedShow(completeShow.data as any);
-        } else {
-          setSelectedShow(content as any);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching complete details:', error);
-      // Fallback to original content if fetch fails
     if ('title' in content) {
       setSelectedMovie(content as Movie);
     } else {
-        setSelectedShow(content as any);
-      }
+      setSelectedShow(content as TVShow);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-black">
-      {/* Announcement Bar */}
-      <AnnouncementBar />
-      
-      {/* Hero Section */}
-      <HeroSection items={heroMovies} loading={heroLoading} onItemClick={handleContentClick} />
-      
-      {/* Movie Rows with Lazy Loading and Ads */}
-      <div className="relative z-10 -mt-32 space-y-12 pb-16">
-        {/* Continue Watching Section */}
-        <ContinueWatching onItemClick={handleContentClick} />
-        
-        {movieRows.map((row, index) => (
-          <div key={row.title}>
-            <div ref={(el) => observeElement(el, index)}>
-              <MovieRow
-                title={row.title}
-                movies={row.movies}
-                loading={row.loading}
-                onItemClick={handleContentClick}
-              />
-            </div>
-            
-            {/* Add ads after specific sections */}
-            {index === 0 && ( // After Trending Now
-              <div className="px-4 md:px-12 mt-8">
-                <AdBanner adKey="mainPageAd1" className="max-w-4xl mx-auto" />
-              </div>
-            )}
-            {index === 2 && ( // After Top Rated
-              <div className="px-4 md:px-12 mt-8">
-                <AdBanner adKey="mainPageAd2" className="max-w-4xl mx-auto" />
-              </div>
-            )}
-            {index === 3 && ( // After Trending TV Shows
-              <div className="px-4 md:px-12 mt-8">
-                <AdBanner adKey="mainPageAd3" className="max-w-4xl mx-auto" />
-              </div>
-            )}
-          </div>
-        ))}
-        
-        {/* Final ad at the bottom */}
-        <div className="px-4 md:px-12">
-          <AdBanner adKey="mainPageAd4" className="max-w-4xl mx-auto" />
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 text-lg">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
-      
-      {/* Floating Social Buttons */}
-      <FloatingSocialButtons />
+    );
+  }
 
-      {/* Footer */}
-      <Footer />
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <section className="w-full">
+        <HeroSlider 
+          items={[...trendingMovies, ...trendingShows].slice(0, 5)}
+          onItemClick={handleContentClick}
+        />
+      </section>
+
+      {/* Content Sections */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 space-y-12 py-8">
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            <section>
+              <MovieCarousel
+                title="Trending Movies"
+                items={trendingMovies}
+                onItemClick={handleContentClick}
+              />
+            </section>
+
+            {/* Ad after Trending Movies */}
+            {adminSettings?.ads?.mainPageAd1?.enabled && (
+              <div className="max-w-4xl mx-auto">
+                <AdBanner 
+                  adKey="mainPageAd1"
+                  imageUrl={adminSettings.ads.mainPageAd1.imageUrl}
+                  clickUrl={adminSettings.ads.mainPageAd1.clickUrl}
+                  enabled={adminSettings.ads.mainPageAd1.enabled}
+                />
+              </div>
+            )}
+
+            <section>
+              <MovieCarousel
+                title="Popular Movies"
+                items={popularMovies}
+                onItemClick={handleContentClick}
+              />
+            </section>
+
+            {/* Ad after Popular Movies */}
+            {adminSettings?.ads?.mainPageAd2?.enabled && (
+              <div className="max-w-4xl mx-auto">
+                <AdBanner 
+                  adKey="mainPageAd2"
+                  imageUrl={adminSettings.ads.mainPageAd2.imageUrl}
+                  clickUrl={adminSettings.ads.mainPageAd2.clickUrl}
+                  enabled={adminSettings.ads.mainPageAd2.enabled}
+                />
+              </div>
+            )}
+
+            <section>
+              <MovieCarousel
+                title="Trending TV Shows"
+                items={trendingShows}
+                onItemClick={handleContentClick}
+              />
+            </section>
+
+            {/* Ad after Trending TV Shows */}
+            {adminSettings?.ads?.mainPageAd3?.enabled && (
+              <div className="max-w-4xl mx-auto">
+                <AdBanner 
+                  adKey="mainPageAd3"
+                  imageUrl={adminSettings.ads.mainPageAd3.imageUrl}
+                  clickUrl={adminSettings.ads.mainPageAd3.clickUrl}
+                  enabled={adminSettings.ads.mainPageAd3.enabled}
+                />
+              </div>
+            )}
+
+            <section>
+              <MovieCarousel
+                title="Popular TV Shows"
+                items={popularShows}
+                onItemClick={handleContentClick}
+              />
+            </section>
+
+            {/* Final ad at the bottom */}
+            {adminSettings?.ads?.mainPageAd4?.enabled && (
+              <div className="max-w-4xl mx-auto">
+                <AdBanner 
+                  adKey="mainPageAd4"
+                  imageUrl={adminSettings.ads.mainPageAd4.imageUrl}
+                  clickUrl={adminSettings.ads.mainPageAd4.clickUrl}
+                  enabled={adminSettings.ads.mainPageAd4.enabled}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Movie Modal */}
       {selectedMovie && (

@@ -7,7 +7,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080
+    port: 8080,
   },
   build: {
     outDir: 'dist',
@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
+    // This line ensures VITE_BACKEND_URL is hardcoded into your final build
     'import.meta.env.VITE_BACKEND_URL': JSON.stringify(process.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'),
-  }
+  },
 }));

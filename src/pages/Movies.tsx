@@ -1,79 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { Filter, Grid, List } from 'lucide-react';
+import { Filter, Grid, List, Star, Calendar, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import MovieCard from '@/components/MovieCard';
-import MovieRow from '@/components/MovieRow';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MovieModal from '@/components/MovieModal';
-import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
-import FloatingSocialButtons from '@/components/FloatingSocialButtons';
+import MovieCarousel from '@/components/MovieCarousel';
 import AdBanner from '@/components/AdBanner';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import api, { Movie } from '@/services/api';
-import { Loader2, Film, Tv, Zap, Heart, Star } from 'lucide-react';
-
-interface Genre {
-  id: number;
-  name: string;
-}
+import { Loader2 } from 'lucide-react';
 
 const Movies = () => {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [genres, setGenres] = useState<Genre[]>([]);
-  const [movies, setMovies] = useState<Movie[]>([]);
+  const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
+  const [selectedGenre, setSelectedGenre] = useState<string>('all');
+  const [sortBy, setSortBy] = useState('popularity.desc');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
   const [upcomingMovies, setUpcomingMovies] = useState<Movie[]>([]);
+  const [filteredMovies, setFilteredMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [selectedGenre, setSelectedGenre] = useState<string>('');
-  const [sortBy, setSortBy] = useState('popularity.desc');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
-    fetchGenres();
-    fetchInitialMovies();
-  }, []);
-
-  useEffect(() => {
-    if (selectedGenre || sortBy !== 'popularity.desc') {
-      fetchFilteredMovies(1, true);
-    }
-  }, [selectedGenre, sortBy]);
-
-  useEffect(() => {
-    fetchInitialMovies();
-  }, []);
-
-  // Handle custom events from "More Like This" clicks
-  useEffect(() => {
-    const handleOpenMovieModal = (event: any) => {
-      const movie = event.detail;
-      handleMovieClick(movie);
-    };
-
-    window.addEventListener('openMovieModal', handleOpenMovieModal);
-
-    return () => {
-      window.removeEventListener('openMovieModal', handleOpenMovieModal);
-    };
-  }, []);
-
     const fetchGenres = async () => {
       try {
         const genresResponse = await api.getMovieGenres();
-      setGenres(genresResponse.data?.genres || []);
+        setGenres(genresResponse.data?.genres || []);
       } catch (err) {
         setError('Failed to load genres');
         console.error(err);
       }
     };
+    fetchGenres();
+  }, []);
 
-  const fetchInitialMovies = async () => {
+  const fetchMovies = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -90,15 +52,11 @@ const Movies = () => {
         new Date(movie.release_date) > today
       ) || [];
 
-      const trendingResults = trending.data?.results || [];
-      const popularResults = popular.data?.results || [];
-      const topRatedResults = topRated.data?.results || [];
-
-      setTrendingMovies(trendingResults);
-      setPopularMovies(popularResults);
-      setTopRatedMovies(topRatedResults);
+      setTrendingMovies(trending.data?.results || []);
+      setPopularMovies(popular.data?.results || []);
+      setTopRatedMovies(topRated.data?.results || []);
       setUpcomingMovies(actuallyUpcoming);
-      setMovies(popularResults); // Default to popular movies
+      setFilteredMovies(popular.data?.results || []); // Default to popular movies
     } catch (error) {
       console.error('Error fetching movies:', error);
       setError('Failed to load movies. Please try again later.');
@@ -106,89 +64,59 @@ const Movies = () => {
     setLoading(false);
   };
 
-  const fetchFilteredMovies = async (page: number, reset: boolean = false) => {
-    try {
-      if (reset) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
+  useEffect(() => {
+    fetchMovies();
+  }, []);
 
+  useEffect(() => {
+    if (selectedGenre !== 'all' || sortBy !== 'popularity.desc') {
+      applyFilters();
+    }
+  }, [selectedGenre, sortBy]);
+
+  const applyFilters = async () => {
+    try {
       let response;
-      if (selectedGenre) {
+      if (selectedGenre !== 'all') {
         response = await api.getMoviesByGenre(parseInt(selectedGenre));
+        setFilteredMovies(response.data?.results || []);
       } else {
         // Use existing data based on sort
         switch (sortBy) {
           case 'vote_average.desc':
-            response = { data: { results: topRatedMovies, total_pages: 1 } };
+            setFilteredMovies(topRatedMovies);
             break;
           case 'release_date.desc':
-            response = { data: { results: upcomingMovies, total_pages: 1 } };
+            setFilteredMovies(upcomingMovies);
             break;
           case 'title.asc':
             const sortedAsc = [...popularMovies].sort((a, b) => a.title.localeCompare(b.title));
-            response = { data: { results: sortedAsc, total_pages: 1 } };
+            setFilteredMovies(sortedAsc);
             break;
           case 'title.desc':
             const sortedDesc = [...popularMovies].sort((a, b) => b.title.localeCompare(a.title));
-            response = { data: { results: sortedDesc, total_pages: 1 } };
+            setFilteredMovies(sortedDesc);
             break;
           default:
-            response = { data: { results: popularMovies, total_pages: 1 } };
+            setFilteredMovies(popularMovies);
             break;
         }
       }
-
-      if (reset) {
-        setMovies(response.data?.results || []);
-        setCurrentPage(1);
-      } else {
-        setMovies(prev => [...prev, ...(response.data?.results || [])]);
-      }
-      
-      setTotalPages(response.data?.total_pages || 1);
     } catch (error) {
-      console.error('Error fetching filtered movies:', error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
-
-  const loadMoreMovies = () => {
-    if (currentPage < totalPages && !loadingMore) {
-      const nextPage = currentPage + 1;
-      setCurrentPage(nextPage);
-      fetchFilteredMovies(nextPage, false);
+      console.error('Error applying filters:', error);
     }
   };
 
   const handleGenreChange = (genreId: string) => {
     setSelectedGenre(genreId);
-    setCurrentPage(1);
   };
 
-  const handleSortChange = (sort: string) => {
-    setSortBy(sort);
-    setCurrentPage(1);
+  const handleSortChange = (sortValue: string) => {
+    setSortBy(sortValue);
   };
 
-  const handleMovieClick = async (movie: Movie) => {
-    try {
-      // Fetch complete movie details with cast/crew if not already present
-      if (!movie.cast || !movie.crew) {
-        console.log('Fetching complete movie details for:', movie.title);
-        const completeMovie = await api.getMovieDetails(movie.id);
-        setSelectedMovie(completeMovie.data);
-      } else {
-        setSelectedMovie(movie);
-      }
-    } catch (error) {
-      console.error('Error fetching complete movie details:', error);
-      // Fallback to original movie if fetch fails
+  const handleMovieClick = (movie: Movie) => {
     setSelectedMovie(movie);
-    }
   };
 
   if (error) {
@@ -208,135 +136,171 @@ const Movies = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <AnnouncementBar />
-      <Navigation />
-      
-      <div className="pt-20 pb-8">
-        <div className="max-w-7xl mx-auto px-4 md:px-12">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Movies</h1>
-            <p className="text-xl text-gray-400">Discover amazing movies from around the world</p>
-          </div>
-
-          {/* Filters */}
-          <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8">
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              <div className="flex flex-col sm:flex-row gap-4 flex-1">
-        {/* Genre Filter */}
-                <div className="flex items-center gap-2">
-                  <Filter size={20} className="text-gray-400" />
-                  <select
-                    value={selectedGenre}
-                    onChange={(e) => handleGenreChange(e.target.value)}
-                    className="bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="">All Genres</option>
-          {genres.map((genre) => (
-                      <option key={genre.id} value={genre.id.toString()}>
-              {genre.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Sort Filter */}
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-400 text-sm">Sort by:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => handleSortChange(e.target.value)}
-                    className="bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="popularity.desc">Most Popular</option>
-                    <option value="vote_average.desc">Highest Rated</option>
-                    <option value="release_date.desc">Newest First</option>
-                    <option value="title.asc">A-Z</option>
-                    <option value="title.desc">Z-A</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-2 bg-gray-800 rounded-md p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'grid' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <Grid size={18} />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'list' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <List size={18} />
-                </button>
-              </div>
-            </div>
+    <div className="min-h-screen bg-background pt-20">
+      <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Movies</h1>
+          <p className="text-xl text-gray-400">Discover amazing movies from around the world</p>
         </div>
 
-          {/* Movies Ad */}
-          <div className="mb-8">
-            <AdBanner adKey="moviesPageAd" className="max-w-4xl mx-auto" />
-          </div>
+        {/* Top Ad */}
+        <div className="mb-8">
+          <AdBanner 
+            adKey="moviesPageAd" 
+            imageUrl="https://picsum.photos/400/200?random=movies-top"
+            clickUrl="https://example.com"
+            enabled={true}
+          />
+        </div>
 
-          {/* Movies Grid */}
+        {/* Enhanced Filters */}
+        <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8 border border-gray-700/50">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              {/* Genre Filter */}
+              <div className="flex items-center gap-2">
+                <Filter size={20} className="text-gray-400" />
+                <Select value={selectedGenre} onValueChange={handleGenreChange}>
+                  <SelectTrigger className="w-[180px] bg-gray-800 border-gray-700 text-white">
+                    <SelectValue placeholder="All Genres" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genres</SelectItem>
+                    {genres.map((genre) => (
+                      <SelectItem key={genre.id} value={genre.id.toString()}>
+                        {genre.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Sort Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 text-sm">Sort by:</span>
+                <Select value={sortBy} onValueChange={handleSortChange}>
+                  <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="popularity.desc">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp size={16} />
+                        Most Popular
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="vote_average.desc">
+                      <div className="flex items-center gap-2">
+                        <Star size={16} />
+                        Highest Rated
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="release_date.desc">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} />
+                        Newest First
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="title.asc">A-Z</SelectItem>
+                    <SelectItem value="title.desc">Z-A</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2 bg-gray-800 rounded-md p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded transition-colors ${
+                  viewMode === 'grid' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Grid size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded transition-colors ${
+                  viewMode === 'list' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <List size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+
         {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {Array.from({ length: 20 }).map((_, index) => (
-                <div key={index} className="w-full h-96 bg-gray-800 rounded-lg animate-pulse" />
-              ))}
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <Loader2 className="w-12 h-12 animate-spin text-primary" />
           </div>
         ) : (
           <>
-              <div className={`grid gap-6 ${
-                viewMode === 'grid' 
-                  ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
-                  : 'grid-cols-1 md:grid-cols-2'
-              }`}>
-                {movies.map((movie) => (
-                  <MovieCard 
-                    key={movie.id} 
-                    movie={movie} 
-                    size={viewMode === 'list' ? 'large' : 'medium'}
-                onItemClick={handleMovieClick}
-              />
-                ))}
-              </div>
+            {/* Filtered Results */}
+            {(selectedGenre !== 'all' || sortBy !== 'popularity.desc') && (
+              <section className="mb-12">
+                <MovieCarousel 
+                  title={`Filtered Movies ${selectedGenre !== 'all' ? `- ${genres.find(g => g.id.toString() === selectedGenre)?.name}` : ''}`}
+                  items={filteredMovies}
+                  onItemClick={handleMovieClick}
+                />
+              </section>
+            )}
 
-              {/* Load More Button */}
-              {currentPage < totalPages && (
-                <div className="text-center mt-12">
-                  <button
-                    onClick={loadMoreMovies}
-                    disabled={loadingMore}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-8 py-3 rounded-md font-medium transition-colors duration-200 disabled:cursor-not-allowed"
-                  >
-                    {loadingMore ? 'Loading...' : 'Load More Movies'}
-                  </button>
-                </div>
-              )}
+            {/* Default Sections */}
+            {selectedGenre === 'all' && sortBy === 'popularity.desc' && (
+              <>
+                <section className="mb-12">
+                  <MovieCarousel 
+                    title="Trending Movies"
+                    items={trendingMovies}
+                    onItemClick={handleMovieClick}
+                  />
+                </section>
+
+                <section className="mb-12">
+                  <MovieCarousel 
+                    title="Popular Movies"
+                    items={popularMovies}
+                    onItemClick={handleMovieClick}
+                  />
+                </section>
+
+                <section className="mb-12">
+                  <MovieCarousel 
+                    title="Top Rated Movies"
+                    items={topRatedMovies}
+                    onItemClick={handleMovieClick}
+                  />
+                </section>
+
+                <section className="mb-12">
+                  <MovieCarousel 
+                    title="Upcoming Movies"
+                    items={upcomingMovies}
+                    onItemClick={handleMovieClick}
+                  />
+                </section>
+              </>
+            )}
           </>
         )}
 
-          {/* Bottom Movies Ad */}
-          <div className="mt-12">
-            <AdBanner adKey="moviesPageBottomAd" className="max-w-4xl mx-auto" />
-          </div>
+        {/* Bottom Ad */}
+        <div className="mt-12">
+          <AdBanner 
+            adKey="moviesPageBottomAd" 
+            imageUrl="https://picsum.photos/400/200?random=movies-bottom"
+            clickUrl="https://example.com"
+            enabled={true}
+          />
         </div>
       </div>
-
-      {/* Footer */}
-      <Footer />
 
       {/* Movie Modal */}
       {selectedMovie && (
@@ -345,9 +309,6 @@ const Movies = () => {
           onClose={() => setSelectedMovie(null)}
         />
       )}
-      
-      {/* Floating Social Buttons */}
-      <FloatingSocialButtons />
     </div>
   );
 };

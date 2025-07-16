@@ -1,348 +1,338 @@
 import React, { useState, useEffect } from 'react';
-import { Search as SearchIcon, Filter, X } from 'lucide-react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { Search as SearchIcon, Filter, X, Star, Calendar, TrendingUp } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import MovieCard from '@/components/MovieCard';
-import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
-import FloatingSocialButtons from '@/components/FloatingSocialButtons';
-import AdBanner from '@/components/AdBanner';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import MovieModal from '@/components/MovieModal';
 import TVShowPlayer from '@/components/TVShowPlayer';
+import AdBanner from '@/components/AdBanner';
 import api, { Movie, TVShow } from '@/services/api';
 import { Loader2 } from 'lucide-react';
 
-interface Genre {
-  id: number;
-  name: string;
-}
-
 const Search = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [genres, setGenres] = useState<Genre[]>([]);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<(Movie | TVShow)[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Movie | TVShow | null>(null);
+  const [mediaType, setMediaType] = useState('multi');
   const [filters, setFilters] = useState({
-    genre: '',
+    genre: 'all',
     year: '',
-    rating: '',
+    rating: 'any',
+    sortBy: 'relevance'
   });
-  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-  // Initial load - fetch genres and search history
   useEffect(() => {
-    fetchGenres();
-    loadSearchHistory();
-  }, []);
-
-  // Initial load - search if query param exists
-  useEffect(() => {
-    const queryParam = searchParams.get('q');
-    if (queryParam) {
-      setSearchQuery(queryParam);
-      searchMovies(queryParam);
-    }
-  }, []);
-
-  // Update URL when search query changes
-  useEffect(() => {
-    const delayedSearch = setTimeout(() => {
-      if (searchQuery.trim()) {
-        setSearchParams({ q: searchQuery });
-        searchMovies(searchQuery);
-        setShowHistory(false);
+    const delayDebounceFn = setTimeout(() => {
+      if (query.trim()) {
+        performSearch();
       } else {
-        setSearchParams({});
-        setMovies([]);
-        setShowHistory(searchHistory.length > 0);
+        setResults([]);
       }
-    }, 300);
+    }, 500);
 
-    return () => clearTimeout(delayedSearch);
-  }, [searchQuery]);
+    return () => clearTimeout(delayDebounceFn);
+  }, [query, mediaType, filters]);
 
-  const fetchGenres = async () => {
-    try {
-      const response = await api.getMovieGenres();
-      setGenres(response.data?.genres || []);
-    } catch (error) {
-      console.error('Error fetching genres:', error);
-    }
-  };
-
-  const loadSearchHistory = () => {
-    const history = localStorage.getItem('searchHistory');
-    if (history) {
-      const parsedHistory = JSON.parse(history);
-      setSearchHistory(parsedHistory);
-      setShowHistory(parsedHistory.length > 0 && !searchQuery);
-    }
-  };
-
-  const saveSearchHistory = (query: string) => {
-    const newHistory = [query, ...searchHistory.filter(item => item !== query)].slice(0, 5);
-    setSearchHistory(newHistory);
-    localStorage.setItem('searchHistory', JSON.stringify(newHistory));
-  };
-
-  const searchMovies = async (query: string = searchQuery) => {
+  const performSearch = async () => {
     if (!query.trim()) return;
-
-      try {
-        setLoading(true);
-      const response = await api.search(query);
-      setMovies(response.data?.results || []);
-      saveSearchHistory(query);
+    
+    setLoading(true);
+    try {
+      const response = await api.search(query, mediaType);
+      let searchResults = response.data?.results || [];
+      
+      // Apply filters
+      if (filters.year) {
+        searchResults = searchResults.filter(item => {
+          const releaseDate = item.release_date || item.first_air_date;
+          return releaseDate && new Date(releaseDate).getFullYear().toString() === filters.year;
+        });
+      }
+      
+      if (filters.rating && filters.rating !== 'any') {
+        searchResults = searchResults.filter(item => 
+          item.vote_average >= parseFloat(filters.rating)
+        );
+      }
+      
+      // Apply sorting
+      switch (filters.sortBy) {
+        case 'rating':
+          searchResults.sort((a, b) => b.vote_average - a.vote_average);
+          break;
+        case 'date':
+          searchResults.sort((a, b) => {
+            const dateA = new Date(a.release_date || a.first_air_date || 0);
+            const dateB = new Date(b.release_date || b.first_air_date || 0);
+            return dateB.getTime() - dateA.getTime();
+          });
+          break;
+        case 'title':
+          searchResults.sort((a, b) => {
+            const titleA = (a.title || a.name || '').toLowerCase();
+            const titleB = (b.title || b.name || '').toLowerCase();
+            return titleA.localeCompare(titleB);
+          });
+          break;
+        default:
+          // Relevance - keep original order
+          break;
+      }
+      
+      setResults(searchResults);
     } catch (error) {
-      console.error('Error searching movies:', error);
+      console.error('Search error:', error);
+      setResults([]);
       } finally {
         setLoading(false);
       }
     };
 
-  const handleSearchFromHistory = (query: string) => {
-    setSearchQuery(query);
-    setShowHistory(false);
-  };
-
-  const clearSearchHistory = () => {
-    setSearchHistory([]);
-    localStorage.removeItem('searchHistory');
-    setShowHistory(false);
-  };
-
   const clearSearch = () => {
-    setSearchQuery('');
-    setMovies([]);
-    setShowHistory(searchHistory.length > 0);
+    setQuery('');
+    setResults([]);
+    setFilters({
+      genre: 'all',
+      year: '',
+      rating: '',
+      sortBy: 'relevance'
+    });
   };
 
-  const handleSearchFocus = () => {
-    if (!searchQuery && searchHistory.length > 0) {
-      setShowHistory(true);
-    }
+  const handleItemClick = (item: Movie | TVShow) => {
+    setSelectedItem(item);
   };
 
-  const handleSearchBlur = () => {
-    // Delay hiding to allow clicks on history items
-    setTimeout(() => setShowHistory(false), 200);
+  const clearFilters = () => {
+    setFilters({
+      genre: 'all',
+      year: '',
+      rating: '',
+      sortBy: 'relevance'
+    });
   };
+
+  const hasActiveFilters = filters.genre !== 'all' || filters.year || filters.rating || filters.sortBy !== 'relevance';
 
   return (
-    <div className="min-h-screen bg-black">
-      <AnnouncementBar />
-      <Navigation inModalView={false} />
-      <div className="pt-20 pb-8">
-        <div className="max-w-7xl mx-auto px-4 md:px-12">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Search</h1>
-            <p className="text-xl text-gray-400">Find your favorite movies and shows</p>
+    <div className="min-h-screen bg-background pt-20">
+      <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Search</h1>
+          <p className="text-xl text-gray-400">Find your favorite movies and TV shows</p>
         </div>
 
-          {/* Top Ad */}
-          <div className="mb-8">
-            <AdBanner adKey="searchTopAd" className="max-w-4xl mx-auto" />
+        {/* Top Ad */}
+        <div className="mb-8">
+          <AdBanner 
+            adKey="searchPageAd" 
+            imageUrl="https://picsum.photos/400/200?random=search-top"
+            clickUrl="https://example.com"
+            enabled={true}
+          />
       </div>
 
-          {/* Search Bar */}
-          <div className="relative mb-8">
-            <div className="relative">
-              <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={24} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={handleSearchFocus}
-                onBlur={handleSearchBlur}
-                placeholder="Search for movies..."
-                className="w-full bg-gray-900/50 backdrop-blur-sm text-white pl-12 pr-12 py-4 rounded-xl border border-gray-700 focus:border-blue-500 focus:outline-none text-lg transition-all duration-300"
+        {/* Search Bar */}
+        <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/80 rounded-lg border border-gray-800">
+          <div className="flex gap-4 items-center flex-wrap w-full">
+            <div className="relative flex-1 min-w-[300px]">
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search movies, TV shows, or people..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-white pl-10 pr-10 h-12 text-lg"
               />
-              {searchQuery && (
-                <button
+              {query && (
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={clearSearch}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1 h-6 w-6"
                 >
-                  <X size={24} />
-                </button>
+                  <X className="w-4 h-4" />
+                </Button>
               )}
             </div>
-
-            {/* Search Suggestions/History */}
-            {showHistory && searchHistory.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-b-xl mt-1 z-50">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-medium text-gray-400">Recent Searches</h3>
-                    <button
-                      onClick={clearSearchHistory}
-                      className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                  {searchHistory.map((query, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSearchFromHistory(query)}
-                      className="block w-full text-left px-3 py-2 text-gray-300 hover:bg-gray-800 rounded-md text-sm transition-colors"
-                    >
-                      <SearchIcon className="inline w-4 h-4 mr-2 text-gray-500" />
-                      {query}
-                    </button>
-                  ))}
+            <Select value={mediaType} onValueChange={setMediaType}>
+              <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white h-12">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="multi">All</SelectItem>
+                <SelectItem value="movie">Movies</SelectItem>
+                <SelectItem value="tv">TV Shows</SelectItem>
+                <SelectItem value="person">People</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-            )}
-          </div>
 
-          {/* Filters Toggle */}
-          <div className="mb-6">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors"
-            >
-              <Filter size={18} />
-              Filters
-              {showFilters && <span className="text-xs bg-blue-600 px-2 py-1 rounded-full ml-2">Open</span>}
-            </button>
-          </div>
-
-          {/* Filters Panel */}
-          {showFilters && (
-            <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8 border border-gray-700">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Genre</label>
-                  <select
-                    value={filters.genre}
-                    onChange={(e) => setFilters({ ...filters, genre: e.target.value })}
-                    className="w-full bg-gray-800 text-white px-3 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="">All Genres</option>
-                    {genres.map((genre) => (
-                      <option key={genre.id} value={genre.id.toString()}>
-                        {genre.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Year</label>
-                  <input
-                    type="number"
-                    value={filters.year}
-                    onChange={(e) => setFilters({ ...filters, year: e.target.value })}
-                    placeholder="e.g. 2023"
-                    min="1900"
-                    max={new Date().getFullYear()}
-                    className="w-full bg-gray-800 text-white px-3 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Rating</label>
-                  <select
-                    value={filters.rating}
-                    onChange={(e) => setFilters({ ...filters, rating: e.target.value })}
-                    className="w-full bg-gray-800 text-white px-3 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="">Any Rating</option>
-                    <option value="9">9+ Stars</option>
-                    <option value="8">8+ Stars</option>
-                    <option value="7">7+ Stars</option>
-                    <option value="6">6+ Stars</option>
-                  </select>
-                </div>
+        {/* Advanced Filters Panel */}
+        <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8 border border-gray-700/50">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Year</label>
+                <Input
+                  type="number"
+                  value={filters.year}
+                  onChange={(e) => setFilters({ ...filters, year: e.target.value })}
+                  placeholder="e.g. 2023"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Minimum Rating</label>
+                <Select value={filters.rating} onValueChange={(value) => setFilters({ ...filters, rating: value })}>
+                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                    <SelectValue placeholder="Any rating" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any rating</SelectItem>
+                    <SelectItem value="9">9+ Stars</SelectItem>
+                    <SelectItem value="8">8+ Stars</SelectItem>
+                    <SelectItem value="7">7+ Stars</SelectItem>
+                    <SelectItem value="6">6+ Stars</SelectItem>
+                    <SelectItem value="5">5+ Stars</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Sort By</label>
+                <Select value={filters.sortBy} onValueChange={(value) => setFilters({ ...filters, sortBy: value })}>
+                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="relevance">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp size={16} />
+                        Relevance
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="rating">
+                      <div className="flex items-center gap-2">
+                        <Star size={16} />
+                        Rating
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="date">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} />
+                        Release Date
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="title">Title A-Z</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end">
+                <Button
+                  onClick={clearFilters}
+                  variant="outline"
+                  className="w-full bg-gray-800 hover:bg-gray-700 text-white border-gray-700"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            </div>
+          </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="w-8 h-8 animate-spin" />
           </div>
         )}
 
-        {/* Search Results */}
-          {loading ? (
-            <div className="text-center py-12">
-              <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
-              <p className="text-gray-400">Searching...</p>
+        {/* Results */}
+        {!loading && query && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">
+                Search Results for "{query}"
+              </h2>
+              <span className="text-gray-400">
+                {results.length} result{results.length !== 1 ? 's' : ''}
+              </span>
             </div>
-          ) : movies.length > 0 ? (
-            <>
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white">
-                  Search Results for "{searchQuery}"
-            </h2>
-                <p className="text-gray-400 mt-1">{movies.length} movies found</p>
+
+            {results.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400 text-lg">No results found for "{query}"</p>
+                <p className="text-gray-500 mt-2">Try adjusting your search terms or filters</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {movies.map((movie) => (
-                  <MovieCard 
-                    key={movie.id} 
-                    movie={movie}
-                    size="medium"
-                    onItemClick={(item) => {
-                      // Handle both movies and TV shows
-                      if ('title' in item) {
-                        setSelectedMovie(item as any);
-                      } else {
-                        setSelectedShow(item as any);
-                      }
-                    }}
-                  />
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {results.map((item) => (
+                  <div
+                    key={item.id}
+                    className="group cursor-pointer"
+                    onClick={() => handleItemClick(item)}
+                  >
+                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-800">
+                      <img
+                        src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
+                        alt={'title' in item ? item.title : item.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/300x450/666666/ffffff?text=No+Image';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="absolute top-2 right-2 bg-black/80 text-yellow-400 px-2 py-1 rounded text-xs font-semibold">
+                        {item.vote_average?.toFixed(1) || 'N/A'}
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <h3 className="text-sm font-medium text-white truncate">
+                        {'title' in item ? item.title : item.name}
+                      </h3>
+                      <p className="text-xs text-gray-400">
+                        {('release_date' in item ? item.release_date : item.first_air_date)
+                          ? new Date('release_date' in item ? item.release_date : item.first_air_date).getFullYear()
+                          : 'Unknown'}
+                      </p>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </>
-          ) : searchQuery ? (
-            <div className="text-center py-12">
-              <div className="text-gray-500 mb-4">
-                <SearchIcon size={48} className="mx-auto mb-4" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-400 mb-2">No results found</h3>
-              <p className="text-gray-500">Try searching with different keywords or check your spelling</p>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <div className="text-gray-500 mb-4">
-                <SearchIcon size={48} className="mx-auto mb-4" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-400 mb-2">Start searching</h3>
-              <p className="text-gray-500">Enter a movie title, actor, or keyword to get started</p>
-            </div>
-          )}
-          
-          {/* Bottom Ad */}
-          <div className="mt-12">
-            <AdBanner adKey="searchBottomAd" className="max-w-4xl mx-auto" />
+            )}
           </div>
-        </div>
+        )}
+
+        {/* Bottom Ad */}
+        <div className="mt-12">
+          <AdBanner 
+            adKey="searchPageBottomAd" 
+            imageUrl="https://picsum.photos/400/200?random=search-bottom"
+            clickUrl="https://example.com"
+            enabled={true}
+            />
+          </div>
       </div>
 
-      {/* Footer */}
-      <Footer />
-
       {/* Movie Modal */}
-      {selectedMovie && (
+      {selectedItem && 'title' in selectedItem && (
         <MovieModal
-          movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
+          movie={selectedItem as Movie}
+          onClose={() => setSelectedItem(null)}
         />
       )}
 
       {/* TV Show Player */}
-      {selectedShow && (
+      {selectedItem && 'name' in selectedItem && (
         <TVShowPlayer
-          show={selectedShow}
-          onClose={() => setSelectedShow(null)}
+          show={selectedItem as TVShow}
+          onClose={() => setSelectedItem(null)}
         />
       )}
-      
-      {/* Floating Social Buttons */}
-      <FloatingSocialButtons />
     </div>
   );
 };
 
-export default Search;
+export default Search; 

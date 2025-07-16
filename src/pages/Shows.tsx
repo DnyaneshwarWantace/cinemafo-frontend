@@ -1,231 +1,293 @@
 import React, { useEffect, useState } from 'react';
-import { Filter, Grid, List } from 'lucide-react';
+import { Filter, Grid, List, Star, Calendar, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import MovieRow from '@/components/MovieRow';
-import MovieCard from '@/components/MovieCard';
-import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
-import FloatingSocialButtons from '@/components/FloatingSocialButtons';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MovieModal from '@/components/MovieModal';
+import MovieCarousel from '@/components/MovieCarousel';
+import TVShowPlayer from '@/components/TVShowPlayer';
 import AdBanner from '@/components/AdBanner';
-import AnnouncementBar from '@/components/AnnouncementBar';
-import api, { TVShow } from '@/services/api';
-import { Loader2, Tv, Film, Zap, Heart, Star } from 'lucide-react';
-import TVShowPlayer from "@/components/TVShowPlayer";
+import api, { Movie, TVShow } from '@/services/api';
+import { Loader2 } from 'lucide-react';
 
 const Shows = () => {
-  const [shows, setShows] = useState<TVShow[]>([]);
+  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
   const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
-  const [selectedGenre, setSelectedGenre] = useState<string>('');
+  const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [sortBy, setSortBy] = useState('popularity.desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
+  const [trendingShows, setTrendingShows] = useState<TVShow[]>([]);
+  const [popularShows, setPopularShows] = useState<TVShow[]>([]);
+  const [topRatedShows, setTopRatedShows] = useState<TVShow[]>([]);
+  const [filteredShows, setFilteredShows] = useState<TVShow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const fetchGenres = async () => {
       try {
-        setLoading(true);
-        const [genresResponse, showsResponse] = await Promise.all([
-          api.getTVGenres(),
-          api.getPopularShows()
-        ]);
-        
-        const popularResults = showsResponse.data?.results || [];
-        
+        const genresResponse = await api.getTVGenres();
         setGenres(genresResponse.data?.genres || []);
-        setShows(popularResults);
       } catch (err) {
-        setError('Failed to load TV shows');
+        setError('Failed to load genres');
         console.error(err);
-      } finally {
-        setLoading(false);
       }
     };
+    fetchGenres();
+  }, []);
 
-    fetchInitialData();
+  const fetchShows = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [trending, popular, topRated] = await Promise.all([
+        api.getTrendingShows(),
+        api.getPopularShows(),
+        api.getTopRatedShows()
+      ]);
+
+      setTrendingShows(trending.data?.results || []);
+      setPopularShows(popular.data?.results || []);
+      setTopRatedShows(topRated.data?.results || []);
+      setFilteredShows(popular.data?.results || []); // Default to popular shows
+    } catch (error) {
+      console.error('Error fetching shows:', error);
+      setError('Failed to load TV shows. Please try again later.');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchShows();
   }, []);
 
   useEffect(() => {
-    const fetchShowsByGenre = async () => {
-      if (!selectedGenre) return;
-      try {
-        setLoading(true);
-        const response = await api.getShowsByGenre(parseInt(selectedGenre));
-        setShows(response.data?.results || []);
-      } catch (err) {
-        setError('Failed to load TV shows');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    if (selectedGenre !== 'all' || sortBy !== 'popularity.desc') {
+      applyFilters();
+    }
+  }, [selectedGenre, sortBy]);
+
+  const applyFilters = async () => {
+    try {
+      let response;
+      if (selectedGenre !== 'all') {
+        response = await api.getShowsByGenre(parseInt(selectedGenre));
+        setFilteredShows(response.data?.results || []);
+      } else {
+        // Use existing data based on sort
+        switch (sortBy) {
+          case 'vote_average.desc':
+            setFilteredShows(topRatedShows);
+            break;
+          case 'first_air_date.desc':
+            const sortedByDate = [...popularShows].sort((a, b) => 
+              new Date(b.first_air_date).getTime() - new Date(a.first_air_date).getTime()
+            );
+            setFilteredShows(sortedByDate);
+            break;
+          case 'name.asc':
+            const sortedAsc = [...popularShows].sort((a, b) => a.name.localeCompare(b.name));
+            setFilteredShows(sortedAsc);
+            break;
+          case 'name.desc':
+            const sortedDesc = [...popularShows].sort((a, b) => b.name.localeCompare(a.name));
+            setFilteredShows(sortedDesc);
+            break;
+          default:
+            setFilteredShows(popularShows);
+            break;
+        }
       }
-    };
-    fetchShowsByGenre();
-  }, [selectedGenre]);
+    } catch (error) {
+      console.error('Error applying filters:', error);
+    }
+  };
 
   const handleGenreChange = (genreId: string) => {
     setSelectedGenre(genreId);
   };
 
-  const handleSortChange = (sort: string) => {
-    setSortBy(sort);
-    // Apply sorting logic here if needed
+  const handleSortChange = (sortValue: string) => {
+    setSortBy(sortValue);
   };
 
-  const handleShowClick = async (item: TVShow) => {
-    try {
-      // Fetch complete show details with cast/crew if not already present
-      if (!item.cast || !item.crew) {
-        console.log('Fetching complete show details for:', item.name);
-        const completeShow = await api.getShowDetails(item.id);
-        setSelectedShow(completeShow.data as any);
-      } else {
-        setSelectedShow(item);
-      }
-    } catch (error) {
-      console.error('Error fetching complete show details:', error);
-      // Fallback to original show if fetch fails
-    setSelectedShow(item);
-    }
+  const handleShowClick = (show: TVShow) => {
+    setSelectedShow(show);
   };
-
-  // Handle custom events from "More Like This" clicks
-  useEffect(() => {
-    const handleOpenShowModal = (event: any) => {
-      const show = event.detail;
-      handleShowClick(show);
-    };
-
-    window.addEventListener('openShowModal', handleOpenShowModal);
-
-    return () => {
-      window.removeEventListener('openShowModal', handleOpenShowModal);
-    };
-  }, []);
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-red-500">{error}</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 text-lg">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <AnnouncementBar />
-      <Navigation />
-
-      <div className="pt-20 pb-8">
-        <div className="max-w-7xl mx-auto px-4 md:px-12">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">TV Shows</h1>
-            <p className="text-xl text-gray-400">Discover amazing TV shows and series from around the world</p>
-          </div>
-
-          {/* Filters */}
-          <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8">
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              <div className="flex flex-col sm:flex-row gap-4 flex-1">
-      {/* Genre Filter */}
-                <div className="flex items-center gap-2">
-                  <Filter size={20} className="text-gray-400" />
-                  <select
-                    value={selectedGenre}
-                    onChange={(e) => handleGenreChange(e.target.value)}
-                    className="bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="">All Genres</option>
-          {genres.map((genre) => (
-                      <option key={genre.id} value={genre.id.toString()}>
-              {genre.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Sort Filter */}
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-400 text-sm">Sort by:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => handleSortChange(e.target.value)}
-                    className="bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="popularity.desc">Most Popular</option>
-                    <option value="vote_average.desc">Highest Rated</option>
-                    <option value="first_air_date.desc">Newest First</option>
-                    <option value="name.asc">A-Z</option>
-                    <option value="name.desc">Z-A</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-2 bg-gray-800 rounded-md p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'grid' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <Grid size={18} />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'list' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <List size={18} />
-                </button>
-              </div>
-            </div>
+    <div className="min-h-screen bg-background pt-20">
+      <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">TV Shows</h1>
+          <p className="text-xl text-gray-400">Discover amazing TV shows and series from around the world</p>
         </div>
 
-          {/* Shows Ad */}
-          <div className="mb-8">
-            <AdBanner adKey="showsPageAd" className="max-w-4xl mx-auto" />
-          </div>
+        {/* Top Ad */}
+        <div className="mb-8">
+          <AdBanner 
+            adKey="showsPageAd" 
+            imageUrl="https://picsum.photos/400/200?random=shows-top"
+            clickUrl="https://example.com"
+            enabled={true}
+          />
+        </div>
 
-          {/* Shows Grid */}
+        {/* Enhanced Filters */}
+        <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8 border border-gray-700/50">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+      {/* Genre Filter */}
+              <div className="flex items-center gap-2">
+                <Filter size={20} className="text-gray-400" />
+                <Select value={selectedGenre} onValueChange={handleGenreChange}>
+                  <SelectTrigger className="w-[180px] bg-gray-800 border-gray-700 text-white">
+                    <SelectValue placeholder="All Genres" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genres</SelectItem>
+                    {genres.map((genre) => (
+                      <SelectItem key={genre.id} value={genre.id.toString()}>
+              {genre.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Sort Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 text-sm">Sort by:</span>
+                <Select value={sortBy} onValueChange={handleSortChange}>
+                  <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="popularity.desc">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp size={16} />
+                        Most Popular
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="vote_average.desc">
+                      <div className="flex items-center gap-2">
+                        <Star size={16} />
+                        Highest Rated
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="first_air_date.desc">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} />
+                        Newest First
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="name.asc">A-Z</SelectItem>
+                    <SelectItem value="name.desc">Z-A</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2 bg-gray-800 rounded-md p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded transition-colors ${
+                  viewMode === 'grid' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Grid size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded transition-colors ${
+                  viewMode === 'list' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <List size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+
         {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {Array.from({ length: 20 }).map((_, index) => (
-                <div key={index} className="w-full h-96 bg-gray-800 rounded-lg animate-pulse" />
-              ))}
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <Loader2 className="w-12 h-12 animate-spin text-primary" />
           </div>
         ) : (
-            <div className={`grid gap-6 ${
-              viewMode === 'grid' 
-                ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
-                : 'grid-cols-1 md:grid-cols-2'
-            }`}>
-              {shows.map((show) => (
-                <MovieCard 
-                  key={show.id} 
-                  movie={{...show, title: show.name, release_date: show.first_air_date}} 
-                  size={viewMode === 'list' ? 'large' : 'medium'}
-                  onItemClick={(movie) => handleShowClick({...show, name: ('title' in movie ? movie.title : movie.name) || show.name})}
-                />
-              ))}
-            </div>
-          )}
+          <>
+            {/* Filtered Results */}
+            {(selectedGenre !== 'all' || sortBy !== 'popularity.desc') && (
+              <section className="mb-12">
+          <MovieCarousel
+                  title={`Filtered Shows ${selectedGenre !== 'all' ? `- ${genres.find(g => g.id.toString() === selectedGenre)?.name}` : ''}`}
+                  items={filteredShows}
+            onItemClick={handleShowClick}
+          />
+              </section>
+            )}
 
-          {/* Bottom Shows Ad */}
-          <div className="mt-12">
-            <AdBanner adKey="showsPageBottomAd" className="max-w-4xl mx-auto" />
-          </div>
+            {/* Default Sections */}
+            {selectedGenre === 'all' && sortBy === 'popularity.desc' && (
+              <>
+                <section className="mb-12">
+              <MovieCarousel
+                    title="Trending TV Shows"
+                    items={trendingShows}
+                onItemClick={handleShowClick}
+              />
+                </section>
+
+                <section className="mb-12">
+              <MovieCarousel
+                    title="Popular TV Shows"
+                    items={popularShows}
+                onItemClick={handleShowClick}
+              />
+                </section>
+
+                <section className="mb-12">
+              <MovieCarousel
+                    title="Top Rated TV Shows"
+                    items={topRatedShows}
+                onItemClick={handleShowClick}
+              />
+                </section>
+              </>
+            )}
+          </>
+        )}
+
+        {/* Bottom Ad */}
+        <div className="mt-12">
+          <AdBanner 
+            adKey="showsPageBottomAd" 
+            imageUrl="https://picsum.photos/400/200?random=shows-bottom"
+            clickUrl="https://example.com"
+            enabled={true}
+          />
         </div>
       </div>
-
-      {/* Footer */}
-      <Footer />
 
       {/* TV Show Player */}
       {selectedShow && (
@@ -234,9 +296,6 @@ const Shows = () => {
           onClose={() => setSelectedShow(null)}
         />
       )}
-      
-      {/* Floating Social Buttons */}
-      <FloatingSocialButtons />
     </div>
   );
 };
