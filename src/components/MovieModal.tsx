@@ -11,6 +11,7 @@ import VideoPlayer from "./VideoPlayer";
 import TVShowPlayer from "./TVShowPlayer";
 import AdBanner from "./AdBanner";
 import api, { Movie, TVShow, cacheUtils } from "@/services/api";
+import useAdminSettings from '@/hooks/useAdminSettings';
 
 interface MovieModalProps {
   movie: Movie;
@@ -25,6 +26,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
   const [isOpen, setIsOpen] = useState(false);
   const [relatedMovies, setRelatedMovies] = useState<Movie[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
+  const { settings: adminSettings } = useAdminSettings();
 
   // No need to check for detailed data anymore - backend provides complete data
   console.log(`✅ Movie ${initialMovie.id} loaded with complete data from backend`);
@@ -481,14 +483,16 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
             )}
 
             {/* Ad Banner */}
-            <div className="mt-8">
-              <AdBanner 
-                adKey="movieModalAd" 
-                imageUrl="https://picsum.photos/400/200?random=movie-modal"
-                clickUrl="https://example.com"
-                enabled={true}
-              />
-            </div>
+            {adminSettings?.ads?.playerPageAd?.enabled && (
+              <div className="mt-8">
+                <AdBanner
+                  adKey="playerPageAd"
+                  imageUrl={adminSettings.ads.playerPageAd.imageUrl}
+                  clickUrl={adminSettings.ads.playerPageAd.clickUrl}
+                  enabled={adminSettings.ads.playerPageAd.enabled}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

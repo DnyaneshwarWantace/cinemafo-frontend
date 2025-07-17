@@ -10,6 +10,7 @@ import {
   DollarSign, Award, Building2, MapPin, Languages, Info, Film, Globe, Hash, Tags,
   ChevronDown, ChevronUp
 } from 'lucide-react';
+import useAdminSettings from '@/hooks/useAdminSettings';
 
 interface TVShowPlayerProps {
   show: TVShow;
@@ -27,6 +28,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [relatedShows, setRelatedShows] = useState<TVShow[]>([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
+  const { settings: adminSettings } = useAdminSettings();
 
   // Debug: Log the show data being passed
   console.log('TVShowPlayer received show data:', show);
@@ -434,66 +436,78 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
               </div>
             </div>
 
-              {/* Related Shows Section */}
-              {relatedShows.length > 0 && (
-                <div className="mt-8">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
-                <Film className="w-5 h-5" />
-                Related Shows
-              </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-                    {relatedShows.map((relatedShow) => (
-                      <div
-                        key={relatedShow.id}
-                        className="cursor-pointer group"
-                        onClick={() => {
-                          // Update the show data
-                          const updatedShow = { ...relatedShow, media_type: 'tv' };
-                          // Close current modal and open new one
-                          onClose();
-                          setTimeout(() => {
-                            // This would need to be handled by the parent component
-                            // For now, we'll just log the action
-                            console.log('Opening related show:', updatedShow);
-                          }, 300);
-                        }}
-                      >
-                        <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
-                          <img
-                            src={`https://image.tmdb.org/t/p/w500${relatedShow.poster_path}`}
-                            alt={relatedShow.name}
-                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                            loading="lazy"
-                          />
-                          {/* Play Button Overlay */}
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <div className="bg-black/60 rounded-full p-2 sm:p-3 flex items-center justify-center">
-                              <Play className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
-                            </div>
-                          </div>
-                          {/* Rating Badge */}
-                          {relatedShow.vote_average > 0 && (
-                            <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-black/80 text-yellow-400 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs font-semibold flex items-center gap-1">
-                              <Star className="w-2 h-2 sm:w-3 sm:h-3" />
-                              {relatedShow.vote_average.toFixed(1)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="mt-2">
-                          <h4 className="text-white font-medium text-xs sm:text-sm line-clamp-2">
-                                {relatedShow.name}
-                          </h4>
-                          <p className="text-gray-400 text-xs mt-1">
-                                {formatReleaseDate(relatedShow.first_air_date)}
-                              </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+            {/* Ad Banner (same as MovieModal, backend-driven) */}
+            {adminSettings?.ads?.playerPageAd?.enabled && (
+              <div className="mt-8">
+                <AdBanner
+                  adKey="playerPageAd"
+                  imageUrl={adminSettings.ads.playerPageAd.imageUrl}
+                  clickUrl={adminSettings.ads.playerPageAd.clickUrl}
+                  enabled={adminSettings.ads.playerPageAd.enabled}
+                />
+              </div>
+            )}
 
-              {/* Season Selector */}
+            {/* Related Shows Section */}
+            {relatedShows.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
+                  <Film className="w-5 h-5" />
+                  Related Shows
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                  {relatedShows.map((relatedShow) => (
+                    <div
+                      key={relatedShow.id}
+                      className="cursor-pointer group"
+                      onClick={() => {
+                        // Update the show data
+                        const updatedShow = { ...relatedShow, media_type: 'tv' };
+                        // Close current modal and open new one
+                        onClose();
+                        setTimeout(() => {
+                          // This would need to be handled by the parent component
+                          // For now, we'll just log the action
+                          console.log('Opening related show:', updatedShow);
+                        }, 300);
+                      }}
+                    >
+                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
+                        <img
+                          src={`https://image.tmdb.org/t/p/w500${relatedShow.poster_path}`}
+                          alt={relatedShow.name}
+                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                        {/* Play Button Overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="bg-black/60 rounded-full p-2 sm:p-3 flex items-center justify-center">
+                            <Play className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+                          </div>
+                        </div>
+                        {/* Rating Badge */}
+                        {relatedShow.vote_average > 0 && (
+                          <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-black/80 text-yellow-400 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs font-semibold flex items-center gap-1">
+                            <Star className="w-2 h-2 sm:w-3 sm:h-3" />
+                            {relatedShow.vote_average.toFixed(1)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <h4 className="text-white font-medium text-xs sm:text-sm line-clamp-2">
+                              {relatedShow.name}
+                        </h4>
+                        <p className="text-gray-400 text-xs mt-1">
+                              {formatReleaseDate(relatedShow.first_air_date)}
+                            </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Season Selector */}
             <Separator className="my-6 bg-gray-700" />
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-4 text-white text-center lg:text-left">Select Season</h3>
@@ -520,7 +534,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
               </div>
             </div>
 
-              {/* Episodes List */}
+            {/* Episodes List */}
             <div>
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
                 Season {selectedSeason} Episodes
