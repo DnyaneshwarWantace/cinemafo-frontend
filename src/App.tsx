@@ -53,23 +53,23 @@ function App() {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Layout>
+        <Layout>
             <main className="min-h-screen bg-black">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/movies" element={<Movies />} />
-                <Route path="/shows" element={<Shows />} />
-                <Route path="/search" element={<Search />} />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/movies" element={<Movies />} />
+            <Route path="/shows" element={<Shows />} />
+            <Route path="/search" element={<Search />} />
                 <Route path="/watchlist" element={<Watchlist />} />
                 <Route path="/admin" element={
                   <ErrorBoundary>
                     <AdminPanel />
                   </ErrorBoundary>
                 } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
             </main>
-          </Layout>
+        </Layout>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

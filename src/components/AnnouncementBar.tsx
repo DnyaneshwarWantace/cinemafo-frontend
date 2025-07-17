@@ -7,7 +7,7 @@ const AnnouncementBar = () => {
   const { settings: adminSettings } = useAdminSettings();
 
   // Default values for better UX
-  const isEnabled = adminSettings?.appearance?.announcementBar?.enabled ?? false;
+  const isEnabled = adminSettings?.appearance?.announcementBar?.enabled ?? true;
   const text = adminSettings?.appearance?.announcementBar?.text || 'Welcome to CINEMA.FO - Your ultimate streaming destination!';
   const backgroundColor = adminSettings?.appearance?.announcementBar?.backgroundColor || '#1e40af';
   const textColor = adminSettings?.appearance?.announcementBar?.textColor || '#ffffff';
@@ -46,13 +46,13 @@ const AnnouncementBar = () => {
           >
             {text}
           </p>
-          <button
-            onClick={handleClose}
+        <button
+          onClick={handleClose}
             className="absolute right-4 text-white hover:text-gray-200 transition-colors"
             style={{ color: textColor }}
-          >
+        >
             <X size={16} />
-          </button>
+        </button>
         </div>
       </div>
       

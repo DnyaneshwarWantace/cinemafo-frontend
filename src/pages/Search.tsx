@@ -9,8 +9,10 @@ import AdBanner from '@/components/AdBanner';
 import api, { Movie, TVShow } from '@/services/api';
 import { Loader2 } from 'lucide-react';
 import useAdminSettings from '@/hooks/useAdminSettings';
+import { useSearchParams } from 'react-router-dom';
 
 const Search = () => {
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<(Movie | TVShow)[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,6 +24,14 @@ const Search = () => {
     rating: 'any',
     sortBy: 'relevance'
   });
+
+  // Read query from URL on component mount
+  useEffect(() => {
+    const urlQuery = searchParams.get('q');
+    if (urlQuery) {
+      setQuery(decodeURIComponent(urlQuery));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -128,14 +138,14 @@ const Search = () => {
 
         {/* Top Ad */}
         {adminSettings?.ads?.searchTopAd?.enabled && (
-          <div className="mb-8">
-            <AdBanner 
+        <div className="mb-8">
+          <AdBanner 
               adKey="searchTopAd"
               imageUrl={adminSettings.ads.searchTopAd.imageUrl}
               clickUrl={adminSettings.ads.searchTopAd.clickUrl}
               enabled={adminSettings.ads.searchTopAd.enabled}
-            />
-          </div>
+          />
+      </div>
         )}
 
         {/* Search Bar */}
@@ -147,6 +157,14 @@ const Search = () => {
                 placeholder="Search movies, TV shows, or people..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && query.trim()) {
+                    e.preventDefault();
+                    // Update URL with new search query
+                    const newUrl = `/search?q=${encodeURIComponent(query.trim())}`;
+                    window.history.pushState({}, '', newUrl);
+                  }
+                }}
                 className="bg-gray-800 border-gray-700 text-white pl-10 pr-10 h-12 text-lg"
               />
               {query && (
@@ -311,8 +329,8 @@ const Search = () => {
 
         {/* Bottom Ad */}
         {adminSettings?.ads?.searchBottomAd?.enabled && (
-          <div className="mt-12">
-            <AdBanner 
+        <div className="mt-12">
+          <AdBanner 
               adKey="searchBottomAd"
               imageUrl={adminSettings.ads.searchBottomAd.imageUrl}
               clickUrl={adminSettings.ads.searchBottomAd.clickUrl}
