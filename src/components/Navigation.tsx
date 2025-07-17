@@ -125,7 +125,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                     to={item.path}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 hover:scale-105 ${
                       isActive
-                        ? 'bg-gray-800 text-white shadow-lg'
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
                         : 'text-gray-300 hover:bg-white/10 hover:text-white'
                     }`}
                   >

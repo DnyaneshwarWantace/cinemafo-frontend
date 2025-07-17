@@ -727,6 +727,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       if (settingsMenu && 
           !settingsMenu.contains(event.target as Node) && 
           !settingsButton?.contains(event.target as Node)) {
+        // Only close if clicking outside both the menu and the settings button
         setShowSettingsMenu(false);
       }
     };
@@ -863,7 +864,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onMouseMove={() => setShowControls(true)}
         onMouseLeave={() => isPlaying && setShowControls(false)}
         onDoubleClick={handleScreenDoubleClick}
-        onClick={() => {
+        onClick={(e) => {
+          // Don't toggle if clicking on controls or settings
+          if (e.target instanceof Element) {
+            const target = e.target as Element;
+            if (target.closest('.controls-overlay') || target.closest('.settings-menu')) {
+              return;
+            }
+          }
+          
+          // Single click to toggle play/pause
+          if (currentSource?.type === 'hls') {
+            togglePlayPause();
+          }
           // Focus the container when clicked to ensure keyboard events work
           if (playerContainerRef.current) {
             playerContainerRef.current.focus();
@@ -975,7 +988,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {/* Controls Overlay */}
         {showControls && currentSource?.type === 'hls' && (
           <div 
-            className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20 pointer-events-none"
+            className="controls-overlay absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20 pointer-events-none"
             style={{ pointerEvents: 'none' }}
           >
             {/* Back Button - Top Left */}
@@ -999,9 +1012,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             >
               {/* Empty for now - removed duplicate controls */}
                 </div>
-
-            {/* Settings Menu */}
-            {renderSettingsMenu()}
             
             {/* Bottom Controls */}
             <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
@@ -1039,19 +1049,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={togglePlayPause}
+                    onClick={skipBackward}
                     className="text-white hover:bg-white/20"
                   >
-                    {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+                    <SkipBack className="w-5 h-5" />
                   </Button>
                   
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={skipBackward}
+                    onClick={togglePlayPause}
                     className="text-white hover:bg-white/20"
                   >
-                    <SkipBack className="w-5 h-5" />
+                    {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
                   </Button>
                   
                   <Button
@@ -1151,7 +1161,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </Button>
         )}
 
-        {/* Settings Menu */}
+        {/* Settings Menu - Outside controls overlay */}
         {renderSettingsMenu()}
       </div>
 
