@@ -695,7 +695,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
     
     setCurrentQuality(levelIndex);
-    setShowSettingsMenu(false);
   };
 
   // Format quality label
@@ -738,6 +737,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [showSettingsMenu]);
 
+  // Settings menu hover timeout
+  const settingsTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  const handleSettingsMouseEnter = () => {
+    if (settingsTimeoutRef.current) {
+      clearTimeout(settingsTimeoutRef.current);
+    }
+  };
+
+  const handleSettingsMouseLeave = () => {
+    settingsTimeoutRef.current = setTimeout(() => {
+      setShowSettingsMenu(false);
+    }, 2000); // 2 second delay
+  };
+
   // Settings menu UI
   const renderSettingsMenu = () => {
     if (!showSettingsMenu) return null;
@@ -746,13 +760,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       <div 
         className="settings-menu absolute bottom-20 right-4 bg-black/90 backdrop-blur-xl rounded-xl border border-white/10 p-4 w-64 space-y-4 z-50"
         onClick={(e) => e.stopPropagation()}
-        onMouseEnter={() => {
-          // Reset auto-close timer when user interacts with menu
-          const timer = setTimeout(() => {
-            setShowSettingsMenu(false);
-          }, 5000);
-          return () => clearTimeout(timer);
-        }}
+        onMouseEnter={handleSettingsMouseEnter}
+        onMouseLeave={handleSettingsMouseLeave}
       >
         {/* Settings Tabs */}
         <div className="flex space-x-2 border-b border-white/10 pb-2">
@@ -809,7 +818,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 key={speed}
                 onClick={() => {
                   handleSpeedChange(speed);
-                  setShowSettingsMenu(false);
                 }}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${playbackSpeed === speed ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
               >
@@ -828,7 +836,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 key={track.id}
                 onClick={() => {
                   handleAudioTrackChange(track.id.toString());
-                  setShowSettingsMenu(false);
                 }}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${selectedAudioTrack === track.id ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
               >
@@ -917,7 +924,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         {/* Pause Screen Overlay with Logo */}
         {!isPlaying && currentSource?.type === 'hls' && (
-          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center pointer-events-none">
             <div className="text-center mb-8">
               {/* Logo */}
               <img 
@@ -933,7 +940,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         {/* Loading Overlay */}
         {loading && (
-          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-white">Loading video...</p>
@@ -943,7 +950,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         {/* Error Overlay */}
         {error && (
-          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <div className="text-center max-w-md">
                               <p className="text-blue-400 mb-4">{error}</p>
               <div className="flex gap-4 justify-center">
@@ -968,7 +975,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {/* Controls Overlay */}
         {showControls && currentSource?.type === 'hls' && (
           <div 
-            className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/80 pointer-events-none"
+            className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20 pointer-events-none"
             style={{ pointerEvents: 'none' }}
           >
             {/* Back Button - Top Left */}

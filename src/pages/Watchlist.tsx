@@ -75,7 +75,7 @@ const Watchlist = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pt-20">
+      <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -86,7 +86,7 @@ const Watchlist = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-20">
+    <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20">
       <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 py-8">
         {/* Header */}
         <div className="mb-8">

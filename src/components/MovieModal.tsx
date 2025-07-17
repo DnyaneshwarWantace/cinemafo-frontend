@@ -10,6 +10,7 @@ import {
 import VideoPlayer from "./VideoPlayer";
 import TVShowPlayer from "./TVShowPlayer";
 import AdBanner from "./AdBanner";
+import MovieCarousel from "./MovieCarousel";
 import api, { Movie, TVShow, cacheUtils } from "@/services/api";
 import useAdminSettings from '@/hooks/useAdminSettings';
 
@@ -197,8 +198,8 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
               className="w-full h-full object-cover"
               />
           {/* Mobile-optimized gradients */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/95 via-black/80 to-black/70 sm:bg-gradient-to-r sm:from-black/90 sm:via-black/60 sm:to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/40 sm:bg-gradient-to-r sm:from-black/60 sm:via-black/30 sm:to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         </div>
       </div>
 
@@ -210,10 +211,10 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with Back Button */}
-        <div className="absolute top-0 left-0 right-0 z-20 h-16 bg-gradient-to-b from-black/80 to-transparent">
+        <div className="absolute top-0 left-0 right-0 z-20 h-16 bg-gradient-to-b from-black/50 to-transparent">
           <button
             onClick={handleClose}
-            className="absolute top-4 left-4 bg-black/80 hover:bg-black text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm border border-white/20 shadow-lg"
+            className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm border border-white/20 shadow-lg"
             aria-label="Close modal"
           >
             <ArrowLeft className="w-6 h-6" />
@@ -256,19 +257,19 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                         )}
                       </Badge>
                     )}
-                  <Badge variant="outline" className="flex items-center gap-1 bg-gray-800/80 text-white border-gray-600 text-xs sm:text-sm">
+                  <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-gray-500 text-xs sm:text-sm">
                       <Calendar className="w-3 h-3" />
                     <span className="hidden sm:inline">{formatReleaseDate(movie.release_date || movie.first_air_date)}</span>
                     <span className="sm:hidden">{new Date(movie.release_date || movie.first_air_date).getFullYear()}</span>
                     </Badge>
                 {movie.runtime && (
-                    <Badge variant="outline" className="flex items-center gap-1 bg-gray-800/80 text-white border-gray-600 text-xs sm:text-sm">
+                    <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-gray-500 text-xs sm:text-sm">
                         <Clock className="w-3 h-3" />
                         {formatRuntime(movie.runtime)}
                       </Badge>
                     )}
                   {movie.genres?.slice(0, 3).map((genre: any) => (
-                    <Badge key={genre.id} variant="secondary" className="bg-gray-800/80 text-white text-xs sm:text-sm">
+                    <Badge key={genre.id} variant="secondary" className="bg-gray-700/60 text-white text-xs sm:text-sm">
                         {genre.name}
                       </Badge>
                     ))}
@@ -400,7 +401,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                         </h3>
                       <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                         {movie.keywords.slice(0, 8).map(keyword => (
-                          <Badge key={keyword.id} variant="outline" className="text-xs bg-gray-800/80 text-white border-gray-600">
+                          <Badge key={keyword.id} variant="outline" className="text-xs bg-gray-700/60 text-white border-gray-500">
                               {keyword.name}
                             </Badge>
                           ))}
@@ -418,49 +419,17 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                 <Film className="w-5 h-5" />
                   More Like This
               </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-                    {relatedMovies.map((relatedMovie) => (
-                      <div
-                        key={relatedMovie.id}
-                      className="cursor-pointer group"
-                        onClick={() => {
-                          setMovie(relatedMovie);
-                          setRelatedMovies([]);
-                          setLoadingRelated(false);
-                        }}
-                      >
-                        <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
-                          <img
-                            src={`https://image.tmdb.org/t/p/w500${relatedMovie.poster_path}`}
-                            alt={relatedMovie.title || relatedMovie.name}
-                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                            loading="lazy"
-                          />
-                          {/* Play Button Overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <div className="bg-black/60 rounded-full p-2 sm:p-3 flex items-center justify-center">
-                            <Play className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
-                          </div>
-                          </div>
-                          {/* Rating Badge */}
-                          {relatedMovie.vote_average > 0 && (
-                          <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-black/80 text-yellow-400 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs font-semibold flex items-center gap-1">
-                            <Star className="w-2 h-2 sm:w-3 sm:h-3" />
-                              {relatedMovie.vote_average.toFixed(1)}
-                            </div>
-                          )}
-                      </div>
-                      <div className="mt-2">
-                        <h4 className="text-white font-medium text-xs sm:text-sm line-clamp-2">
-                                {relatedMovie.title || relatedMovie.name}
-                        </h4>
-                        <p className="text-gray-400 text-xs mt-1">
-                                {formatReleaseDate(relatedMovie.release_date || relatedMovie.first_air_date)}
-                              </p>
-                            </div>
-                          </div>
-                  ))}
-                </div>
+                <MovieCarousel 
+                  title="More Like This"
+                  items={relatedMovies}
+                  onItemClick={(item) => {
+                    if ('title' in item) {
+                      setMovie(item as Movie);
+                      setRelatedMovies([]);
+                      setLoadingRelated(false);
+                    }
+                  }}
+                />
               </div>
             )}
 

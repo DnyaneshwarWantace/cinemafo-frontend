@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import VideoPlayer from './VideoPlayer';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Separator } from './ui/separator';
-import AdBanner from './AdBanner';
-import api, { TVShow, Season, Episode } from '@/services/api';
+import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { 
-  ChevronLeft, ChevronRight, Play, Calendar, Clock, Star, ArrowLeft, Users, 
-  DollarSign, Award, Building2, MapPin, Languages, Info, Film, Globe, Hash, Tags,
-  ChevronDown, ChevronUp
-} from 'lucide-react';
+  Play, Star, Calendar, Clock, Loader2, Film, Users, Globe, Info, DollarSign, 
+  Award, Building2, MapPin, Languages, Tags, ArrowLeft, ChevronLeft, ChevronRight
+} from "lucide-react";
+import VideoPlayer from "./VideoPlayer";
+import AdBanner from "./AdBanner";
+import MovieCarousel from "./MovieCarousel";
+import api, { Movie, TVShow, Episode } from "@/services/api";
 import useAdminSettings from '@/hooks/useAdminSettings';
 
 interface TVShowPlayerProps {
@@ -226,9 +227,9 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
               alt={show.name}
               className="w-full h-full object-cover"
             />
-          {/* Mobile-optimized gradients */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/95 via-black/80 to-black/70 sm:bg-gradient-to-r sm:from-black/90 sm:via-black/60 sm:to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
+          {/* Mobile-optimized gradients - lighter version */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/40 sm:bg-gradient-to-r sm:from-black/60 sm:via-black/30 sm:to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         </div>
       </div>
 
@@ -240,10 +241,10 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with Back Button */}
-        <div className="absolute top-0 left-0 right-0 z-20 h-16 bg-gradient-to-b from-black/80 to-transparent">
+        <div className="absolute top-0 left-0 right-0 z-20 h-16 bg-gradient-to-b from-black/50 to-transparent">
           <button
             onClick={handleClose}
-            className="absolute top-4 left-4 bg-black/80 hover:bg-black text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm border border-white/20 shadow-lg"
+            className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm border border-white/20 shadow-lg"
             aria-label="Close modal"
           >
             <ArrowLeft className="w-6 h-6" />
@@ -286,18 +287,18 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                       )}
                     </Badge>
                   )}
-                  <Badge variant="outline" className="flex items-center gap-1 bg-gray-800/80 text-white border-gray-600 text-xs sm:text-sm">
+                  <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-gray-500 text-xs sm:text-sm">
                     <Calendar className="w-3 h-3" />
                     <span className="hidden sm:inline">{formatReleaseDate(show.first_air_date)}</span>
                     <span className="sm:hidden">{new Date(show.first_air_date).getFullYear()}</span>
                   </Badge>
                   {showDetails?.number_of_seasons && (
-                    <Badge variant="outline" className="bg-gray-800/80 text-white border-gray-600 text-xs sm:text-sm">
+                    <Badge variant="outline" className="bg-gray-700/60 text-white border-gray-500 text-xs sm:text-sm">
                       {showDetails.number_of_seasons} Season{showDetails.number_of_seasons > 1 ? 's' : ''}
                     </Badge>
                   )}
                   {show.genres?.slice(0, 3).map((genre: any) => (
-                    <Badge key={genre.id} variant="secondary" className="bg-gray-800/80 text-white text-xs sm:text-sm">
+                    <Badge key={genre.id} variant="secondary" className="bg-gray-700/60 text-white text-xs sm:text-sm">
                       {genre.name}
                     </Badge>
                   ))}
@@ -331,37 +332,37 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                     </div>
                   )}
                   {showDetails?.status && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-gray-200">
                       <Info className="w-4 h-4 flex-shrink-0" />
                       <span className="truncate">Status: {showDetails.status}</span>
                     </div>
                   )}
                   {showDetails?.original_language && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-gray-200">
                       <Globe className="w-4 h-4 flex-shrink-0" />
                       <span className="truncate">Original Language: {showDetails.original_language.toUpperCase()}</span>
                     </div>
                   )}
                   {showDetails?.budget > 0 && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-gray-200">
                       <DollarSign className="w-4 h-4 flex-shrink-0" />
                       <span className="truncate">Budget: {formatMoney(showDetails.budget)}</span>
                     </div>
                   )}
                   {showDetails?.revenue > 0 && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-gray-200">
                       <Award className="w-4 h-4 flex-shrink-0" />
                       <span className="truncate">Revenue: {formatMoney(showDetails.revenue)}</span>
                     </div>
                   )}
                   {showDetails?.production_companies?.[0] && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-gray-200">
                       <Building2 className="w-4 h-4 flex-shrink-0" />
                       <span className="truncate">Studio: {showDetails.production_companies[0].name}</span>
                     </div>
                   )}
                   {showDetails?.production_countries?.length > 0 && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-gray-200">
                       <MapPin className="w-4 h-4 flex-shrink-0" />
                       <span className="truncate">
                         Countries: {showDetails.production_countries?.slice(0, 2).map(c => c.name).join(', ')}
@@ -370,7 +371,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                     </div>
                   )}
                   {showDetails?.spoken_languages?.length > 0 && (
-                    <div className="flex items-center gap-2 text-gray-300">
+                    <div className="flex items-center gap-2 text-gray-200">
                       <Languages className="w-4 h-4 flex-shrink-0" />
                       <span className="truncate">
                         Languages: {showDetails.spoken_languages?.slice(0, 2).map(l => l.name).join(', ')}
@@ -383,7 +384,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                 {/* Cast Section */}
                 {mainCast.length > 0 && (
                   <>
-                    <Separator className="my-6 bg-gray-700" />
+                    <Separator className="my-6 bg-gray-600" />
                     <div>
                       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
                         <Users className="w-5 h-5" />
@@ -417,7 +418,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                 {/* Keywords */}
                 {showDetails?.keywords?.length > 0 && (
                   <>
-                    <Separator className="my-6 bg-gray-700" />
+                    <Separator className="my-6 bg-gray-600" />
                     <div>
                       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
                         <Tags className="w-5 h-5" />
@@ -425,7 +426,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                       </h3>
                       <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                         {showDetails.keywords.slice(0, 8).map(keyword => (
-                          <Badge key={keyword.id} variant="outline" className="text-xs bg-gray-800/80 text-white border-gray-600">
+                          <Badge key={keyword.id} variant="outline" className="text-xs bg-gray-700/60 text-white border-gray-500">
                             {keyword.name}
                           </Badge>
                         ))}
@@ -455,79 +456,44 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                   <Film className="w-5 h-5" />
                   Related Shows
                 </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-                  {relatedShows.map((relatedShow) => (
-                    <div
-                      key={relatedShow.id}
-                      className="cursor-pointer group"
-                      onClick={() => {
-                        // Update the show data
-                        const updatedShow = { ...relatedShow, media_type: 'tv' };
-                        // Close current modal and open new one
-                        onClose();
-                        setTimeout(() => {
-                          // This would need to be handled by the parent component
-                          // For now, we'll just log the action
-                          console.log('Opening related show:', updatedShow);
-                        }, 300);
-                      }}
-                    >
-                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
-                        <img
-                          src={`https://image.tmdb.org/t/p/w500${relatedShow.poster_path}`}
-                          alt={relatedShow.name}
-                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                        />
-                        {/* Play Button Overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <div className="bg-black/60 rounded-full p-2 sm:p-3 flex items-center justify-center">
-                            <Play className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
-                          </div>
-                        </div>
-                        {/* Rating Badge */}
-                        {relatedShow.vote_average > 0 && (
-                          <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-black/80 text-yellow-400 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs font-semibold flex items-center gap-1">
-                            <Star className="w-2 h-2 sm:w-3 sm:h-3" />
-                            {relatedShow.vote_average.toFixed(1)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-2">
-                        <h4 className="text-white font-medium text-xs sm:text-sm line-clamp-2">
-                              {relatedShow.name}
-                        </h4>
-                        <p className="text-gray-400 text-xs mt-1">
-                              {formatReleaseDate(relatedShow.first_air_date)}
-                            </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <MovieCarousel 
+                  title="Related Shows"
+                  items={relatedShows}
+                  onItemClick={(item) => {
+                    if ('name' in item) {
+                      // Close current modal and open new one
+                      onClose();
+                      setTimeout(() => {
+                        // This would need to be handled by the parent component
+                        console.log('Opening related show:', item);
+                      }, 300);
+                    }
+                  }}
+                />
               </div>
             )}
 
             {/* Season Selector */}
-            <Separator className="my-6 bg-gray-700" />
+            <Separator className="my-6 bg-gray-600" />
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-4 text-white text-center lg:text-left">Select Season</h3>
               <div className="flex gap-2 flex-wrap justify-center lg:justify-start">
                 {seasons.map((season) => (
-                  <Button
-                    key={season.season_number}
-                    variant={selectedSeason === season.season_number ? "default" : "outline"}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log(`Season ${season.season_number} clicked`);
-                      setSelectedSeason(season.season_number);
-                    }}
-                    className={`min-w-[80px] sm:min-w-[100px] text-xs sm:text-sm ${
-                      selectedSeason === season.season_number 
-                        ? 'bg-white text-black hover:bg-gray-200' 
-                        : 'bg-gray-800/80 text-white border-gray-600 hover:bg-gray-700/80'
-                    }`}
-                  >
+                                      <Button
+                      key={season.season_number}
+                      variant={selectedSeason === season.season_number ? "default" : "outline"}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log(`Season ${season.season_number} clicked`);
+                        setSelectedSeason(season.season_number);
+                      }}
+                      className={`min-w-[80px] sm:min-w-[100px] text-xs sm:text-sm ${
+                        selectedSeason === season.season_number 
+                          ? 'bg-white text-black hover:bg-gray-200' 
+                          : 'bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60'
+                      }`}
+                    >
                     Season {season.season_number}
                   </Button>
                 ))}
@@ -547,12 +513,12 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                     {loading ? (
                       // Loading skeleton
                       Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-800/50 rounded-lg animate-pulse">
-                      <div className="w-24 sm:w-32 h-16 sm:h-20 bg-gray-700 rounded flex-shrink-0" />
+                    <div key={i} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-700/40 rounded-lg animate-pulse">
+                      <div className="w-24 sm:w-32 h-16 sm:h-20 bg-gray-600 rounded flex-shrink-0" />
                           <div className="flex-1">
-                        <div className="h-3 sm:h-4 bg-gray-700 rounded w-1/4 mb-2" />
-                        <div className="h-2 sm:h-3 bg-gray-700 rounded w-3/4 mb-2" />
-                        <div className="h-2 sm:h-3 bg-gray-700 rounded w-1/2" />
+                        <div className="h-3 sm:h-4 bg-gray-600 rounded w-1/4 mb-2" />
+                        <div className="h-2 sm:h-3 bg-gray-600 rounded w-3/4 mb-2" />
+                        <div className="h-2 sm:h-3 bg-gray-600 rounded w-1/2" />
                           </div>
                         </div>
                       ))
@@ -564,7 +530,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                       episodes.map((episode) => (
                         <button
                           key={episode.episode_number}
-                      className="w-full text-left flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer group focus:outline-none focus:ring-2 focus:ring-white/50"
+                      className="w-full text-left flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-700/40 rounded-lg hover:bg-gray-600/40 transition-colors cursor-pointer group focus:outline-none focus:ring-2 focus:ring-white/50"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();

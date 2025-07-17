@@ -41,26 +41,44 @@
 
 @layer base {
   :root {
-    --background: 220 13% 9%;
-    --foreground: 0 0% 95%;
-    --card: 220 13% 9%;
-    --card-foreground: 0 0% 95%;
-    --popover: 220 13% 9%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 0 0% 100%;
-    --primary-foreground: 220 13% 9%;
-    --secondary: 220 13% 18%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 220 13% 18%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 220 13% 18%;
-    --accent-foreground: 0 0% 95%;
-    --destructive: 217 91% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 18%;
-    --input: 220 13% 18%;
-    --ring: 217 91% 60%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 217.2 91.2% 59.8%;
+
     --radius: 0.5rem;
+
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -70,14 +88,14 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
-    background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #16213e 100%);
+    background: #000000;
     min-height: 100vh;
   }
 }
 
 @layer components {
   .loading-bar {
-    @apply fixed top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 z-50;
+    @apply fixed top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600/60 via-blue-500/60 to-blue-400/60 z-50;
     animation: loading 2s ease-in-out infinite;
   }
   
@@ -91,7 +109,7 @@
   
   .card-hover:hover {
     transform: scale(1.05);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   }
   
   .scrollbar-hide {
@@ -125,10 +143,10 @@
   }
   
   .netflix-quality-menu {
-    background: rgba(0,0,0,0.95);
+    background: rgba(0,0,0,0.85);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(59, 130, 246, 0.2);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
   }
   
   /* Hide scrollbars completely for trailer modal */
@@ -205,7 +223,7 @@
 .settings-menu {
   backdrop-filter: blur(20px);
   border: 1px solid rgba(59, 130, 246, 0.2);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
 /* Custom crystal triangle play button */

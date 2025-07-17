@@ -98,7 +98,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
 
   return (
     <>
-      <nav className={`fixed left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-gray-800/30 transition-all duration-150 h-[80px] ${
+      <nav className={`fixed left-0 right-0 z-50 bg-black backdrop-blur-xl transition-all duration-150 h-[80px] ${
         isAnnouncementEnabled && !inModalView && !isScrolled ? 'top-[48px]' : 'top-0'
       }`}>
         <div className="w-full h-full px-4 sm:px-6 lg:px-8">
@@ -125,7 +125,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                     to={item.path}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 hover:scale-105 ${
                       isActive
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
+                        ? 'bg-gray-800 text-white shadow-lg'
                         : 'text-gray-300 hover:bg-white/10 hover:text-white'
                     }`}
                   >
@@ -198,7 +198,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
           />
 
         {/* Mobile Menu */}
-          <div className="absolute top-0 right-0 w-64 h-full bg-gray-900/95 backdrop-blur-xl border-l border-gray-800/30">
+          <div className="absolute top-0 right-0 w-64 h-full bg-gray-900/95 backdrop-blur-xl">
             <div className="p-6">
               {/* Close button */}
               <div className="flex justify-end mb-6">

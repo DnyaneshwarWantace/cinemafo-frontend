@@ -230,108 +230,219 @@ const Index = () => {
       <LoadingBar isLoading={isLoading} />
       <Navigation />
       
-      {/* Hero Slider */}
-      <HeroSlider items={trendingMovies?.data?.results?.slice(0, 5) || []} onItemClick={handleMovieClick} />
+      {/* Hero Slider with Trending Overlay */}
+      <HeroSlider 
+        items={trendingMovies?.data?.results?.slice(0, 5) || []} 
+        onItemClick={handleMovieClick}
+        trendingMovies={trendingMovies?.data?.results || []}
+      />
 
-      <div className="container mx-auto px-4 py-8 pt-20">
-        {/* Home Page Ad */}
-        <div className="mb-8">
-          <AdBanner 
-            adKey="homePageAd" 
-            imageUrl="https://picsum.photos/400/200?random=home-page"
-            clickUrl="https://example.com"
-            enabled={true}
-          />
-        </div>
+      {/* Mobile Content */}
+      <div className="lg:hidden">
+        <div className="container mx-auto px-4 py-8 pt-0 bg-black">
+          {/* Home Page Ad */}
+          <div className="mb-8">
+            <AdBanner 
+              adKey="homePageAd" 
+              imageUrl="https://picsum.photos/400/200?random=home-page"
+              clickUrl="https://example.com"
+              enabled={true}
+            />
+          </div>
 
-        {/* Simple Netflix-style Discover Filters */}
-        <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/80 rounded-lg border border-gray-800">
-          <div className="flex gap-4 items-center flex-wrap">
-                  <Select value={contentType} onValueChange={setContentType}>
-              <SelectTrigger className="w-[140px] bg-gray-800 border-gray-700 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="movie">Movies</SelectItem>
-                <SelectItem value="tv">TV Shows</SelectItem>
-                    </SelectContent>
-                  </Select>
+          {/* Simple Netflix-style Discover Filters */}
+          <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/40 rounded-lg border border-gray-800">
+            <div className="flex gap-4 items-center flex-wrap">
+              <Select value={contentType} onValueChange={setContentType}>
+                <SelectTrigger className="w-[140px] bg-gray-800 border-gray-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="movie">Movies</SelectItem>
+                  <SelectItem value="tv">TV Shows</SelectItem>
+                </SelectContent>
+              </Select>
 
-                  <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-              <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
-                <SelectValue placeholder="Genre" />
-                    </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Genres</SelectItem>
-                      {(contentType === 'movie' ? genres : tvGenres)?.map((genre) => (
-                        <SelectItem key={genre.id} value={genre.id.toString()}>
-                          {genre.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Genre" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Genres</SelectItem>
+                  {(contentType === 'movie' ? genres : tvGenres)?.map((genre) => (
+                    <SelectItem key={genre.id} value={genre.id.toString()}>
+                      {genre.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-                  <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="popularity.desc">Popular</SelectItem>
-                <SelectItem value="vote_average.desc">Top Rated</SelectItem>
-                <SelectItem value="release_date.desc">Latest</SelectItem>
-                <SelectItem value="revenue.desc">Box Office</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="popularity.desc">Popular</SelectItem>
+                  <SelectItem value="vote_average.desc">Top Rated</SelectItem>
+                  <SelectItem value="release_date.desc">Latest</SelectItem>
+                  <SelectItem value="revenue.desc">Box Office</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      placeholder="Search movies & TV shows..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white pl-10 pr-10"
-                    />
-                    {searchQuery && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1 h-6 w-6"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search movies & TV shows..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-gray-800 border-gray-700 text-white pl-10 pr-10"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1 h-6 w-6"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
+
+          {/* Filtered Results */}
+          {(selectedGenre !== 'all' || searchQuery) && filteredContent?.results && (
+            <MovieSection 
+              title={searchQuery ? `Search Results for "${searchQuery}"` : `${contentType === 'movie' ? 'Movies' : 'TV Shows'} - ${genres.find(g => g.id.toString() === selectedGenre)?.name || tvGenres.find(g => g.id.toString() === selectedGenre)?.name}`}
+              movies={filteredContent.results}
+              isLarge={true}
+            />
+          )}
+
+          {/* Movie Sections */}
+          {!searchQuery && selectedGenre === 'all' && (
+            <>
+              <MovieSection title="Trending Movies" movies={trendingMovies?.data?.results || []} isLarge={true} />
+              <MovieSection title="Top Rated Movies" movies={topRatedMovies?.data?.results || []} />
+              <MovieSection title="Popular Movies" movies={popularMovies?.data?.results || []} />
+              <MovieSection title="Trending TV Shows" movies={trendingTv?.data?.results || []} />
+            </>
+          )}
+
+          {/* Bottom Ad */}
+          <div className="mt-12">
+            <AdBanner 
+              adKey="homePageBottomAd" 
+              imageUrl="https://picsum.photos/400/200?random=home-bottom"
+              clickUrl="https://example.com"
+              enabled={true}
+            />
+          </div>
         </div>
+      </div>
 
-        {/* Filtered Results */}
-        {(selectedGenre !== 'all' || searchQuery) && filteredContent?.results && (
-          <MovieSection 
-            title={searchQuery ? `Search Results for "${searchQuery}"` : `${contentType === 'movie' ? 'Movies' : 'TV Shows'} - ${genres.find(g => g.id.toString() === selectedGenre)?.name || tvGenres.find(g => g.id.toString() === selectedGenre)?.name}`}
-            movies={filteredContent.results}
-            isLarge={true}
-          />
-        )}
+      {/* Desktop Content */}
+      <div className="hidden lg:block">
+        <div className="container mx-auto px-4 py-8 bg-black">
+          {/* Home Page Ad */}
+          <div className="mb-8">
+            <AdBanner 
+              adKey="homePageAd" 
+              imageUrl="https://picsum.photos/400/200?random=home-page"
+              clickUrl="https://example.com"
+              enabled={true}
+            />
+          </div>
 
-        {/* Movie Sections */}
-        {!searchQuery && selectedGenre === 'all' && (
-          <>
-            <MovieSection title="Trending Movies" movies={trendingMovies?.data?.results || []} isLarge={true} />
-            <MovieSection title="Top Rated Movies" movies={topRatedMovies?.data?.results || []} />
-            <MovieSection title="Popular Movies" movies={popularMovies?.data?.results || []} />
-            <MovieSection title="Trending TV Shows" movies={trendingTv?.data?.results || []} />
-          </>
-        )}
+          {/* Simple Netflix-style Discover Filters */}
+          <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/40 rounded-lg border border-gray-800">
+            <div className="flex gap-4 items-center flex-wrap">
+              <Select value={contentType} onValueChange={setContentType}>
+                <SelectTrigger className="w-[140px] bg-gray-800 border-gray-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="movie">Movies</SelectItem>
+                  <SelectItem value="tv">TV Shows</SelectItem>
+                </SelectContent>
+              </Select>
 
-        {/* Bottom Ad */}
-        <div className="mt-12">
-          <AdBanner 
-            adKey="homePageBottomAd" 
-            imageUrl="https://picsum.photos/400/200?random=home-bottom"
-            clickUrl="https://example.com"
-            enabled={true}
-          />
+              <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Genre" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Genres</SelectItem>
+                  {(contentType === 'movie' ? genres : tvGenres)?.map((genre) => (
+                    <SelectItem key={genre.id} value={genre.id.toString()}>
+                      {genre.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="popularity.desc">Popular</SelectItem>
+                  <SelectItem value="vote_average.desc">Top Rated</SelectItem>
+                  <SelectItem value="release_date.desc">Latest</SelectItem>
+                  <SelectItem value="revenue.desc">Box Office</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search movies & TV shows..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-gray-800 border-gray-700 text-white pl-10 pr-10"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1 h-6 w-6"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Filtered Results */}
+          {(selectedGenre !== 'all' || searchQuery) && filteredContent?.results && (
+            <MovieSection 
+              title={searchQuery ? `Search Results for "${searchQuery}"` : `${contentType === 'movie' ? 'Movies' : 'TV Shows'} - ${genres.find(g => g.id.toString() === selectedGenre)?.name || tvGenres.find(g => g.id.toString() === selectedGenre)?.name}`}
+              movies={filteredContent.results}
+              isLarge={true}
+            />
+          )}
+
+          {/* Movie Sections */}
+          {!searchQuery && selectedGenre === 'all' && (
+            <>
+              <MovieSection title="Top Rated Movies" movies={topRatedMovies?.data?.results || []} />
+              <MovieSection title="Popular Movies" movies={popularMovies?.data?.results || []} />
+              <MovieSection title="Trending TV Shows" movies={trendingTv?.data?.results || []} />
+            </>
+          )}
+
+          {/* Bottom Ad */}
+          <div className="mt-12">
+            <AdBanner 
+              adKey="homePageBottomAd" 
+              imageUrl="https://picsum.photos/400/200?random=home-bottom"
+              clickUrl="https://example.com"
+              enabled={true}
+            />
+          </div>
         </div>
       </div>
 

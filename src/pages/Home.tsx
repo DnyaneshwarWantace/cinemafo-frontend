@@ -77,7 +77,7 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black">
       {/* Hero Section */}
       <section className="w-full">
         <HeroSlider 
@@ -85,6 +85,21 @@ const Home = () => {
           onItemClick={handleContentClick}
         />
       </section>
+
+      {/* Trending Movies Section - Overlaps with Hero */}
+      {!loading && trendingMovies.length > 0 && (
+        <section className="relative -mt-32 lg:-mt-32 z-10">
+          <div className="bg-gradient-to-t from-black via-black/90 to-transparent pt-8 pb-8">
+            <div className="w-full px-4 sm:px-6 lg:px-8">
+              <MovieCarousel
+                title="Trending Movies"
+                items={trendingMovies}
+                onItemClick={handleContentClick}
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Content Sections */}
       <div className="w-full px-4 sm:px-6 lg:px-8 space-y-12 py-8">
@@ -94,15 +109,7 @@ const Home = () => {
           </div>
         ) : (
           <>
-            <section>
-              <MovieCarousel
-                title="Trending Movies"
-                items={trendingMovies}
-                onItemClick={handleContentClick}
-              />
-            </section>
-
-            {/* Ad after Trending Movies */}
+            {/* Ad after Hero Section */}
             {adminSettings?.ads?.mainPageAd1?.enabled && (
               <div className="max-w-4xl mx-auto">
                 <AdBanner 

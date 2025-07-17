@@ -217,7 +217,7 @@ const Shows = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background pt-20">
+      <div className="min-h-screen bg-black pt-20">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
             <p className="text-red-500 text-lg mb-4">{error}</p>
@@ -231,7 +231,7 @@ const Shows = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-20">
+    <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20">
       {/* Mobile Header - Netflix Style */}
       <div className="lg:hidden">
         <div className="px-4 py-6">

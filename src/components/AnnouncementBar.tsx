@@ -28,8 +28,7 @@ const AnnouncementBar = () => {
       className="text-center shadow-lg h-[48px] flex items-center"
       style={{ 
         backgroundColor,
-        background: `linear-gradient(135deg, ${backgroundColor}ee, ${backgroundColor}cc)`,
-        borderBottom: `2px solid ${backgroundColor}66`
+        background: `linear-gradient(135deg, ${backgroundColor}ee, ${backgroundColor}cc)`
       }}
     >
       {/* Gradient overlay for better visual appeal */}
@@ -56,13 +55,6 @@ const AnnouncementBar = () => {
         </div>
       </div>
       
-      {/* Bottom gradient border */}
-      <div 
-        className="absolute bottom-0 left-0 right-0 h-0.5"
-        style={{
-          background: `linear-gradient(90deg, transparent, ${backgroundColor}aa, transparent)`
-        }}
-      ></div>
     </div>
   );
 };

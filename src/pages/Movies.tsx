@@ -227,7 +227,7 @@ const Movies = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background pt-20">
+      <div className="min-h-screen bg-black pt-20">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
             <p className="text-red-500 text-lg mb-4">{error}</p>
@@ -241,7 +241,7 @@ const Movies = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-20" style={{ position: 'relative' }}>
+    <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20" style={{ position: 'relative' }}>
       {/* Mobile Header - Netflix Style */}
       <div className="lg:hidden">
         <div className="px-4 py-6">
@@ -258,7 +258,7 @@ const Movies = () => {
               setShowFilterDrawer(true);
               console.log('Setting showFilterDrawer to true');
             }}
-            className="w-full bg-gray-800/50 border border-gray-600 text-white hover:bg-gray-700/50 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors cursor-pointer"
+            className="w-full bg-gray-800/30 border border-gray-600 text-white hover:bg-gray-700/30 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors cursor-pointer"
             style={{ position: 'relative', zIndex: 10 }}
           >
             <SlidersHorizontal size={16} />

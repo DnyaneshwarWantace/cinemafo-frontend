@@ -103,7 +103,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
           {items && items.length > 0 ? items.map((item) => (
             <div
               key={item.id}
-              className="group relative bg-gray-900/50 rounded-lg overflow-hidden hover:scale-105 transition-all duration-300 cursor-pointer"
+              className="group relative bg-gray-900/30 rounded-lg overflow-hidden hover:scale-105 transition-all duration-300 cursor-pointer"
               onClick={() => onItemClick(item)}
             >
               <div className="aspect-[2/3] relative overflow-hidden">
@@ -121,7 +121,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                 {/* Heart Button */}
                 <button
                   onClick={(e) => toggleWatchlist(e, item)}
-                  className="absolute top-2 left-2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 z-20"
+                  className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 z-20"
                 >
                   <Heart 
                     size={16} 
@@ -132,7 +132,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                 {/* Play Button or Calendar Overlay */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   {isUpcoming ? (
-                    <div className="bg-black/60 rounded-full p-4 flex items-center justify-center">
+                    <div className="bg-black/40 rounded-full p-4 flex items-center justify-center">
                       <Calendar className="w-8 h-8 text-white" />
                     </div>
                   ) : (
@@ -144,20 +144,20 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                 
                 {/* Rating Badge or Release Date Badge */}
                 {isUpcoming ? (
-                  <div className="absolute top-2 right-2 bg-black/80 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
+                  <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                     <Calendar className="w-3 h-3" />
                     {formatReleaseDate(getItemReleaseDate(item))}
                   </div>
                 ) : (
                   typeof item.vote_average === 'number' && (
-                    <div className="absolute top-2 right-2 bg-black/80 text-yellow-400 px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
+                    <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                       <Star className="w-3 h-3" />
                       {item.vote_average.toFixed(1)}
                     </div>
                   )
                 )}
                 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                   <div>
                     <h3 className="text-white font-semibold text-sm line-clamp-2">
                       {getItemTitle(item)}
@@ -189,7 +189,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       {/* Scroll Buttons */}
       <button
         onClick={scrollLeft}
-        className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/70"
+        className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/30 p-2 rounded-full z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/50"
         aria-label="Scroll left"
       >
         <ChevronLeft className="w-6 h-6 text-white" />
@@ -197,7 +197,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
 
       <button
         onClick={scrollRight}
-        className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/50 p-2 rounded-full z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/70"
+        className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/30 p-2 rounded-full z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/50"
         aria-label="Scroll right"
       >
         <ChevronRight className="w-6 h-6 text-white" />
@@ -229,7 +229,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
               {/* Heart Button */}
               <button
                 onClick={(e) => toggleWatchlist(e, item)}
-                className="absolute top-2 left-2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover/item:opacity-100 z-20"
+                className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover/item:opacity-100 z-20"
               >
                 <Heart 
                   size={16} 
@@ -240,7 +240,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
               {/* Play Button or Calendar Overlay */}
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover/item:opacity-100">
                 {isUpcoming ? (
-                <div className="bg-black/60 rounded-full p-4 flex items-center justify-center">
+                <div className="bg-black/40 rounded-full p-4 flex items-center justify-center">
                     <Calendar className="w-8 h-8 text-white" />
                   </div>
                   ) : (
@@ -252,20 +252,20 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
               
               {/* Rating Badge or Release Date Badge */}
               {isUpcoming ? (
-                <div className="absolute top-2 right-2 bg-black/80 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
+                <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                   <Calendar className="w-3 h-3" />
                   {formatReleaseDate(getItemReleaseDate(item))}
                 </div>
               ) : (
                 typeof item.vote_average === 'number' && (
-                  <div className="absolute top-2 right-2 bg-black/80 text-yellow-400 px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
+                  <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                     <Star className="w-3 h-3" />
                     {item.vote_average.toFixed(1)}
                   </div>
                 )
               )}
               
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
                 <div>
                   <h3 className="text-white font-semibold text-sm line-clamp-2">
                     {getItemTitle(item)}

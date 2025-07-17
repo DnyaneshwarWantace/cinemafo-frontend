@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Play, Info, Star, Calendar } from 'lucide-react';
 import { Movie, TVShow } from '@/services/api';
+import MovieCarousel from './MovieCarousel';
 
 interface HeroSliderProps {
   items: (Movie | TVShow)[];
@@ -42,7 +43,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
   const isUpcoming = new Date(releaseDate) > new Date();
 
   return (
-    <div className="relative w-full h-[50vh] min-h-[300px] md:h-[70vh] lg:h-[90vh] overflow-hidden group">
+    <div className="relative w-full h-[calc(100vh-80px)] min-h-[400px] overflow-hidden group">
       {/* Background Image */}
       <div 
         className="absolute inset-0 w-full h-full"
@@ -50,23 +51,23 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
         <img
           src={`https://image.tmdb.org/t/p/original${currentItem.backdrop_path}`}
           alt={title}
-          className="w-full h-full object-cover object-center md:object-center lg:object-center transition-transform duration-500"
+          className="w-full h-full object-cover object-top transition-transform duration-500"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
       </div>
 
       {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8 md:p-16 z-10 flex flex-col justify-end h-full max-w-screen-xl mx-auto">
+      <div className="absolute inset-0 p-4 sm:p-8 md:p-16 z-10 flex flex-col justify-start lg:justify-center h-full max-w-screen-xl mx-auto pt-20 sm:pt-20 md:pt-16 lg:pt-0">
         {/* Rating or Release Date Badge */}
         {isUpcoming ? (
-          <div className="inline-flex items-center gap-2 bg-black/80 text-white px-3 py-1.5 rounded-full text-sm font-semibold mb-4 w-fit">
+          <div className="inline-flex items-center gap-2 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-semibold mb-4 w-fit">
             <Calendar className="w-4 h-4" />
             Coming {formatReleaseDate(releaseDate)}
           </div>
         ) : (
           currentItem.vote_average > 0 && (
-            <div className="inline-flex items-center gap-2 bg-black/80 text-white px-3 py-1.5 rounded-full text-sm font-semibold mb-4 w-fit">
+            <div className="inline-flex items-center gap-2 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-semibold mb-4 w-fit">
               <Star className="w-4 h-4 text-yellow-400" />
               {currentItem.vote_average.toFixed(1)} Rating
               {'vote_count' in currentItem && currentItem.vote_count > 0 && (
@@ -126,20 +127,20 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
             <Info className="w-5 h-5" />
             More Info
           </Button>
-      </div>
+        </div>
 
         {/* Indicators - Positioned within content area */}
         {items.length > 1 && (
           <div className="flex gap-2">
             {items.map((_, index) => (
-          <button
-            key={index}
+              <button
+                key={index}
                 className={`w-12 h-1 rounded-full transition-all duration-300 ${
                   index === currentIndex ? 'bg-white' : 'bg-gray-500 hover:bg-gray-400'
-            }`}
-            onClick={() => setCurrentIndex(index)}
-          />
-        ))}
+                }`}
+                onClick={() => setCurrentIndex(index)}
+              />
+            ))}
           </div>
         )}
       </div>
