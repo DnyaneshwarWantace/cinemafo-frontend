@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bookmark, Trash2, Play, Info, Heart, Star, Calendar } from 'lucide-react';
+import { Bookmark, Trash2, Play, Info, Heart, Star, Calendar, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MovieModal from '@/components/MovieModal';
 import TVShowPlayer from '@/components/TVShowPlayer';
@@ -29,9 +29,12 @@ const Watchlist = () => {
       const saved = localStorage.getItem('watchlist');
       if (saved) {
         setWatchlist(JSON.parse(saved));
+      } else {
+        setWatchlist([]);
       }
     } catch (error) {
       console.error('Error loading watchlist:', error);
+      setWatchlist([]);
     } finally {
       setLoading(false);
     }
@@ -39,11 +42,16 @@ const Watchlist = () => {
 
   const removeFromWatchlist = (e: React.MouseEvent, item: Movie | TVShow) => {
     e.stopPropagation();
-    const updatedWatchlist = watchlist.filter(watchlistItem => 
-      watchlistItem.id !== item.id || watchlistItem.media_type !== item.media_type
-    );
-    setWatchlist(updatedWatchlist);
-    localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
+    try {
+      const updatedWatchlist = watchlist.filter(watchlistItem => 
+        watchlistItem.id !== item.id || watchlistItem.media_type !== item.media_type
+      );
+      setWatchlist(updatedWatchlist);
+      localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
+      console.log('Removed item from watchlist:', item);
+    } catch (error) {
+      console.error('Error removing item from watchlist:', error);
+    }
   };
 
   const handleItemClick = (item: Movie | TVShow) => {
@@ -51,8 +59,14 @@ const Watchlist = () => {
   };
 
   const clearWatchlist = () => {
-    setWatchlist([]);
-    localStorage.removeItem('watchlist');
+    console.log('Clear watchlist function called');
+    try {
+      setWatchlist([]);
+      localStorage.removeItem('watchlist');
+      console.log('Watchlist cleared successfully');
+    } catch (error) {
+      console.error('Error clearing watchlist:', error);
+    }
   };
 
   const getItemTitle = (item: Movie | TVShow): string => {
@@ -86,34 +100,37 @@ const Watchlist = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20">
-      <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">My Watchlist</h1>
-          <p className="text-xl text-gray-400">
-            {watchlist.length === 0 
-              ? "Your watchlist is empty. Start adding movies and TV shows!" 
-              : `${watchlist.length} item${watchlist.length !== 1 ? 's' : ''} in your watchlist`
-            }
-          </p>
-        </div>
-
-
-
-        {/* Watchlist Actions */}
-        {watchlist.length > 0 && (
-          <div className="flex justify-end mb-6">
-            <Button
-              variant="destructive"
-              onClick={clearWatchlist}
-              className="flex items-center gap-2"
+    <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20 relative">
+      <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 py-8 relative">
+        {/* Header with Clear All Button */}
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">My Watchlist</h1>
+            <p className="text-xl text-gray-400">
+              {watchlist.length === 0 
+                ? "Your watchlist is empty. Start adding movies and TV shows!" 
+                : `${watchlist.length} item${watchlist.length !== 1 ? 's' : ''} in your watchlist`
+              }
+            </p>
+          </div>
+          
+          {/* Clear All Button */}
+          {watchlist.length > 0 && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Button clicked!');
+                clearWatchlist();
+              }}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer z-50"
+              style={{ pointerEvents: 'auto' }}
             >
               <Trash2 size={16} />
               Clear All
-            </Button>
-          </div>
-        )}
+            </button>
+          )}
+        </div>
 
         {/* Watchlist Items */}
         {watchlist.length === 0 ? (
@@ -142,7 +159,14 @@ const Watchlist = () => {
                     }}
                   />
                   
-
+                  {/* Individual Delete Button */}
+                  <button
+                    onClick={(e) => removeFromWatchlist(e, item)}
+                    className="absolute top-2 left-2 bg-black/80 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20"
+                    title="Remove from watchlist"
+                  >
+                    <X size={14} />
+                  </button>
 
                   {/* Play Button Overlay */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -174,7 +198,6 @@ const Watchlist = () => {
             ))}
           </div>
         )}
-
 
       </div>
 

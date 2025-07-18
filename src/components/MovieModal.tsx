@@ -425,8 +425,8 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                   onItemClick={(item) => {
                     if ('title' in item) {
                       setMovie(item as Movie);
-                      setRelatedMovies([]);
-                      setLoadingRelated(false);
+                          setRelatedMovies([]);
+                          setLoadingRelated(false);
                     }
                   }}
                 />

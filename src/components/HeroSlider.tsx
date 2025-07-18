@@ -127,20 +127,20 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
             <Info className="w-5 h-5" />
             More Info
           </Button>
-        </div>
+      </div>
 
         {/* Indicators - Positioned within content area */}
         {items.length > 1 && (
           <div className="flex gap-2">
             {items.map((_, index) => (
-              <button
-                key={index}
+          <button
+            key={index}
                 className={`w-12 h-1 rounded-full transition-all duration-300 ${
                   index === currentIndex ? 'bg-white' : 'bg-gray-500 hover:bg-gray-400'
-                }`}
-                onClick={() => setCurrentIndex(index)}
-              />
-            ))}
+            }`}
+            onClick={() => setCurrentIndex(index)}
+          />
+        ))}
           </div>
         )}
       </div>

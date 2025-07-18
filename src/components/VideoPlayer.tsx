@@ -3,7 +3,7 @@ import Hls from 'hls.js';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
-import { X, Play, Pause, Volume2, VolumeX, Settings, Maximize, Minimize, Languages, SkipForward, SkipBack, ArrowLeft, Zap, RefreshCw } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX, Settings, Maximize, Minimize, Languages, SkipForward, SkipBack, ArrowLeft, Zap, RefreshCw, SkipForward as NextEpisode, Zap as SkipIntro } from 'lucide-react';
 
 interface VideoPlayerProps {
   tmdbId: number;
@@ -12,6 +12,7 @@ interface VideoPlayerProps {
   episode?: number;
   title: string;
   onClose: () => void;
+  onNextEpisode?: () => void; // New prop for next episode callback
 }
 
 interface AudioTrack {
@@ -42,7 +43,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   season, 
   episode, 
   title, 
-  onClose 
+  onClose,
+  onNextEpisode 
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -51,7 +53,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
   const currentSourceUrlRef = useRef<string>('');
-  // skipIntroTimeoutRef removed for now
+  const skipIntroTimeoutRef = useRef<NodeJS.Timeout>();
+  const skipIntroAutoHideRef = useRef<NodeJS.Timeout>();
   
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -79,6 +82,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   
+  // New states for Netflix-style features
+  const [showNextEpisode, setShowNextEpisode] = useState(false);
+  const [showSkipIntro, setShowSkipIntro] = useState(false);
+  const [skipIntroTimeRemaining, setSkipIntroTimeRemaining] = useState(90);
+
   // Skip intro functionality removed
 
   // Fetch stream URLs from backend with encrypted niggaflix URLs
@@ -202,21 +210,99 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [tmdbId, type, season, episode]);
 
-  // Initialize sources on mount - only run once
+  // Initialize sources on mount and when episode/season changes
   useEffect(() => {
-    // Only fetch if we haven't already initialized
-    if (!initializedRef.current) {
-      initializedRef.current = true;
-      fetchStreamUrls();
-    }
+    // Reset initialization flag when episode/season changes
+    initializedRef.current = false;
+    fetchStreamUrls();
     
     // Cleanup function to reset initialization when component unmounts
     return () => {
       initializedRef.current = false;
     };
-  }, []); // Empty dependency array - only run once on mount
+  }, [tmdbId, type, season, episode]); // Re-run when these props change
 
-  // Skip intro functionality removed
+  // Netflix-style features logic
+  useEffect(() => {
+    if (!videoRef.current || currentSource?.type !== 'hls') return;
+
+    const handleTimeUpdate = () => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      const currentTime = video.currentTime;
+      const duration = video.duration;
+
+      // Next Episode button logic (for TV shows only)
+      if (type === 'tv' && duration > 0) {
+        const timeRemaining = duration - currentTime;
+        if (timeRemaining <= 120 && timeRemaining > 0) { // Last 2 minutes
+          setShowNextEpisode(true);
+        } else {
+          setShowNextEpisode(false);
+        }
+      }
+
+      // Skip Intro button logic
+      if (currentTime <= 90) { // First 90 seconds
+        setShowSkipIntro(true);
+        setSkipIntroTimeRemaining(Math.max(0, 90 - currentTime));
+      } else {
+        setShowSkipIntro(false);
+      }
+    };
+
+    const video = videoRef.current;
+    video.addEventListener('timeupdate', handleTimeUpdate);
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+    };
+  }, [type, currentSource?.type]);
+
+  // Auto-hide skip intro button after 5 seconds
+  useEffect(() => {
+    if (showSkipIntro) {
+      skipIntroAutoHideRef.current = setTimeout(() => {
+        setShowSkipIntro(false);
+      }, 5000);
+    }
+
+    return () => {
+      if (skipIntroAutoHideRef.current) {
+        clearTimeout(skipIntroAutoHideRef.current);
+      }
+    };
+  }, [showSkipIntro]);
+
+  // Skip intro function
+  const handleSkipIntro = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!videoRef.current) return;
+    
+    const video = videoRef.current;
+    const skipToTime = Math.min(video.currentTime + skipIntroTimeRemaining, 90);
+    video.currentTime = skipToTime;
+    setShowSkipIntro(false);
+  }, [skipIntroTimeRemaining]);
+
+  // Next episode function
+  const handleNextEpisode = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('🎬 Next Episode button clicked in VideoPlayer');
+    console.log('onNextEpisode callback exists:', !!onNextEpisode);
+    
+    if (onNextEpisode) {
+      console.log('🎬 Calling onNextEpisode callback');
+      onNextEpisode();
+    } else {
+      console.log('❌ No onNextEpisode callback provided');
+    }
+  }, [onNextEpisode]);
 
   // Video controls
   const togglePlayPause = useCallback(() => {
@@ -933,7 +1019,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
         )}
         
-        {/* Skip Intro Button removed */}
+        {/* Skip Intro and Next Episode Buttons - Positioned on right side above progress bar */}
+        {showControls && currentSource?.type === 'hls' && (
+          <div className="absolute bottom-32 right-4 flex items-center gap-4 pointer-events-auto z-50">
+            {/* Skip Intro Button */}
+            {showSkipIntro && (
+              <Button
+                onClick={handleSkipIntro}
+                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-white/20"
+              >
+                <SkipIntro className="w-4 h-4" />
+                <span className="text-sm font-medium">Skip Intro ({Math.ceil(skipIntroTimeRemaining)}s)</span>
+              </Button>
+            )}
+
+            {/* Next Episode Button - Only for TV shows */}
+            {showNextEpisode && type === 'tv' && (
+              <Button
+                onClick={handleNextEpisode}
+                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-white/20"
+              >
+                <NextEpisode className="w-4 h-4" />
+                <span className="text-sm font-medium">Next Episode</span>
+              </Button>
+            )}
+          </div>
+        )}
         
         {/* Pause Screen Overlay with Logo */}
         {!isPlaying && currentSource?.type === 'hls' && (

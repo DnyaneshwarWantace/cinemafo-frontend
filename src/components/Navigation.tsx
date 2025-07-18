@@ -198,7 +198,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
           />
 
         {/* Mobile Menu */}
-          <div className="absolute top-0 right-0 w-64 h-full bg-gray-900/95 backdrop-blur-xl">
+          <div className="absolute top-0 right-0 w-64 h-full bg-black backdrop-blur-xl">
             <div className="p-6">
               {/* Close button */}
               <div className="flex justify-end mb-6">

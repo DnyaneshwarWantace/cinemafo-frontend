@@ -138,6 +138,41 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
     setIsPlaying(true);
   };
 
+  const handleNextEpisode = () => {
+    console.log('🔄 Next Episode clicked!');
+    console.log('Current episode:', selectedEpisode);
+    console.log('Current season:', selectedSeason);
+    console.log('Available episodes:', seasonDetails?.episodes);
+    
+    const currentEpisodes = seasonDetails?.episodes || [];
+    const currentEpisodeIndex = currentEpisodes.findIndex(ep => ep.episode_number === selectedEpisode);
+    
+    console.log('Current episode index:', currentEpisodeIndex);
+    console.log('Total episodes in season:', currentEpisodes.length);
+    
+    if (currentEpisodeIndex >= 0 && currentEpisodeIndex < currentEpisodes.length - 1) {
+      // Next episode in same season
+      const nextEpisode = currentEpisodes[currentEpisodeIndex + 1];
+      console.log('🎬 Going to next episode:', nextEpisode.episode_number);
+      setSelectedEpisode(nextEpisode.episode_number);
+      // Keep playing - the VideoPlayer will re-render with new episode
+    } else if (currentEpisodeIndex === currentEpisodes.length - 1) {
+      // Last episode of season, go to next season
+      const nextSeason = selectedSeason + 1;
+      console.log('🎬 Going to next season:', nextSeason);
+      if (nextSeason <= (showDetails?.number_of_seasons || 1)) {
+        setSelectedSeason(nextSeason);
+        setSelectedEpisode(1);
+        // Keep playing - the VideoPlayer will re-render with new season/episode
+      }
+    } else {
+      console.log('❌ No next episode available');
+    }
+    
+    // If we're at the very last episode of the last season, do nothing
+    // (or you could show a message that this is the final episode)
+  };
+
   const getSeasonOptions = () => {
     if (showDetails?.seasons) {
       return showDetails.seasons.filter(season => season.season_number > 0);
@@ -204,6 +239,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
         episode={selectedEpisode}
         title={`${show.name} - S${selectedSeason}E${selectedEpisode}`}
         onClose={() => setIsPlaying(false)}
+        onNextEpisode={handleNextEpisode}
       />
     );
   }
@@ -461,12 +497,12 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                   items={relatedShows}
                   onItemClick={(item) => {
                     if ('name' in item) {
-                      // Close current modal and open new one
-                      onClose();
-                      setTimeout(() => {
-                        // This would need to be handled by the parent component
+                        // Close current modal and open new one
+                        onClose();
+                        setTimeout(() => {
+                          // This would need to be handled by the parent component
                         console.log('Opening related show:', item);
-                      }, 300);
+                        }, 300);
                     }
                   }}
                 />
