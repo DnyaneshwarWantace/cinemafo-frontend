@@ -43,11 +43,11 @@ const Watchlist = () => {
   const removeFromWatchlist = (e: React.MouseEvent, item: Movie | TVShow) => {
     e.stopPropagation();
     try {
-      const updatedWatchlist = watchlist.filter(watchlistItem => 
-        watchlistItem.id !== item.id || watchlistItem.media_type !== item.media_type
-      );
-      setWatchlist(updatedWatchlist);
-      localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
+    const updatedWatchlist = watchlist.filter(watchlistItem => 
+      watchlistItem.id !== item.id || watchlistItem.media_type !== item.media_type
+    );
+    setWatchlist(updatedWatchlist);
+    localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
       console.log('Removed item from watchlist:', item);
     } catch (error) {
       console.error('Error removing item from watchlist:', error);
@@ -61,8 +61,8 @@ const Watchlist = () => {
   const clearWatchlist = () => {
     console.log('Clear watchlist function called');
     try {
-      setWatchlist([]);
-      localStorage.removeItem('watchlist');
+    setWatchlist([]);
+    localStorage.removeItem('watchlist');
       console.log('Watchlist cleared successfully');
     } catch (error) {
       console.error('Error clearing watchlist:', error);
@@ -105,17 +105,17 @@ const Watchlist = () => {
         {/* Header with Clear All Button */}
         <div className="mb-8 flex justify-between items-start">
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">My Watchlist</h1>
-            <p className="text-xl text-gray-400">
-              {watchlist.length === 0 
-                ? "Your watchlist is empty. Start adding movies and TV shows!" 
-                : `${watchlist.length} item${watchlist.length !== 1 ? 's' : ''} in your watchlist`
-              }
-            </p>
-          </div>
-          
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">My Watchlist</h1>
+          <p className="text-xl text-gray-400">
+            {watchlist.length === 0 
+              ? "Your watchlist is empty. Start adding movies and TV shows!" 
+              : `${watchlist.length} item${watchlist.length !== 1 ? 's' : ''} in your watchlist`
+            }
+          </p>
+        </div>
+
           {/* Clear All Button */}
-          {watchlist.length > 0 && (
+        {watchlist.length > 0 && (
             <button
               onClick={(e) => {
                 e.preventDefault();
@@ -130,7 +130,7 @@ const Watchlist = () => {
               Clear All
             </button>
           )}
-        </div>
+          </div>
 
         {/* Watchlist Items */}
         {watchlist.length === 0 ? (

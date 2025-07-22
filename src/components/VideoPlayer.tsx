@@ -5,6 +5,76 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from './ui/badge';
 import { X, Play, Pause, Volume2, VolumeX, Settings, Maximize, Minimize, Languages, SkipForward, SkipBack, ArrowLeft, Zap, RefreshCw, SkipForward as NextEpisode, Zap as SkipIntro } from 'lucide-react';
 
+// Background HLS Prefetching Utility
+class HLSPrefetcher {
+  private prefetchedSegments = new Map<string, Blob>();
+  private isPrefetching = false;
+  private currentM3u8Url = '';
+
+  async prefetchSegments(m3u8Url: string, startIndex: number = 20, endIndex: number = 60) {
+    if (this.isPrefetching || this.currentM3u8Url === m3u8Url) return;
+    
+    this.isPrefetching = true;
+    this.currentM3u8Url = m3u8Url;
+    
+    try {
+      // Check network speed
+      if ('connection' in navigator && (navigator as any).connection?.downlink < 2) {
+        console.log('🚫 Network too slow for prefetching');
+        return;
+      }
+
+      const baseUrl = m3u8Url.substring(0, m3u8Url.lastIndexOf('/') + 1);
+      const response = await fetch(m3u8Url);
+      const m3u8Text = await response.text();
+
+      // Extract .ts segment links
+      const lines = m3u8Text.split('\n').filter(line => line && !line.startsWith('#'));
+      const segmentUrls = lines.map(line => baseUrl + line);
+
+      const nextSegments = segmentUrls.slice(startIndex, endIndex);
+      console.log(`🔄 Prefetching ${nextSegments.length} segments...`);
+
+      // Prefetch segments in parallel with limited concurrency
+      const batchSize = 5;
+      for (let i = 0; i < nextSegments.length; i += batchSize) {
+        const batch = nextSegments.slice(i, i + batchSize);
+        
+        await Promise.allSettled(
+          batch.map(async (url) => {
+            try {
+              const res = await fetch(url);
+              const blob = await res.blob();
+              this.prefetchedSegments.set(url, blob);
+              console.log('✅ Prefetched:', url.split('/').pop());
+            } catch (err) {
+              console.warn('❌ Prefetch failed:', url, err);
+            }
+          })
+        );
+      }
+      
+      console.log(`🎉 Prefetching complete! ${this.prefetchedSegments.size} segments cached`);
+    } catch (error) {
+      console.error('❌ Prefetching error:', error);
+    } finally {
+      this.isPrefetching = false;
+    }
+  }
+
+  getPrefetchedSegment(url: string): Blob | null {
+    return this.prefetchedSegments.get(url) || null;
+  }
+
+  clearPrefetched() {
+    this.prefetchedSegments.clear();
+    this.currentM3u8Url = '';
+  }
+}
+
+// Global prefetcher instance
+const hlsPrefetcher = new HLSPrefetcher();
+
 interface VideoPlayerProps {
   tmdbId: number;
   type: 'movie' | 'tv';
@@ -86,7 +156,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showNextEpisode, setShowNextEpisode] = useState(false);
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [skipIntroTimeRemaining, setSkipIntroTimeRemaining] = useState(90);
-
+  
   // Skip intro functionality removed
 
   // Fetch stream URLs from backend with encrypted niggaflix URLs
@@ -214,7 +284,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     // Reset initialization flag when episode/season changes
     initializedRef.current = false;
-    fetchStreamUrls();
+      fetchStreamUrls();
     
     // Cleanup function to reset initialization when component unmounts
     return () => {
@@ -516,6 +586,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         video.play().catch((playError) => {
           console.warn('Autoplay failed:', playError);
         });
+
+        // Start background prefetching after manifest is parsed
+        if (currentSource?.url) {
+          console.log('🚀 Starting background prefetching...');
+          hlsPrefetcher.prefetchSegments(currentSource.url);
+        }
 
         // Get available quality levels
         const levels = hls.levels.map((level, index) => ({
