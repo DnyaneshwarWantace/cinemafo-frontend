@@ -157,6 +157,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [skipIntroTimeRemaining, setSkipIntroTimeRemaining] = useState(90);
   const [isPlayPausePending, setIsPlayPausePending] = useState(false);
+  const [bufferStallCount, setBufferStallCount] = useState(0);
+  const bufferStallTimeoutRef = useRef<NodeJS.Timeout>();
   
   // Skip intro functionality removed
 
@@ -547,6 +549,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Reset play/pause pending state when source changes
   useEffect(() => {
     setIsPlayPausePending(false);
+    setBufferStallCount(0);
+    
+    // Clear any existing buffer stall timeout
+    if (bufferStallTimeoutRef.current) {
+      clearTimeout(bufferStallTimeoutRef.current);
+    }
   }, [currentSource?.url]);
 
   // Handle double click on screen areas
@@ -590,33 +598,40 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (Hls.isSupported()) {
           const hls = new Hls({
             enableWorker: true,
-        backBufferLength: 90,
-            maxBufferLength: 30,
-        maxMaxBufferLength: 600,
-            maxBufferSize: 60 * 1000 * 1000,
-        maxBufferHole: 1,
-        highBufferWatchdogPeriod: 2,
-        nudgeOffset: 0.2,
-        nudgeMaxRetry: 6,
-        maxFragLookUpTolerance: 0.25,
-        liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 10,
-        manifestLoadingTimeOut: 20000,
-        manifestLoadingMaxRetry: 4,
-        manifestLoadingRetryDelay: 1000,
-        levelLoadingTimeOut: 20000,
-        levelLoadingMaxRetry: 4,
-        levelLoadingRetryDelay: 1000,
-        fragLoadingTimeOut: 40000,
-        fragLoadingMaxRetry: 6,
-        fragLoadingRetryDelay: 1000,
-        startFragPrefetch: true,
-        testBandwidth: true,
-        progressive: true,
-        lowLatencyMode: false,
-        // Enable automatic quality switching by default
-        startLevel: -1,
-        capLevelToPlayerSize: true
+            // Buffer configuration to prevent stalling
+            backBufferLength: 120, // Increased from 90
+            maxBufferLength: 60, // Increased from 30
+            maxMaxBufferLength: 600,
+            maxBufferSize: 120 * 1000 * 1000, // Increased from 60MB to 120MB
+            maxBufferHole: 0.5, // Reduced from 1 to be more tolerant
+            highBufferWatchdogPeriod: 5, // Increased from 2
+            nudgeOffset: 0.1, // Reduced from 0.2 for more frequent nudges
+            nudgeMaxRetry: 10, // Increased from 6
+            maxFragLookUpTolerance: 0.5, // Increased from 0.25
+            // Live streaming settings (not needed for VOD)
+            liveSyncDurationCount: 3,
+            liveMaxLatencyDurationCount: 10,
+            // Loading timeouts
+            manifestLoadingTimeOut: 30000, // Increased from 20000
+            manifestLoadingMaxRetry: 6, // Increased from 4
+            manifestLoadingRetryDelay: 2000, // Increased from 1000
+            levelLoadingTimeOut: 30000, // Increased from 20000
+            levelLoadingMaxRetry: 6, // Increased from 4
+            levelLoadingRetryDelay: 2000, // Increased from 1000
+            fragLoadingTimeOut: 60000, // Increased from 40000
+            fragLoadingMaxRetry: 8, // Increased from 6
+            fragLoadingRetryDelay: 2000, // Increased from 1000
+            // Advanced settings
+            startFragPrefetch: true,
+            testBandwidth: true,
+            progressive: true,
+            lowLatencyMode: false,
+            // Quality switching
+            startLevel: -1, // Auto quality
+            capLevelToPlayerSize: true,
+            // Additional buffer settings
+            maxStarvationDelay: 4, // Maximum delay before switching to lower quality
+            maxLoadingDelay: 4 // Maximum delay for fragment loading
           });
 
           hlsRef.current = hls;
@@ -690,7 +705,57 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       hls.on(Hls.Events.ERROR, (event, data) => {
         console.error('HLS error event:', event, data);
         
-        // Handle non-fatal errors (like segment loading failures)
+        // Handle buffer stalling errors specifically
+        if (data.details === 'bufferStalledError') {
+          console.log('Buffer stalling detected, attempting recovery...');
+          
+          // Increment stall counter
+          setBufferStallCount(prev => prev + 1);
+          
+          // Clear any existing timeout
+          if (bufferStallTimeoutRef.current) {
+            clearTimeout(bufferStallTimeoutRef.current);
+          }
+          
+          // Try to recover by switching to a lower quality level
+          if (hls.levels.length > 1) {
+            const currentLevel = hls.currentLevel;
+            const lowerLevel = Math.min(currentLevel + 1, hls.levels.length - 1);
+            
+            if (lowerLevel !== currentLevel) {
+              console.log(`Switching from level ${currentLevel} to level ${lowerLevel} to recover from buffer stall`);
+              hls.currentLevel = lowerLevel;
+              setCurrentQuality(lowerLevel);
+            }
+          }
+          
+          // If multiple stalls occur, try more aggressive recovery
+          if (bufferStallCount >= 3) {
+            console.log('Multiple buffer stalls detected, attempting aggressive recovery');
+            
+            // Switch to lowest quality
+            if (hls.levels.length > 1) {
+              hls.currentLevel = hls.levels.length - 1;
+              setCurrentQuality(hls.levels.length - 1);
+            }
+            
+            // Reset stall counter
+            setBufferStallCount(0);
+          }
+          
+          // If still having issues, try to restart the stream
+          bufferStallTimeoutRef.current = setTimeout(() => {
+            if (video.readyState === 0 || video.buffered.length === 0) {
+              console.log('Attempting to restart stream due to persistent buffer issues');
+              hls.stopLoad();
+              hls.startLoad();
+            }
+          }, 3000);
+          
+          return;
+        }
+        
+        // Handle other non-fatal errors
         if (!data.fatal) {
           console.log('Non-fatal HLS error, continuing playback');
           return;
@@ -700,21 +765,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         console.log('Fatal HLS error, attempting fallback');
         
         // Try to switch to iframe fallback
-          const iframeSource = streamingSources.find(s => s.type === 'iframe');
-          if (iframeSource) {
-            console.log('Switching to iframe fallback:', iframeSource.url);
-            setCurrentSource(iframeSource);
-            setError(null);
-            setLoading(true);
-          
+        const iframeSource = streamingSources.find(s => s.type === 'iframe');
+        if (iframeSource) {
+          console.log('Switching to iframe fallback:', iframeSource.url);
+          setCurrentSource(iframeSource);
+          setError(null);
+          setLoading(true);
+        
           // Cleanup HLS instance
           if (hlsRef.current) {
             hlsRef.current.destroy();
             hlsRef.current = null;
           }
-          } else {
-            setError('Video source unavailable. Please try again later.');
-            setLoading(false);
+        } else {
+          setError('Video source unavailable. Please try again later.');
+          setLoading(false);
         }
       });
 
@@ -725,6 +790,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       
       video.addEventListener('timeupdate', () => {
         setCurrentTime(video.currentTime);
+        
+        // Monitor buffer health
+        if (video.buffered.length > 0) {
+          const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+          const currentTime = video.currentTime;
+          const bufferAhead = bufferedEnd - currentTime;
+          
+          // If buffer is getting low, log a warning
+          if (bufferAhead < 10 && bufferAhead > 0) {
+            console.warn(`Low buffer detected: ${bufferAhead.toFixed(2)}s ahead`);
+          }
+          
+          // If buffer is empty and video is playing, this might cause stalling
+          if (bufferAhead <= 0 && !video.paused) {
+            console.warn('Buffer underrun detected, video may stall soon');
+          }
+        }
       });
       
       video.addEventListener('play', () => setIsPlaying(true));
@@ -774,6 +856,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (hls) {
           hls.destroy();
           hlsRef.current = null;
+        }
+        
+        // Cleanup buffer stall timeout
+        if (bufferStallTimeoutRef.current) {
+          clearTimeout(bufferStallTimeoutRef.current);
         }
       };
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
