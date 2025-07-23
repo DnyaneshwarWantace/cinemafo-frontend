@@ -156,6 +156,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showNextEpisode, setShowNextEpisode] = useState(false);
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [skipIntroTimeRemaining, setSkipIntroTimeRemaining] = useState(90);
+  const [isPlayPausePending, setIsPlayPausePending] = useState(false);
   
   // Skip intro functionality removed
 
@@ -166,6 +167,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setError(null);
 
       const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
+      
+      // Test backend connectivity first (optional)
+      try {
+        const testResponse = await fetch(`${baseUrl}/health`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(3000)
+        });
+        console.log('✅ Backend health check:', testResponse.status);
+      } catch (testError) {
+        console.log('⚠️ Backend health check failed, continuing with endpoints...');
+      }
       
       // Try multiple endpoints in order of preference
       const endpoints = type === 'movie' 
@@ -193,7 +205,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             headers: {
               'Accept': 'application/json',
             },
-            signal: AbortSignal.timeout(8000) // 8 second timeout
+            signal: AbortSignal.timeout(15000) // 15 second timeout
           });
           
           if (response.ok) {
@@ -208,6 +220,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           }
         } catch (error) {
           console.log(`❌ Endpoint ${endpoint} failed:`, error);
+          if (error instanceof Error) {
+            console.log(`Error type: ${error.name}, Message: ${error.message}`);
+          }
           continue;
         }
       }
@@ -244,10 +259,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         setCurrentSource(sources[0]);
         return;
       } else {
-        throw new Error('No stream URL found from any endpoint');
+        console.log('⚠️ No stream URL found from backend, using iframe fallback');
+        // Don't throw error, just use fallback
       }
     } catch (error) {
-      console.error('❌ All backend endpoints failed:', error);
+      console.error('❌ Backend request failed:', error);
       
       // Fallback to iframe sources only
       const fallbackSources: StreamingSource[] = [];
@@ -273,7 +289,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         setStreamingSources(fallbackSources);
         setCurrentSource(fallbackSources[0]);
       } else {
-        setError('No streaming sources available');
+        setError('Unable to load video. Please try again later.');
       }
     } finally {
       setLoading(false);
@@ -374,26 +390,52 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [onNextEpisode]);
 
-  // Video controls
+  // Video controls with debounce to prevent rapid play/pause errors
+  // This prevents the "AbortError: The play() request was interrupted by a call to pause()" error
+  // that occurs when users click the play/pause button too rapidly
   const togglePlayPause = useCallback(() => {
     console.log('togglePlayPause called, current isPlaying:', isPlaying);
     console.log('videoRef.current:', videoRef.current);
     
-    if (!videoRef.current) {
-      console.log('No video element found');
+    if (!videoRef.current || isPlayPausePending) {
+      console.log('No video element found or operation pending');
       return;
     }
+    
+    setIsPlayPausePending(true);
+    
+    // Safety timeout to reset pending state if something goes wrong
+    const safetyTimeout = setTimeout(() => {
+      setIsPlayPausePending(false);
+    }, 2000);
     
     if (isPlaying) {
       console.log('Pausing video');
       videoRef.current.pause();
+      // Small delay to prevent rapid state changes
+      setTimeout(() => {
+        clearTimeout(safetyTimeout);
+        setIsPlayPausePending(false);
+      }, 100);
     } else {
       console.log('Playing video');
-      videoRef.current.play().catch((error) => {
-        console.error('Error playing video:', error);
-      });
+      videoRef.current.play()
+        .then(() => {
+          console.log('Video play successful');
+          clearTimeout(safetyTimeout);
+          setIsPlayPausePending(false);
+        })
+        .catch((error) => {
+          console.error('Error playing video:', error);
+          // Only log the error if it's not an abort error (which is expected during rapid clicking)
+          if (error.name !== 'AbortError') {
+            console.error('Non-abort error playing video:', error);
+          }
+          clearTimeout(safetyTimeout);
+          setIsPlayPausePending(false);
+        });
     }
-  }, [isPlaying]);
+  }, [isPlaying, isPlayPausePending]);
 
   const toggleMute = useCallback(() => {
     if (!videoRef.current) return;
@@ -501,6 +543,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setShowCenterPlayButton(false);
     }
   }, [isPlaying, currentSource]);
+
+  // Reset play/pause pending state when source changes
+  useEffect(() => {
+    setIsPlayPausePending(false);
+  }, [currentSource?.url]);
 
   // Handle double click on screen areas
   const handleScreenDoubleClick = (e: React.MouseEvent) => {
@@ -753,6 +800,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         hlsRef.current = null;
     }
       currentSourceUrlRef.current = '';
+      setIsPlayPausePending(false);
     };
   }, [currentSource?.url]); // Only re-run when the source URL changes
 
@@ -1246,9 +1294,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     variant="ghost"
                     size="icon"
                     onClick={togglePlayPause}
-                    className="text-white hover:bg-white/20"
+                    disabled={isPlayPausePending}
+                    className={`text-white hover:bg-white/20 ${isPlayPausePending ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+                    {isPlayPausePending ? (
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : isPlaying ? (
+                      <Pause className="w-6 h-6" />
+                    ) : (
+                      <Play className="w-6 h-6" />
+                    )}
                   </Button>
                   
                   <Button
