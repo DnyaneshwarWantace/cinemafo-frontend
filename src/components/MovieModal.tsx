@@ -25,8 +25,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
   const [showFullMovie, setShowFullMovie] = useState(false);
   const [showTVShowPlayer, setShowTVShowPlayer] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [relatedMovies, setRelatedMovies] = useState<Movie[]>([]);
-  const [loadingRelated, setLoadingRelated] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const { settings: adminSettings } = useAdminSettings();
 
   // No need to check for detailed data anymore - backend provides complete data
@@ -38,52 +37,20 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch related movies
+  // Prevent body scroll when modal is open
   useEffect(() => {
-    const fetchRelatedMovies = async () => {
-      try {
-        setLoadingRelated(true);
-        // Use the recommendations from movie details if available, otherwise fetch similar movies
-        if (movie.recommendations && movie.recommendations.length > 0) {
-          // Convert recommendations to Movie format
-          const recommendationsAsMovies = movie.recommendations.map(rec => ({
-            ...rec,
-            overview: '',
-            backdrop_path: '',
-            release_date: '',
-            vote_count: 0,
-            genres: [],
-            name: rec.title
-          })) as Movie[];
-          setRelatedMovies(recommendationsAsMovies.slice(0, 6));
-        } else {
-          // Fallback to popular movies in the same genre
-          const genreId = movie.genres?.[0]?.id;
-          if (genreId) {
-            const response = await api.getMoviesByGenre(genreId);
-            const similarMovies = response.data.results
-              .filter((m: Movie) => m.id !== movie.id)
-              .slice(0, 6);
-            setRelatedMovies(similarMovies);
-          } else {
-            // Final fallback to popular movies
-            const response = await api.getPopularMovies();
-            const popularMovies = response.data.results
-              .filter((m: Movie) => m.id !== movie.id)
-              .slice(0, 6);
-            setRelatedMovies(popularMovies);
-          }
-        }
-    } catch (error) {
-        console.error('Error fetching related movies:', error);
-        setRelatedMovies([]);
-    } finally {
-        setLoadingRelated(false);
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
     }
-  };
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
-    fetchRelatedMovies();
-  }, [movie.id, movie.recommendations, movie.genres]);
+
 
   const handleWatchNow = () => {
     const releaseDate = movie.release_date || movie.first_air_date;
@@ -223,9 +190,20 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
 
             {/* Content */}
         <div className="h-full max-w-6xl w-full mx-2 sm:mx-4 flex items-center justify-center">
-          <div className="max-h-[90vh] w-full overflow-y-auto scrollbar-hide">
+          <div className="max-h-[90vh] w-full overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Content */}
           <div className="p-3 sm:p-4 md:p-6 pt-20 sm:pt-24 relative z-10">
+            {/* Ad Banner - Moved to top */}
+            {adminSettings?.ads?.playerPageAd?.enabled && (
+              <div className="mb-6">
+                <AdBanner
+                  adKey="playerPageAd"
+                  imageUrl={adminSettings.ads.playerPageAd.imageUrl}
+                  clickUrl={adminSettings.ads.playerPageAd.clickUrl}
+                  enabled={adminSettings.ads.playerPageAd.enabled}
+                />
+              </div>
+            )}
             <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 md:gap-6">
               {/* Poster Image */}
               <div className="flex-shrink-0 flex justify-center lg:justify-start">
@@ -278,7 +256,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                   {/* Overview */}
                 <p className="text-gray-200 mb-6 text-sm md:text-base leading-relaxed text-center lg:text-left">{movie.overview}</p>
 
-                  {/* Action Buttons */}
+                  {/* Action Buttons and Show More Details */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-center lg:justify-start">
                     {isUpcoming ? (
                     <Button disabled className="flex items-center gap-2 bg-gray-600 text-white px-6 py-3 rounded-md text-base font-semibold cursor-not-allowed opacity-75 w-full sm:w-auto">
@@ -292,10 +270,29 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                         Watch Now
                       </Button>
                 )}
+                
+                <Button
+                  onClick={() => setShowDetails(!showDetails)}
+                  variant="outline"
+                  className="flex items-center gap-2 bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60 w-full sm:w-auto"
+                >
+                  {showDetails ? (
+                    <>
+                      <ChevronLeft className="w-4 h-4" />
+                      Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronRight className="w-4 h-4" />
+                      Show More Details
+                    </>
+                  )}
+                </Button>
               </div>
               
-                  {/* Detailed Information Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                  {/* Detailed Information Grid - Hidden by default */}
+                {showDetails && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm mb-6">
                     {director && (
                     <div className="flex items-center gap-2 text-gray-300">
                       <Film className="w-4 h-4 flex-shrink-0" />
@@ -353,115 +350,52 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                         {movie.spoken_languages.length > 2 && '...'}
                         </span>
             </div>
-                    )}
-          </div>
+                                      )}
+                </div>
+                )}
 
-                  {/* Cast Section */}
-                  {mainCast.length > 0 && (
+                  {/* Expanded Details Section */}
+                  {showDetails && (
                     <>
-                    <Separator className="my-6 bg-gray-700" />
-                      <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
-                          <Users className="w-5 h-5" />
-                          Cast
-                        </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                          {mainCast.map(actor => (
-                            <div key={actor.id} className="flex items-center gap-3">
-                              {actor.profile_path ? (
-                                <img
-                                  src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
-                                  alt={actor.name}
-                                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
-                                />
-                              ) : (
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
-                              </div>
-                            )}
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-sm text-white truncate">{actor.name}</p>
-                              <p className="text-xs text-gray-400 truncate">{actor.character}</p>
-                              </div>
+                      {/* Cast Section */}
+                      {mainCast.length > 0 && (
+                        <>
+                          <Separator className="my-6 bg-gray-700" />
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
+                              <Users className="w-5 h-5" />
+                              Cast
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                              {mainCast.map(actor => (
+                                <div key={actor.id} className="flex items-center gap-3">
+                                  {actor.profile_path ? (
+                                    <img
+                                      src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
+                                      alt={actor.name}
+                                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                      <Users className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
+                                    </div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-sm text-white truncate">{actor.name}</p>
+                                    <p className="text-xs text-gray-400 truncate">{actor.character}</p>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Keywords */}
-                  {movie.keywords?.length > 0 && (
-                    <>
-                    <Separator className="my-6 bg-gray-700" />
-                      <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
-                          <Tags className="w-5 h-5" />
-                          Keywords
-                        </h3>
-                      <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                        {movie.keywords.slice(0, 8).map(keyword => (
-                          <Badge key={keyword.id} variant="outline" className="text-xs bg-gray-700/60 text-white border-gray-500">
-                              {keyword.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
               </div>
             </div>
 
-            {/* Similar Movies Section */}
-            {relatedMovies.length > 0 && (
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
-                <Film className="w-5 h-5" />
-                  More Like This
-              </h3>
-                <MovieCarousel 
-                  title="More Like This"
-                  items={relatedMovies}
-                  onItemClick={(item) => {
-                    if ('title' in item) {
-                      setMovie(item as Movie);
-                          setRelatedMovies([]);
-                          setLoadingRelated(false);
-                    }
-                  }}
-                />
-              </div>
-            )}
 
-            {/* Loading Similar Movies */}
-            {loadingRelated && relatedMovies.length === 0 && (
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
-                  <Film className="w-5 h-5" />
-                  More Like This
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="aspect-[2/3] bg-gray-700 rounded-lg mb-2" />
-                      <div className="h-3 sm:h-4 bg-gray-700 rounded w-3/4" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Ad Banner */}
-            {adminSettings?.ads?.playerPageAd?.enabled && (
-              <div className="mt-8">
-                <AdBanner
-                  adKey="playerPageAd"
-                  imageUrl={adminSettings.ads.playerPageAd.imageUrl}
-                  clickUrl={adminSettings.ads.playerPageAd.clickUrl}
-                  enabled={adminSettings.ads.playerPageAd.enabled}
-                />
-              </div>
-            )}
           </div>
         </div>
       </div>

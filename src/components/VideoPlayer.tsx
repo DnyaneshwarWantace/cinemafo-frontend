@@ -332,9 +332,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
 
       // Skip Intro button logic
-      if (currentTime <= 90) { // First 90 seconds
+      if (currentTime <= 40) { // First 40 seconds
         setShowSkipIntro(true);
-        setSkipIntroTimeRemaining(Math.max(0, 90 - currentTime));
+        setSkipIntroTimeRemaining(Math.max(0, 40 - currentTime));
       } else {
         setShowSkipIntro(false);
       }
@@ -371,7 +371,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (!videoRef.current) return;
     
     const video = videoRef.current;
-    const skipToTime = Math.min(video.currentTime + skipIntroTimeRemaining, 90);
+    const skipToTime = Math.min(video.currentTime + skipIntroTimeRemaining, 40);
     video.currentTime = skipToTime;
     setShowSkipIntro(false);
   }, [skipIntroTimeRemaining]);
@@ -526,6 +526,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [togglePlayPause, skipBackward, skipForward, toggleFullscreen, toggleMute, onClose]);
+
+  // Prevent body scroll when video player is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   // Fullscreen detection
   useEffect(() => {

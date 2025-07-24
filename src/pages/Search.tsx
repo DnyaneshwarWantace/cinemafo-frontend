@@ -128,7 +128,7 @@ const Search = () => {
   const { settings: adminSettings } = useAdminSettings();
 
   return (
-    <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20">
+    <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20" style={{ position: 'relative' }}>
       <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -149,7 +149,7 @@ const Search = () => {
         )}
 
         {/* Search Bar */}
-        <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/40 rounded-lg border border-gray-800">
+        <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-gray-800">
           <div className="flex gap-4 items-center flex-wrap w-full">
             <div className="relative flex-1 min-w-[300px]">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />

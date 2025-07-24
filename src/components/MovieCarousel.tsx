@@ -1,16 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Movie, TVShow } from '@/services/api';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Play, Star, Calendar, Heart } from 'lucide-react';
+import { Movie, TVShow } from '@/services/api';
 
 export interface MovieCarouselProps {
   title: string;
   items: (Movie | TVShow)[];
   onItemClick: (item: Movie | TVShow) => void;
   isUpcoming?: boolean;
-  viewMode?: 'grid' | 'list';
 }
 
-const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick, isUpcoming = false, viewMode = 'grid' }) => {
+const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick, isUpcoming = false }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
   const [watchlistUpdate, setWatchlistUpdate] = useState(0);
 
   useEffect(() => {
@@ -21,19 +26,58 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const scrollLeft = () => {
-    const container = document.getElementById(`carousel-${title}`);
-    if (container) {
-      container.scrollLeft -= container.offsetWidth - 100;
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = 1200;
+      const newScrollLeft = scrollRef.current.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
+      
+      scrollRef.current.scrollTo({
+        left: newScrollLeft,
+        behavior: 'smooth'
+      });
     }
   };
 
-  const scrollRight = () => {
-    const container = document.getElementById(`carousel-${title}`);
-    if (container) {
-      container.scrollLeft += container.offsetWidth - 100;
+  const handleScroll = useCallback(() => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setShowLeftArrow(scrollLeft > 0);
+      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
     }
+  }, []);
+
+  // Mouse drag functionality
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeft(scrollRef.current.scrollLeft);
   };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 2;
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    if (scrollElement) {
+      scrollElement.addEventListener('scroll', handleScroll);
+      handleScroll(); // Initial check
+      return () => scrollElement.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
 
   const formatReleaseDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -69,48 +113,84 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
       const isInList = isInWatchlist(item);
       
-      console.log('Toggle watchlist:', { item: item.id, isInList, currentWatchlist: watchlist });
-      
       if (isInList) {
         const updatedWatchlist = watchlist.filter((watchlistItem: any) => 
           !(watchlistItem.id === item.id && (watchlistItem.media_type || 'movie') === (item.media_type || 'movie'))
         );
         localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
-        console.log('Removed from watchlist');
       } else {
         const itemWithType = { ...item, media_type: item.media_type || 'movie' };
         watchlist.push(itemWithType);
         localStorage.setItem('watchlist', JSON.stringify(watchlist));
-        console.log('Added to watchlist');
       }
       
-      // Force re-render
       setWatchlistUpdate(prev => prev + 1);
     } catch (error) {
       console.error('Error updating watchlist:', error);
     }
   };
 
-  // If viewMode is 'list', render as grid instead of carousel
-  if (viewMode === 'list') {
+  if (!items || items.length === 0) {
     return (
-      <div className="w-full">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl md:text-2xl font-bold">{title}</h2>
+      <div className="mb-12">
+        <h2 className="text-xl md:text-2xl font-bold text-white mb-4">{title}</h2>
+        <div className="flex items-center justify-center w-full py-8 text-gray-500">
+          No items available
         </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {items && items.length > 0 ? items.map((item) => (
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-12 group">
+      <h2 className="text-xl md:text-2xl font-bold text-white mb-4">{title}</h2>
+      
+      <div className="relative">
+        {/* Left Arrow */}
+        {showLeftArrow && (
+          <button
+            onClick={() => scroll('left')}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/80 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+          >
+            <ChevronLeft size={24} />
+          </button>
+        )}
+
+        {/* Right Arrow */}
+        {showRightArrow && (
+          <button
+            onClick={() => scroll('right')}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/80 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+          >
+            <ChevronRight size={24} />
+          </button>
+        )}
+
+        {/* Movies Container */}
+        <div
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          className={`flex gap-4 overflow-x-auto scrollbar-hide pb-4 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          style={{ 
+            scrollbarWidth: 'none', 
+            msOverflowStyle: 'none',
+            userSelect: 'none'
+          }}
+        >
+          {items.map((item) => (
             <div
               key={item.id}
-              className="group relative bg-gray-900/30 rounded-lg overflow-hidden hover:scale-105 transition-all duration-300 cursor-pointer"
+              className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] cursor-pointer group/item"
               onClick={() => onItemClick(item)}
             >
-              <div className="aspect-[2/3] relative overflow-hidden">
+              <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                 <img
                   src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
                   alt={getItemTitle(item)}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  className="w-full h-full object-cover transform group-hover/item:scale-105 transition-transform duration-300"
                   loading="lazy"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -121,7 +201,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                 {/* Heart Button */}
                 <button
                   onClick={(e) => toggleWatchlist(e, item)}
-                  className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 z-20"
+                  className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover/item:opacity-100 z-20"
                 >
                   <Heart 
                     size={16} 
@@ -130,7 +210,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                 </button>
 
                 {/* Play Button or Calendar Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
                   {isUpcoming ? (
                     <div className="bg-black/40 rounded-full p-4 flex items-center justify-center">
                       <Calendar className="w-8 h-8 text-white" />
@@ -157,7 +237,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                   )
                 )}
                 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
                   <div>
                     <h3 className="text-white font-semibold text-sm line-clamp-2">
                       {getItemTitle(item)}
@@ -169,119 +249,8 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                 </div>
               </div>
             </div>
-          )) : (
-            <div className="flex items-center justify-center w-full py-8 text-gray-500">
-              No items available
-            </div>
-          )}
+          ))}
         </div>
-      </div>
-    );
-  }
-
-  // Default carousel view (grid mode)
-  return (
-    <div className="w-full relative group">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl md:text-2xl font-bold">{title}</h2>
-      </div>
-
-      {/* Scroll Buttons */}
-      <button
-        onClick={scrollLeft}
-        className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/30 p-2 rounded-full z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/50"
-        aria-label="Scroll left"
-      >
-        <ChevronLeft className="w-6 h-6 text-white" />
-      </button>
-
-      <button
-        onClick={scrollRight}
-        className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/30 p-2 rounded-full z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/50"
-        aria-label="Scroll right"
-      >
-        <ChevronRight className="w-6 h-6 text-white" />
-      </button>
-
-      {/* Movie Cards Container */}
-      <div
-        id={`carousel-${title}`}
-        className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth"
-        style={{ 
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
-        }}
-      >
-        {items && items.length > 0 ? items.map((item) => (
-          <div
-            key={item.id}
-            className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] snap-start cursor-pointer group/item"
-            onClick={() => onItemClick(item)}
-          >
-            <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
-              <img
-                src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
-                alt={getItemTitle(item)}
-                className="w-full h-full object-cover transform group-hover/item:scale-105 transition-transform duration-300"
-                loading="lazy"
-              />
-              
-              {/* Heart Button */}
-              <button
-                onClick={(e) => toggleWatchlist(e, item)}
-                className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover/item:opacity-100 z-20"
-              >
-                <Heart 
-                  size={16} 
-                  className={isInWatchlist(item) ? 'fill-blue-500 text-blue-500' : 'text-white'} 
-                />
-              </button>
-
-              {/* Play Button or Calendar Overlay */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover/item:opacity-100">
-                {isUpcoming ? (
-                <div className="bg-black/40 rounded-full p-4 flex items-center justify-center">
-                    <Calendar className="w-8 h-8 text-white" />
-                  </div>
-                  ) : (
-                  <div className="crystal-play-button">
-                    {/* Triangle is created via CSS ::before pseudo-element */}
-                  </div>
-                  )}
-              </div>
-              
-              {/* Rating Badge or Release Date Badge */}
-              {isUpcoming ? (
-                <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
-                  <Calendar className="w-3 h-3" />
-                  {formatReleaseDate(getItemReleaseDate(item))}
-                </div>
-              ) : (
-                typeof item.vote_average === 'number' && (
-                  <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
-                    <Star className="w-3 h-3" />
-                    {item.vote_average.toFixed(1)}
-                  </div>
-                )
-              )}
-              
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                <div>
-                  <h3 className="text-white font-semibold text-sm line-clamp-2">
-                    {getItemTitle(item)}
-                  </h3>
-                  <p className="text-gray-300 text-xs mt-1">
-                    {formatReleaseDate(getItemReleaseDate(item))}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )) : (
-          <div className="flex items-center justify-center w-full py-8 text-gray-500">
-            No items available
-          </div>
-        )}
       </div>
 
       <style dangerouslySetInnerHTML={{

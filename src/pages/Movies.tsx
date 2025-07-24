@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Filter, Grid, List, Star, Calendar, TrendingUp, X, RefreshCw, Eye, EyeOff, ChevronDown, SlidersHorizontal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import MovieModal from '@/components/MovieModal';
 import MovieCarousel from '@/components/MovieCarousel';
 import AdBanner from '@/components/AdBanner';
@@ -13,37 +10,15 @@ import useAdminSettings from '@/hooks/useAdminSettings';
 
 const Movies = () => {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [genres, setGenres] = useState<{ id: number; name: string }[]>([]);
-  const [selectedGenre, setSelectedGenre] = useState<string>('all');
-  const [sortBy, setSortBy] = useState('popularity.desc');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
-  const [filteredMovies, setFilteredMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Enhanced filter states
-  const [yearFilter, setYearFilter] = useState<string>('any');
-  const [ratingFilter, setRatingFilter] = useState<string>('any');
-  const [showFilters, setShowFilters] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Movie[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const { settings: adminSettings } = useAdminSettings();
-
-  useEffect(() => {
-    const fetchGenres = async () => {
-      try {
-        const genresResponse = await api.getMovieGenres();
-        setGenres(genresResponse.data?.genres || []);
-      } catch (err) {
-        setError('Failed to load genres');
-        console.error(err);
-      }
-    };
-    fetchGenres();
-  }, []);
 
   const fetchMovies = async () => {
     setLoading(true);
@@ -58,7 +33,6 @@ const Movies = () => {
       setTrendingMovies(trending.data?.results || []);
       setPopularMovies(popular.data?.results || []);
       setTopRatedMovies(topRated.data?.results || []);
-      setFilteredMovies(popular.data?.results || []); // Default to popular movies
     } catch (error) {
       console.error('Error fetching movies:', error);
       setError('Failed to load movies. Please try again later.');
@@ -70,159 +44,34 @@ const Movies = () => {
     fetchMovies();
   }, []);
 
-  useEffect(() => {
-    if (selectedGenre !== 'all' || sortBy !== 'popularity.desc' || yearFilter !== 'any' || ratingFilter !== 'any') {
-      applyFilters();
-    }
-  }, [selectedGenre, sortBy, yearFilter, ratingFilter]);
-
-  // Update active filters display
-  useEffect(() => {
-    const filters: string[] = [];
-    if (selectedGenre !== 'all') {
-      const genreName = genres.find(g => g.id.toString() === selectedGenre)?.name;
-      if (genreName) filters.push(genreName);
-    }
-    if (yearFilter !== 'any') filters.push(`${yearFilter}`);
-    if (ratingFilter !== 'any') filters.push(`${ratingFilter}+ Stars`);
-    if (sortBy !== 'popularity.desc') {
-      const sortLabels: Record<string, string> = {
-        'vote_average.desc': 'Highest Rated',
-        'release_date.desc': 'Newest First',
-        'title.asc': 'A-Z',
-        'title.desc': 'Z-A'
-      };
-      filters.push(sortLabels[sortBy] || sortBy);
-    }
-    setActiveFilters(filters);
-  }, [selectedGenre, yearFilter, ratingFilter, sortBy, genres]);
-
-  // Apply filters when any filter value changes
-  useEffect(() => {
-    if (genres.length > 0 && !loading) {
-      applyFilters();
-    }
-  }, [selectedGenre, yearFilter, ratingFilter, sortBy]);
-
-  const applyFilters = async () => {
-    try {
-      let response;
-      if (selectedGenre !== 'all') {
-        response = await api.getMoviesByGenre(parseInt(selectedGenre));
-        let results = response.data?.results || [];
-        
-        // Apply additional filters
-        if (yearFilter !== 'any') {
-          results = results.filter(movie => 
-            movie.release_date && new Date(movie.release_date).getFullYear().toString() === yearFilter
-          );
-        }
-        
-        if (ratingFilter !== 'any') {
-          results = results.filter(movie => 
-            movie.vote_average >= parseFloat(ratingFilter)
-          );
-        }
-        
-        // Apply sorting
-        results = sortMovies(results);
-        
-        setFilteredMovies(results);
-      } else {
-        // Use existing data based on sort and filters
-        let results = [...popularMovies];
-        
-        // Apply year filter
-        if (yearFilter !== 'any') {
-          results = results.filter(movie => 
-            movie.release_date && new Date(movie.release_date).getFullYear().toString() === yearFilter
-          );
-        }
-        
-        // Apply rating filter
-        if (ratingFilter !== 'any') {
-          results = results.filter(movie => 
-            movie.vote_average >= parseFloat(ratingFilter)
-          );
-        }
-        
-        // Apply sorting
-        results = sortMovies(results);
-        
-        setFilteredMovies(results);
-      }
-    } catch (error) {
-      console.error('Error applying filters:', error);
-    }
-  };
-
-  const sortMovies = (movies: Movie[]) => {
-    switch (sortBy) {
-      case 'vote_average.desc':
-        return [...movies].sort((a, b) => b.vote_average - a.vote_average);
-      case 'release_date.desc':
-        return [...movies].sort((a, b) => 
-          new Date(b.release_date).getTime() - new Date(a.release_date).getTime()
-        );
-      case 'title.asc':
-        return [...movies].sort((a, b) => a.title.localeCompare(b.title));
-      case 'title.desc':
-        return [...movies].sort((a, b) => b.title.localeCompare(a.title));
-      default:
-        return movies;
-    }
-  };
-
-  const handleGenreChange = (genreId: string) => {
-    setSelectedGenre(genreId);
-    // Apply filters immediately when genre changes
-    setTimeout(() => applyFilters(), 0);
-  };
-
-  const handleSortChange = (sortValue: string) => {
-    setSortBy(sortValue);
-    // Apply filters immediately when sort changes
-    setTimeout(() => applyFilters(), 0);
-  };
-
   const handleMovieClick = (movie: Movie) => {
     setSelectedMovie(movie);
   };
 
-  const clearAllFilters = () => {
-    setSelectedGenre('all');
-    setSortBy('popularity.desc');
-    setYearFilter('any');
-    setRatingFilter('any');
-  };
+  // Search functionality
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
 
-  const removeFilter = (filterToRemove: string) => {
-    if (selectedGenre !== 'all' && genres.find(g => g.id.toString() === selectedGenre)?.name === filterToRemove) {
-      setSelectedGenre('all');
-    } else if (yearFilter === filterToRemove) {
-      setYearFilter('any');
-    } else if (ratingFilter !== 'any' && `${ratingFilter}+ Stars` === filterToRemove) {
-      setRatingFilter('any');
-    } else if (sortBy !== 'popularity.desc') {
-      const sortLabels: Record<string, string> = {
-        'vote_average.desc': 'Highest Rated',
-        'release_date.desc': 'Newest First',
-        'title.asc': 'A-Z',
-        'title.desc': 'Z-A'
-      };
-      if (sortLabels[sortBy] === filterToRemove) {
-        setSortBy('popularity.desc');
-      }
+    setIsSearching(true);
+    try {
+      const response = await api.search(query);
+      setSearchResults(response.data?.results || []);
+    } catch (error) {
+      console.error('Error searching movies:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
     }
   };
 
-  const generateYearOptions = () => {
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let year = currentYear; year >= 1900; year--) {
-      years.push(year);
-    }
-    return years;
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
   };
 
   if (error) {
@@ -231,9 +80,12 @@ const Movies = () => {
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
             <p className="text-red-500 text-lg mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()}>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
             Retry
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -249,53 +101,74 @@ const Movies = () => {
           <p className="text-gray-400 text-sm">Discover amazing movies from around the world</p>
         </div>
 
-        {/* Mobile Filter Button */}
-        <div className="px-4 mb-4 relative z-10">
+        {/* Mobile Search */}
+        <div className="px-4 mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="text"
+              placeholder="Search movies..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-10 pr-10 bg-gray-800/30 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500"
+            />
+            {searchQuery && (
           <button 
-            onClick={() => {
-              console.log('Filter button clicked!');
-              console.log('Current showFilterDrawer:', showFilterDrawer);
-              setShowFilterDrawer(true);
-              console.log('Setting showFilterDrawer to true');
-            }}
-            className="w-full bg-gray-800/30 border border-gray-600 text-white hover:bg-gray-700/30 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors cursor-pointer"
-            style={{ position: 'relative', zIndex: 10 }}
-          >
-            <SlidersHorizontal size={16} />
-            <span>Filters</span>
-            {activeFilters.length > 0 && (
-              <Badge variant="secondary" className="ml-2 bg-blue-600 text-white text-xs">
-                {activeFilters.length}
-              </Badge>
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
             )}
-          </button>
-          
-
+          </div>
         </div>
 
-        {/* Mobile Active Filters */}
-        {activeFilters.length > 0 && (
+        {/* Mobile Search Results */}
+        {searchQuery && (
           <div className="px-4 mb-4">
-            <div className="flex flex-wrap gap-2">
-              {activeFilters.map((filter) => (
-                <Badge
-                  key={filter}
-                  variant="secondary"
-                  className="bg-blue-600/20 text-blue-300 border-blue-500/30 hover:bg-blue-600/30 cursor-pointer text-xs"
-                  onClick={() => removeFilter(filter)}
-                >
-                  {filter}
-                  <X size={10} className="ml-1" />
-                </Badge>
-              ))}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAllFilters}
-                className="text-gray-400 hover:text-white text-xs"
-              >
-                Clear All
-              </Button>
+            <div className="bg-black rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-white font-semibold">
+                  Search Results for "{searchQuery}"
+                </h3>
+                {isSearching && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
+              </div>
+              {searchResults.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {searchResults.slice(0, 6).map((movie) => (
+                    <div
+                      key={movie.id}
+                      className="group cursor-pointer"
+                      onClick={() => handleMovieClick(movie)}
+                    >
+                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-800">
+                        <img
+                          src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                          alt={movie.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/300x450/666666/ffffff?text=No+Image';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="absolute top-2 right-2 bg-black/80 text-yellow-400 px-2 py-1 rounded text-xs font-semibold">
+                          {movie.vote_average?.toFixed(1) || 'N/A'}
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <h3 className="text-sm font-medium text-white truncate">
+                          {movie.title}
+                        </h3>
+                        <p className="text-xs text-gray-400">
+                          {movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : !isSearching ? (
+                <p className="text-gray-400 text-sm">No movies found for "{searchQuery}"</p>
+              ) : null}
             </div>
           </div>
         )}
@@ -309,68 +182,26 @@ const Movies = () => {
             <p className="text-xl text-gray-400">Discover amazing movies from around the world</p>
             </div>
 
-          {/* Desktop Filters */}
-          <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8">
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                {/* Genre Filter */}
-                <div className="flex items-center gap-2">
-                  <Filter size={20} className="text-gray-400" />
-                  <select
-                    value={selectedGenre}
-                    onChange={(e) => handleGenreChange(e.target.value)}
-                    className="bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="all">All Genres</option>
-                      {genres.map((genre) => (
-                      <option key={genre.id} value={genre.id.toString()}>
-              {genre.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Sort Filter */}
-                        <div className="flex items-center gap-2">
-                  <span className="text-gray-400 text-sm">Sort by:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => handleSortChange(e.target.value)}
-                    className="bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="popularity.desc">Most Popular</option>
-                    <option value="vote_average.desc">Highest Rated</option>
-                    <option value="release_date.desc">Newest First</option>
-                    <option value="title.asc">A-Z</option>
-                    <option value="title.desc">Z-A</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-2 bg-gray-800 rounded-md p-1">
+          {/* Desktop Search */}
+          <div className="mb-6">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                type="text"
+                placeholder="Search movies..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-10 pr-10 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 text-lg"
+              />
+              {searchQuery && (
                   <button
-                    onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors ${
-                      viewMode === 'grid' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    <Grid size={18} />
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
                   </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                  className={`p-2 rounded transition-colors ${
-                      viewMode === 'list' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    <List size={18} />
-                  </button>
-                </div>
-              </div>
+              )}
+            </div>
             </div>
         </div>
       </div>
@@ -396,27 +227,11 @@ const Movies = () => {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Filtered Results */}
-            {(selectedGenre !== 'all' || sortBy !== 'popularity.desc' || yearFilter !== 'any' || ratingFilter !== 'any') && (
-              <section>
-                <MovieCarousel
-                  title={`Filtered Movies ${selectedGenre !== 'all' ? `- ${genres.find(g => g.id.toString() === selectedGenre)?.name}` : ''}`}
-                  items={filteredMovies}
-                  onItemClick={handleMovieClick}
-                  viewMode="grid"
-                />
-              </section>
-            )}
-
-            {/* Default Sections */}
-            {selectedGenre === 'all' && sortBy === 'popularity.desc' && yearFilter === 'any' && ratingFilter === 'any' && (
-              <>
                 <section>
               <MovieCarousel 
                 title="Trending Movies"
                 items={trendingMovies}
                 onItemClick={handleMovieClick}
-                    viewMode="grid"
               />
             </section>
 
@@ -425,7 +240,6 @@ const Movies = () => {
                 title="Popular Movies"
                 items={popularMovies}
                 onItemClick={handleMovieClick}
-                    viewMode="grid"
               />
             </section>
 
@@ -434,11 +248,8 @@ const Movies = () => {
                 title="Top Rated Movies"
                 items={topRatedMovies}
                 onItemClick={handleMovieClick}
-                    viewMode="grid"
               />
             </section>
-          </>
-        )}
 
             {/* Bottom Ad */}
             {adminSettings?.ads?.moviesPageBottomAd?.enabled && (
@@ -470,150 +281,102 @@ const Movies = () => {
             </div>
           )}
 
+          {/* Desktop Search Results */}
+          {searchQuery && (
+            <div className="mb-8">
+              <div className="bg-black rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-white text-xl font-semibold">
+                    Search Results for "{searchQuery}"
+                  </h3>
+                  {isSearching && <Loader2 className="w-5 h-5 animate-spin text-blue-500" />}
+                </div>
+                {searchResults.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                    {searchResults.map((movie) => (
+                      <div
+                        key={movie.id}
+                        className="group cursor-pointer"
+                        onClick={() => handleMovieClick(movie)}
+                      >
+                        <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-800">
+                          <img
+                            src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                            alt={movie.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://via.placeholder.com/300x450/666666/ffffff?text=No+Image';
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          <div className="absolute top-2 right-2 bg-black/80 text-yellow-400 px-2 py-1 rounded text-xs font-semibold">
+                            {movie.vote_average?.toFixed(1) || 'N/A'}
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <h3 className="text-sm font-medium text-white truncate">
+                            {movie.title}
+                          </h3>
+                          <p className="text-xs text-gray-400">
+                            {movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : !isSearching ? (
+                  <p className="text-gray-400">No movies found for "{searchQuery}"</p>
+                ) : null}
+              </div>
+            </div>
+          )}
+
           {/* Movies Content */}
           {loading ? (
             <div className="flex items-center justify-center min-h-[50vh]">
               <Loader2 className="w-12 h-12 animate-spin text-primary" />
             </div>
           ) : (
-            <>
-              {/* Filtered Results */}
-              {(selectedGenre !== 'all' || sortBy !== 'popularity.desc' || yearFilter !== 'any' || ratingFilter !== 'any') && (
-                <section className="mb-12">
-                  <MovieCarousel
-                    title={`Filtered Movies ${selectedGenre !== 'all' ? `- ${genres.find(g => g.id.toString() === selectedGenre)?.name}` : ''}`}
-                    items={filteredMovies}
-                    onItemClick={handleMovieClick}
-                    viewMode={viewMode}
-                  />
-                </section>
-              )}
-
-              {/* Default Sections */}
-              {selectedGenre === 'all' && sortBy === 'popularity.desc' && yearFilter === 'any' && ratingFilter === 'any' && (
-                <>
-                  <section className="mb-12">
+            <div className="space-y-8">
+              <section>
                     <MovieCarousel 
                       title="Trending Movies"
                       items={trendingMovies}
                       onItemClick={handleMovieClick}
-                      viewMode={viewMode}
                     />
                   </section>
 
-                  <section className="mb-12">
+              <section>
                     <MovieCarousel 
                       title="Popular Movies"
                       items={popularMovies}
                       onItemClick={handleMovieClick}
-                      viewMode={viewMode}
                     />
                   </section>
 
-                  <section className="mb-12">
+              <section>
                     <MovieCarousel 
                       title="Top Rated Movies"
                       items={topRatedMovies}
                       onItemClick={handleMovieClick}
-                      viewMode={viewMode}
               />
             </section>
-          </>
-        )}
-          </>
-        )}
 
         {/* Bottom Ad */}
           {adminSettings?.ads?.moviesPageBottomAd?.enabled && (
-        <div className="mt-12">
+                <div className="mb-8">
           <AdBanner 
             adKey="moviesPageBottomAd" 
                 imageUrl={adminSettings.ads.moviesPageBottomAd.imageUrl}
                 clickUrl={adminSettings.ads.moviesPageBottomAd.clickUrl}
                 enabled={adminSettings.ads.moviesPageBottomAd.enabled}
               />
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
-
-      {/* Mobile Filter Drawer */}
-      {showFilterDrawer && (
-        <div className="fixed inset-0 z-[9999] lg:hidden">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setShowFilterDrawer(false)}
-          />
-          
-          {/* Drawer */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gray-900 rounded-t-2xl p-6 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">Filters</h3>
-              <button
-                onClick={() => setShowFilterDrawer(false)}
-                className="text-gray-400 hover:text-white"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            {/* Genre Filter - Mobile Simplified */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-300 mb-3">Genre</label>
-              <select
-                value={selectedGenre}
-                onChange={(e) => handleGenreChange(e.target.value)}
-                className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
-              >
-                <option value="all">All Genres</option>
-                {genres.slice(0, 10).map((genre) => (
-                  <option key={genre.id} value={genre.id.toString()}>
-                    {genre.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sort Filter - Mobile Simplified */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-300 mb-3">Sort By</label>
-              <select
-                value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value)}
-                className="w-full bg-gray-800 text-white px-4 py-3 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
-              >
-                <option value="popularity.desc">Most Popular</option>
-                <option value="vote_average.desc">Highest Rated</option>
-                <option value="release_date.desc">Newest First</option>
-              </select>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <Button
-                onClick={() => {
-                  clearAllFilters();
-                  setShowFilterDrawer(false);
-                }}
-                variant="outline"
-                className="flex-1 bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
-              >
-                Clear All
-              </Button>
-              <Button
-                onClick={() => {
-                  applyFilters();
-                  setShowFilterDrawer(false);
-                }}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-              >
-                Apply Filters
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Movie Modal */}
       {selectedMovie && (

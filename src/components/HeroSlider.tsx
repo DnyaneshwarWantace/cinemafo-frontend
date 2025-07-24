@@ -53,8 +53,8 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
           alt={title}
           className="w-full h-full object-cover object-top transition-transform duration-500"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
       </div>
 
       {/* Content */}

@@ -27,8 +27,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [relatedShows, setRelatedShows] = useState<TVShow[]>([]);
-  const [loadingRelated, setLoadingRelated] = useState(false);
+  const [showExpandedDetails, setShowExpandedDetails] = useState(false);
   const { settings: adminSettings } = useAdminSettings();
 
   // Debug: Log the show data being passed
@@ -39,6 +38,19 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
     const timer = setTimeout(() => setIsOpen(true), 10);
     return () => clearTimeout(timer);
   }, []);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   // Fetch show details with seasons
   useEffect(() => {
@@ -85,53 +97,6 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
       fetchSeasonDetails();
     }
   }, [show.id, selectedSeason]);
-
-  // Fetch related shows
-  useEffect(() => {
-    const fetchRelatedShows = async () => {
-      try {
-        setLoadingRelated(true);
-        // Use the recommendations from show details if available, otherwise fetch similar shows
-        if (showDetails?.recommendations && showDetails.recommendations.length > 0) {
-          // Convert recommendations to TVShow format
-          const recommendationsAsShows = showDetails.recommendations.map(rec => ({
-            ...rec,
-            overview: '',
-            backdrop_path: '',
-            first_air_date: '',
-            vote_count: 0,
-            genres: [],
-            name: rec.title
-          })) as TVShow[];
-          setRelatedShows(recommendationsAsShows.slice(0, 6));
-        } else {
-          // Fallback to popular shows in the same genre
-          const genreId = show.genres?.[0]?.id;
-          if (genreId) {
-            const response = await api.getShowsByGenre(genreId);
-            const similarShows = response.data.results
-              .filter((s: TVShow) => s.id !== show.id)
-              .slice(0, 6);
-            setRelatedShows(similarShows);
-          } else {
-            // Final fallback to popular shows
-            const response = await api.getPopularShows();
-            const popularShows = response.data.results
-              .filter((s: TVShow) => s.id !== show.id)
-              .slice(0, 6);
-            setRelatedShows(popularShows);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching related shows:', error);
-        setRelatedShows([]);
-      } finally {
-        setLoadingRelated(false);
-      }
-    };
-
-    fetchRelatedShows();
-  }, [show.id, show.genres, showDetails?.recommendations]);
 
   const handlePlayEpisode = (episodeNumber: number) => {
     setSelectedEpisode(episodeNumber);
@@ -289,9 +254,20 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
 
         {/* Content */}
         <div className="h-full max-w-6xl w-full mx-2 sm:mx-4 flex items-center justify-center">
-          <div className="max-h-[90vh] w-full overflow-y-auto scrollbar-hide">
+          <div className="max-h-[90vh] w-full overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Content */}
           <div className="p-3 sm:p-4 md:p-6 pt-20 sm:pt-24 relative z-10">
+            {/* Ad Banner - Moved to top */}
+            {adminSettings?.ads?.playerPageAd?.enabled && (
+              <div className="mb-6">
+                <AdBanner
+                  adKey="playerPageAd"
+                  imageUrl={adminSettings.ads.playerPageAd.imageUrl}
+                  clickUrl={adminSettings.ads.playerPageAd.clickUrl}
+                  enabled={adminSettings.ads.playerPageAd.enabled}
+                />
+              </div>
+            )}
             <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 md:gap-6">
               {/* Poster Image */}
               <div className="flex-shrink-0 flex justify-center lg:justify-start">
@@ -343,7 +319,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                 {/* Overview */}
                 <p className="text-gray-200 mb-6 text-sm md:text-base leading-relaxed text-center lg:text-left">{show.overview}</p>
 
-                {/* Action Buttons */}
+                {/* Action Buttons and Show More Details */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-center lg:justify-start">
                   <Button 
                     onClick={(e) => {
@@ -357,10 +333,29 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                     <Play className="w-4 h-4" />
                     Play S1E1
                   </Button>
+                  
+                  <Button
+                    onClick={() => setShowExpandedDetails(!showExpandedDetails)}
+                    variant="outline"
+                    className="flex items-center gap-2 bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60 w-full sm:w-auto"
+                  >
+                    {showExpandedDetails ? (
+                      <>
+                        <ChevronLeft className="w-4 h-4" />
+                        Show Less
+                      </>
+                    ) : (
+                      <>
+                        <ChevronRight className="w-4 h-4" />
+                        Show More Details
+                      </>
+                    )}
+                  </Button>
                 </div>
 
-                {/* Detailed Information Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                {/* Detailed Information Grid - Hidden by default */}
+                {showExpandedDetails && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm mb-6">
                   {director && (
                     <div className="flex items-center gap-2 text-gray-300">
                       <Film className="w-4 h-4 flex-shrink-0" />
@@ -416,8 +411,12 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                     </div>
                   )}
                 </div>
+                )}
 
-                {/* Cast Section */}
+                {/* Expanded Details Section */}
+                {showExpandedDetails && (
+                  <>
+                    {/* Cast Section */}
                 {mainCast.length > 0 && (
                   <>
                     <Separator className="my-6 bg-gray-600" />
@@ -450,64 +449,14 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                     </div>
                   </>
                 )}
-
-                {/* Keywords */}
-                {showDetails?.keywords?.length > 0 && (
-                  <>
-                    <Separator className="my-6 bg-gray-600" />
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
-                        <Tags className="w-5 h-5" />
-                        Keywords
-                      </h3>
-                      <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                        {showDetails.keywords.slice(0, 8).map(keyword => (
-                          <Badge key={keyword.id} variant="outline" className="text-xs bg-gray-700/60 text-white border-gray-500">
-                            {keyword.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
                   </>
                 )}
+
+
               </div>
             </div>
 
-            {/* Ad Banner (same as MovieModal, backend-driven) */}
-            {adminSettings?.ads?.playerPageAd?.enabled && (
-              <div className="mt-8">
-                <AdBanner
-                  adKey="playerPageAd"
-                  imageUrl={adminSettings.ads.playerPageAd.imageUrl}
-                  clickUrl={adminSettings.ads.playerPageAd.clickUrl}
-                  enabled={adminSettings.ads.playerPageAd.enabled}
-                />
-              </div>
-            )}
 
-            {/* Related Shows Section */}
-            {relatedShows.length > 0 && (
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
-                  <Film className="w-5 h-5" />
-                  Related Shows
-                </h3>
-                <MovieCarousel 
-                  title="Related Shows"
-                  items={relatedShows}
-                  onItemClick={(item) => {
-                    if ('name' in item) {
-                        // Close current modal and open new one
-                        onClose();
-                        setTimeout(() => {
-                          // This would need to be handled by the parent component
-                        console.log('Opening related show:', item);
-                        }, 300);
-                    }
-                  }}
-                />
-              </div>
-            )}
 
             {/* Season Selector */}
             <Separator className="my-6 bg-gray-600" />
