@@ -29,6 +29,57 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  // Cleanup tooltip on component unmount or when items change
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      // If mouse moves outside the carousel area, hide tooltip
+      const carouselElement = scrollRef.current;
+      if (carouselElement && !carouselElement.contains(e.target as Node)) {
+        hideTooltip();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      // Hide tooltip when page becomes hidden (user switches tabs)
+      if (document.hidden) {
+        hideTooltip();
+      }
+    };
+
+    const handleGlobalClick = () => {
+      // Hide tooltip when clicking anywhere
+      hideTooltip();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Hide tooltip on Escape key
+      if (e.key === 'Escape') {
+        hideTooltip();
+      }
+    };
+
+    const handleScroll = () => {
+      // Hide tooltip when scrolling
+      hideTooltip();
+    };
+
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('click', handleGlobalClick);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('scroll', handleScroll);
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('click', handleGlobalClick);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('scroll', handleScroll);
+      
+      hideTooltip();
+    };
+  }, [tooltipTimeout, items]);
+
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const scrollAmount = 1200;
@@ -153,6 +204,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     // Clear any existing timeout
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
     }
     
     // Set timeout for 1.5 seconds
@@ -164,6 +216,15 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
   };
 
   const handleTooltipMouseLeave = () => {
+    // Clear timeout and hide tooltip immediately
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
+    }
+    setTooltipItem(null);
+  };
+
+  const hideTooltip = () => {
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
@@ -228,6 +289,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
               onClick={() => onItemClick(item)}
               onMouseEnter={(e) => handleMouseEnter(e, item)}
               onMouseLeave={handleTooltipMouseLeave}
+              onMouseOut={handleTooltipMouseLeave}
             >
               <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                 <img

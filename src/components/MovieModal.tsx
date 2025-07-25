@@ -283,7 +283,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
 
               {/* Ad Banner - Moved below Watch Now button */}
               {adminSettings?.ads?.playerPageAd?.enabled && (
-                <div className="mt-6">
+                <div className="mt-6 flex justify-center lg:justify-start">
                   <AdBanner
                     adKey="playerPageAd"
                     imageUrl={adminSettings.ads.playerPageAd.imageUrl}

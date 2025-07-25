@@ -351,7 +351,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
 
               {/* Ad Banner - Moved below Play S1E1 button */}
               {adminSettings?.ads?.playerPageAd?.enabled && (
-                <div className="mt-6">
+                <div className="mt-6 flex justify-center lg:justify-start">
                   <AdBanner
                     adKey="playerPageAd"
                     imageUrl={adminSettings.ads.playerPageAd.imageUrl}
