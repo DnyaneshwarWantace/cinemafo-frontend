@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Hls from 'hls.js';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -76,12 +77,12 @@ class HLSPrefetcher {
 const hlsPrefetcher = new HLSPrefetcher();
 
 interface VideoPlayerProps {
-  tmdbId: number;
-  type: 'movie' | 'tv';
+  tmdbId?: number;
+  type?: 'movie' | 'tv';
   season?: number;
   episode?: number;
-  title: string;
-  onClose: () => void;
+  title?: string;
+  onClose?: () => void;
   onNextEpisode?: () => void; // New prop for next episode callback
   onProgressUpdate?: (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => void; // Progress updates (videoElement only for final screenshots)
   initialTime?: number; // New prop for starting at a specific time
@@ -104,16 +105,40 @@ interface StreamingSource {
 
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
-  tmdbId, 
-  type, 
-  season, 
-  episode, 
-  title, 
-  onClose,
-  onNextEpisode,
-  onProgressUpdate,
-  initialTime = 0
+  tmdbId: propTmdbId, 
+  type: propType, 
+  season: propSeason, 
+  episode: propEpisode, 
+  title: propTitle, 
+  onClose: propOnClose,
+  onNextEpisode: propOnNextEpisode,
+  onProgressUpdate: propOnProgressUpdate,
+  initialTime: propInitialTime = 0
 }) => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Get parameters from URL if not provided as props (for route usage)
+  const tmdbId = propTmdbId || parseInt(searchParams.get('id') || '0');
+  const type = propType || (searchParams.get('type') as 'movie' | 'tv') || 'movie';
+  const season = propSeason || parseInt(searchParams.get('season') || '0');
+  const episode = propEpisode || parseInt(searchParams.get('episode') || '0');
+  const title = propTitle || searchParams.get('title') || 'Video';
+  const initialTime = propInitialTime || parseFloat(searchParams.get('time') || '0');
+  
+  // Use prop callbacks if provided, otherwise use navigation
+  const onClose = propOnClose || (() => navigate(-1));
+  const onNextEpisode = propOnNextEpisode || (() => {
+    // For route usage, navigate to next episode
+    const nextEpisode = episode + 1;
+    const nextSeason = season;
+    navigate(`/watch?id=${tmdbId}&type=${type}&season=${nextSeason}&episode=${nextEpisode}&title=${encodeURIComponent(title)}`);
+  });
+  const onProgressUpdate = propOnProgressUpdate || (() => {
+    // For route usage, we might want to save progress to localStorage or call an API
+    console.log('Progress update for route video player');
+  });
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -165,7 +190,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
       
       // Test backend connectivity first (optional)
       try {

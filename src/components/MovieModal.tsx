@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -8,6 +7,8 @@ import {
   Play, Star, Calendar, Clock, Loader2, Film, Users, Globe, Info, DollarSign, 
   Award, Building2, MapPin, Languages, Tags, ArrowLeft, ChevronLeft, ChevronRight
 } from "lucide-react";
+import VideoPlayer from "./VideoPlayer";
+import TVShowPlayer from "./TVShowPlayer";
 import AdBanner from "./AdBanner";
 import MovieCarousel from "./MovieCarousel";
 import api, { Movie, TVShow, cacheUtils } from "@/services/api";
@@ -20,9 +21,10 @@ interface MovieModalProps {
 }
 
 const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose }) => {
-  const navigate = useNavigate();
   const [movie, setMovie] = useState<Movie>(initialMovie);
   const [loading, setLoading] = useState(false);
+  const [showFullMovie, setShowFullMovie] = useState(false);
+  const [showTVShowPlayer, setShowTVShowPlayer] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const { settings: adminSettings } = useAdminSettings();
@@ -71,11 +73,10 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
     const isTVShow = movie.media_type === 'tv' || (movie.name && !movie.title);
     
     if (isTVShow) {
-      // Navigate to TV show player page
-      navigate(`/watch/tv/${movie.id}/1/1`);
+      onClose();
+      setShowTVShowPlayer(true);
     } else {
-      // Navigate to movie player page
-      navigate(`/watch/movie/${movie.id}`);
+      setShowFullMovie(true);
     }
   };
 
@@ -403,6 +404,33 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
         </div>
       </div>
           </div>
+
+      {/* TV Show Player */}
+      {showTVShowPlayer && movie.media_type === 'tv' && (
+        <TVShowPlayer
+          show={{
+            ...movie,
+            name: movie.name || movie.title,
+            first_air_date: movie.first_air_date || movie.release_date
+          } as TVShow}
+          onClose={() => setShowTVShowPlayer(false)}
+        />
+      )}
+
+      {/* Full Movie Player */}
+      {showFullMovie && (
+        <VideoPlayer
+          tmdbId={movie.id}
+          type="movie"
+          title={movie.title || movie.name}
+          onClose={() => setShowFullMovie(false)}
+          onProgressUpdate={(currentTime, duration, videoElement) => {
+            // Only pass videoElement for final screenshots, not regular progress updates
+            updateProgress(movie, currentTime, duration, 'movie', undefined, undefined, undefined, videoElement);
+          }}
+          initialTime={getHistoryItem(movie.id, 'movie')?.currentTime || 0}
+        />
+      )}
 
       {/* Hide scrollbar styles */}
       <style dangerouslySetInnerHTML={{

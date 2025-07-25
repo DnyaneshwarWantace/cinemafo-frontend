@@ -3,6 +3,7 @@ import api, { Movie, TVShow } from '@/services/api';
 import MovieCarousel from '@/components/MovieCarousel';
 import MovieModal from '@/components/MovieModal';
 import TVShowPlayer from '@/components/TVShowPlayer';
+import VideoPlayer from '@/components/VideoPlayer';
 import HeroSlider from '@/components/HeroSlider';
 import ContinueWatching from '@/components/ContinueWatching';
 import AdBanner from '@/components/AdBanner';
@@ -14,6 +15,13 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 const Home = () => {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
+  const [playingContent, setPlayingContent] = useState<{
+    item: Movie | TVShow;
+    type: 'movie' | 'tv';
+    season?: number;
+    episode?: number;
+    initialTime?: number;
+  } | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
   const [trendingShows, setTrendingShows] = useState<TVShow[]>([]);
@@ -72,11 +80,11 @@ const Home = () => {
 
   const handleContinueWatchingClick = async (historyItem: any) => {
     try {
-      // Find the actual content from our data
-      let content: Movie | TVShow | null = null;
-
-      if (historyItem.type === 'movie') {
-        content = [...trendingMovies, ...popularMovies].find(m => m.id === historyItem.id) || null;
+    // Find the actual content from our data
+    let content: Movie | TVShow | null = null;
+    
+    if (historyItem.type === 'movie') {
+      content = [...trendingMovies, ...popularMovies].find(m => m.id === historyItem.id) || null;
         if (!content) {
           // Fetch full movie details if not found
           try {
@@ -87,8 +95,8 @@ const Home = () => {
             return;
           }
         }
-      } else {
-        content = [...trendingShows, ...popularShows].find(s => s.id === historyItem.id) || null;
+    } else {
+      content = [...trendingShows, ...popularShows].find(s => s.id === historyItem.id) || null;
         if (!content) {
           // Fetch full show details if not found
           try {
@@ -99,14 +107,16 @@ const Home = () => {
             return;
           }
         }
-      }
+    }
 
-      if (content) {
-        if (historyItem.type === 'movie') {
-          setSelectedMovie(content as Movie);
-        } else {
-          setSelectedShow(content as TVShow);
-        }
+    if (content) {
+      setPlayingContent({
+        item: content,
+        type: historyItem.type,
+        season: historyItem.season,
+        episode: historyItem.episode,
+        initialTime: historyItem.currentTime
+      });
       }
     } catch (error) {
       console.error('Error handling continue watching click:', error);
@@ -123,7 +133,29 @@ const Home = () => {
     }
   };
 
-
+  const handleProgressUpdate = (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => {
+    if (playingContent) {
+      try {
+      // Only pass videoElement for final screenshots (when user closes)
+      // Regular progress updates don't include videoElement to avoid lag
+      updateProgress(
+        playingContent.item,
+        currentTime,
+        duration,
+        playingContent.type,
+        playingContent.season,
+        playingContent.episode,
+        undefined, // episodeTitle
+        videoElement
+      );
+        
+        // Force re-render of continue watching section
+        setContinueWatchingKey(prev => prev + 1);
+      } catch (error) {
+        console.error('Error updating progress:', error);
+      }
+    }
+  };
 
   if (error) {
     return (
@@ -283,6 +315,20 @@ const Home = () => {
         <TVShowPlayer
           show={selectedShow}
           onClose={() => setSelectedShow(null)}
+        />
+      )}
+
+      {/* Video Player for Continue Watching */}
+      {playingContent && (
+        <VideoPlayer
+          tmdbId={playingContent.item.id}
+          type={playingContent.type}
+          season={playingContent.season}
+          episode={playingContent.episode}
+          title={'title' in playingContent.item ? playingContent.item.title : playingContent.item.name}
+          onClose={() => setPlayingContent(null)}
+          onProgressUpdate={handleProgressUpdate}
+          initialTime={playingContent.initialTime}
         />
       )}
     </div>
