@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search as SearchIcon, Filter, X, Star, Calendar, TrendingUp } from 'lucide-react';
+import { Search as SearchIcon, Filter, X, Star, Calendar, TrendingUp, Play } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,9 @@ const Search = () => {
     rating: 'any',
     sortBy: 'relevance'
   });
+  const [tooltipItem, setTooltipItem] = useState<Movie | TVShow | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Read query from URL on component mount
   useEffect(() => {
@@ -122,6 +125,29 @@ const Search = () => {
       rating: '',
       sortBy: 'relevance'
     });
+  };
+
+  const handleMouseEnter = (e: React.MouseEvent, item: Movie | TVShow) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.bottom + 10
+    });
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
+    }
+    const timeout = setTimeout(() => {
+      setTooltipItem(item);
+    }, 800);
+    setTooltipTimeout(timeout);
+  };
+  const handleTooltipMouseLeave = () => {
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
+    }
+    setTooltipItem(null);
   };
 
   const hasActiveFilters = filters.genre !== 'all' || filters.year || filters.rating || filters.sortBy !== 'relevance';
@@ -293,8 +319,11 @@ const Search = () => {
                 {results.map((item) => (
                   <div
                     key={item.id}
-                    className="group cursor-pointer"
+                    className="group cursor-pointer relative"
                     onClick={() => handleItemClick(item)}
+                    onMouseEnter={(e) => handleMouseEnter(e, item)}
+                    onMouseLeave={handleTooltipMouseLeave}
+                    onMouseOut={handleTooltipMouseLeave}
                   >
                     <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-800">
                       <img
@@ -305,7 +334,13 @@ const Search = () => {
                           e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgdmlld0JveD0iMCAwIDMwMCA0NTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDUwIiBmaWxsPSIjMWYyOTM3Ii8+Cjx0ZXh0IHg9IjE1MCIgeT0iMjI1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2YjcyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K';
                         }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      {/* Play Button Overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="crystal-play-button">
+                          {/* Triangle is created via CSS ::before pseudo-element */}
+                        </div>
+                      </div>
+                      {/* Rating Badge */}
                       <div className="absolute top-2 right-2 bg-black/80 text-yellow-400 px-2 py-1 rounded text-xs font-semibold">
                         {item.vote_average?.toFixed(1) || 'N/A'}
                       </div>
@@ -359,6 +394,41 @@ const Search = () => {
           show={selectedItem as TVShow}
           onClose={() => setSelectedItem(null)}
         />
+      )}
+
+      {/* Tooltip */}
+      {tooltipItem && tooltipPosition && (
+        <div
+          className="fixed z-50 bg-black/95 text-white rounded-lg shadow-lg p-4 min-w-[220px] max-w-xs pointer-events-none"
+          style={{ left: tooltipPosition.x, top: tooltipPosition.y }}
+          onMouseLeave={handleTooltipMouseLeave}
+        >
+          <h4 className="font-semibold text-base mb-1">
+            {'title' in tooltipItem ? tooltipItem.title : tooltipItem.name}
+          </h4>
+          <div className="flex items-center gap-2 text-xs text-gray-300 mb-2">
+            <span>
+              {(() => {
+                const date = 'release_date' in tooltipItem ? tooltipItem.release_date : tooltipItem.first_air_date;
+                if (!date || date === 'Invalid Date' || date === 'null' || date === 'undefined') {
+                  return 'Unknown';
+                }
+                const dateObj = new Date(date);
+                return isNaN(dateObj.getTime()) ? 'Unknown' : dateObj.getFullYear();
+              })()}
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1">
+              <Star className="w-3 h-3 text-yellow-400" />
+              {tooltipItem.vote_average?.toFixed(1) || 'N/A'}
+            </span>
+            <span>•</span>
+            <span className="capitalize">{'title' in tooltipItem ? 'Movie' : 'TV Show'}</span>
+          </div>
+          <p className="text-xs text-gray-400 line-clamp-4">
+            {tooltipItem.overview || 'No description available.'}
+          </p>
+        </div>
       )}
     </div>
   );
