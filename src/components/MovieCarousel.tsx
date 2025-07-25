@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Play, Star, Calendar, Heart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Star, Calendar, Bookmark, Clock, Users } from 'lucide-react';
 import { Movie, TVShow } from '@/services/api';
 
 export interface MovieCarouselProps {
@@ -17,6 +17,9 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [watchlistUpdate, setWatchlistUpdate] = useState(0);
+  const [tooltipItem, setTooltipItem] = useState<Movie | TVShow | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -130,6 +133,34 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     }
   };
 
+  const handleMouseEnter = (e: React.MouseEvent, item: Movie | TVShow) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.bottom + 10
+    });
+    
+    // Clear any existing timeout
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+    }
+    
+    // Set timeout for 1.5 seconds
+    const timeout = setTimeout(() => {
+      setTooltipItem(item);
+    }, 1500);
+    
+    setTooltipTimeout(timeout);
+  };
+
+  const handleTooltipMouseLeave = () => {
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
+    }
+    setTooltipItem(null);
+  };
+
   if (!items || items.length === 0) {
     return (
       <div className="mb-12">
@@ -185,6 +216,8 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
               key={item.id}
               className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] cursor-pointer group/item"
               onClick={() => onItemClick(item)}
+              onMouseEnter={(e) => handleMouseEnter(e, item)}
+              onMouseLeave={handleTooltipMouseLeave}
             >
               <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                 <img
@@ -194,16 +227,16 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                   loading="lazy"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = 'https://via.placeholder.com/300x450/1f2937/6b7280?text=No+Image';
+                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgdmlld0JveD0iMCAwIDMwMCA0NTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDUwIiBmaWxsPSIjMWYyOTM3Ii8+Cjx0ZXh0IHg9IjE1MCIgeT0iMjI1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2YjcyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K';
                   }}
                 />
                 
-                {/* Heart Button */}
+                {/* Watchlist Button */}
                 <button
                   onClick={(e) => toggleWatchlist(e, item)}
                   className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover/item:opacity-100 z-20"
                 >
-                  <Heart 
+                  <Bookmark 
                     size={16} 
                     className={isInWatchlist(item) ? 'fill-blue-500 text-blue-500' : 'text-white'} 
                   />
@@ -252,6 +285,61 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
           ))}
         </div>
       </div>
+
+      {/* Tooltip */}
+      {tooltipItem && (
+        <div
+          className="fixed z-50 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+        style={{ 
+            left: tooltipPosition.x,
+            top: tooltipPosition.y,
+            transform: 'translateX(-50%)',
+            marginTop: '0px'
+          }}
+        >
+          <div className="flex items-start gap-3">
+            {/* Poster */}
+            <div className="flex-shrink-0 w-16 h-24 bg-gray-700 rounded overflow-hidden">
+              <img
+                src={`https://image.tmdb.org/t/p/w92${tooltipItem.poster_path}`}
+                alt={getItemTitle(tooltipItem)}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg==';
+                }}
+                />
+                  </div>
+
+            {/* Details */}
+            <div className="flex-1 min-w-0">
+              <h4 className="text-white font-semibold text-sm line-clamp-2 mb-2">
+                {getItemTitle(tooltipItem)}
+              </h4>
+              
+              <div className="space-y-1 text-xs text-gray-300">
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  <span>{formatReleaseDate(getItemReleaseDate(tooltipItem))}</span>
+                </div>
+                
+                {typeof tooltipItem.vote_average === 'number' && (
+                  <div className="flex items-center gap-1">
+                    <Star className="w-3 h-3 text-yellow-400" />
+                    <span>{tooltipItem.vote_average.toFixed(1)}</span>
+                  </div>
+                )}
+                
+                {tooltipItem.overview && (
+                  <p className="text-gray-400 line-clamp-2 mt-2">
+                    {tooltipItem.overview}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+          </div>
+        )}
 
       <style dangerouslySetInnerHTML={{
         __html: `

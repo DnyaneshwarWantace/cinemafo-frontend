@@ -13,6 +13,9 @@ const Footer = () => {
   const handleContactClick = () => {
     if (contactEmail) {
       window.open(`mailto:${contactEmail}`, '_blank');
+    } else {
+      // Fallback: open default email client with a generic email
+      window.open('mailto:contact@cinema.fo', '_blank');
     }
   };
 
@@ -60,15 +63,12 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Support */}
+          {/* Contact */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Support</h3>
-            <ul className="space-y-2">
-              {contactEmail && (
-                <li>
+            <h3 className="text-white font-semibold mb-4">Contact Us</h3>
                   <button 
                     onClick={handleContactClick}
-                    className="text-gray-400 hover:text-white transition-colors text-sm flex items-center gap-2 cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 cursor-pointer font-medium"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 13.5l8-5V7l-8 5-8-5v1.5l8 5z"/>
@@ -76,9 +76,6 @@ const Footer = () => {
                     </svg>
                     Contact Us
                   </button>
-                </li>
-              )}
-            </ul>
           </div>
         </div>
 

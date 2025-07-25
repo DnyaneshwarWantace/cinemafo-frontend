@@ -140,7 +140,7 @@ const Movies = () => {
                       key={movie.id}
                       className="group cursor-pointer"
                       onClick={() => handleMovieClick(movie)}
-                    >
+                >
                       <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-800">
                         <img
                           src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
@@ -197,11 +197,11 @@ const Movies = () => {
                   <button
                   onClick={clearSearch}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                >
+                  >
                   <X className="w-5 h-5" />
                   </button>
               )}
-            </div>
+              </div>
             </div>
         </div>
       </div>

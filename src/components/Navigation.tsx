@@ -208,8 +208,8 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
               </Link>
             </div>
 
-            {/* Navigation Items and Search - Center */}
-            <div className="hidden md:flex items-center space-x-8 flex-1 justify-center">
+            {/* Navigation Items and Search - Center (Desktop Only) */}
+            <div className="hidden lg:flex items-center space-x-8 flex-1 justify-center">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
@@ -229,17 +229,17 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                 );
               })}
               
-              {/* Search Bar - Centered with navigation */}
+              {/* Search Bar - Centered with navigation (Desktop Only) */}
               <div className="relative search-container">
                 <form onSubmit={handleSearchSubmit}>
-                  <div className={`flex items-center transition-all duration-300 ${
-                    isSearchFocused ? 'w-80' : 'w-64'
-                  }`}>
-                    <div className="relative w-full">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                      <input
-                        type="text"
-                        value={searchQuery}
+                <div className={`flex items-center transition-all duration-300 ${
+                  isSearchFocused ? 'w-80' : 'w-64'
+                }`}>
+                  <div className="relative w-full">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <input
+                      type="text"
+                      value={searchQuery}
                         onChange={(e) => handleSearch(e.target.value)}
                         onFocus={() => setIsSearchFocused(true)}
                         onBlur={() => setIsSearchFocused(false)}
@@ -260,7 +260,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                   </div>
                 </form>
 
-                                {/* Desktop Search Popup */}
+                {/* Desktop Search Popup */}
                 {showSearchPopup && (
                   <div className="absolute top-full left-0 mt-2 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl z-50 w-full">
                     {isSearching ? (
@@ -341,8 +341,117 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
               </div>
             </div>
 
-            {/* Discord Button - Right side */}
-            <div className="hidden md:flex items-center">
+            {/* Tablet Search Bar (md to lg) */}
+            <div className="hidden md:flex lg:hidden items-center flex-1 justify-center px-4">
+              <div className="relative search-container max-w-md w-full">
+                <form onSubmit={handleSearchSubmit}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      onFocus={() => setIsSearchFocused(true)}
+                      onBlur={() => setIsSearchFocused(false)}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder="Search movies..."
+                      className="w-full bg-white/10 text-white pl-10 pr-10 py-2.5 rounded-full border border-white/20 focus:border-blue-500 focus:outline-none text-sm placeholder-gray-400 transition-all duration-300 focus:bg-white/15"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={clearSearch}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                </form>
+
+                {/* Tablet Search Popup */}
+                {showSearchPopup && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl z-50">
+                    {isSearching ? (
+                      <div className="p-4 text-center text-gray-400">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
+                        Searching...
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      <div>
+                        <div className="p-2 max-h-64 overflow-y-auto scrollbar-hide">
+                          {searchResults.slice(0, 4).map((item) => {
+                            const title = 'title' in item ? item.title : item.name;
+                            const releaseDate = 'release_date' in item ? item.release_date : item.first_air_date;
+                            const isMovie = 'title' in item;
+                            
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => handleSearchItemClick(item)}
+                                className="flex items-center gap-3 p-3 hover:bg-gray-800/50 rounded-lg cursor-pointer transition-colors group"
+                              >
+                                {/* Poster */}
+                                <div className="flex-shrink-0 w-12 h-16 bg-gray-700 rounded overflow-hidden">
+                                  <img
+                                    src={`https://image.tmdb.org/t/p/w92${item.poster_path}`}
+                                    alt={title}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                    onError={(e) => {
+                                      e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg==';
+                                    }}
+                                  />
+                                </div>
+                                
+                                {/* Details */}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-white font-medium truncate text-sm">{title}</h4>
+                                  <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                                    <span>{releaseDate ? new Date(releaseDate).getFullYear() : 'Unknown'}</span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      <Star className="w-3 h-3 text-yellow-400" />
+                                      {item.vote_average?.toFixed(1) || 'N/A'}
+                                    </span>
+                                    <span>•</span>
+                                    <span className="capitalize">{isMovie ? 'Movie' : 'TV Show'}</span>
+                                  </div>
+                                  {item.overview && (
+                                    <p className="text-xs text-gray-500 truncate mt-1 line-clamp-1">
+                                      {item.overview}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* View More Results - Always visible */}
+                        {searchResults.length > 4 && (
+                          <div
+                            onClick={() => {
+                              setShowSearchPopup(false);
+                              navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+                            }}
+                            className="p-3 text-center text-blue-400 hover:text-blue-300 cursor-pointer border-t border-gray-700/50"
+                          >
+                            View all {searchResults.length} results →
+                          </div>
+                        )}
+                      </div>
+                    ) : searchQuery && !isSearching ? (
+                      <div className="p-4 text-center text-gray-400">
+                        No results found for "{searchQuery}"
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+                </div>
+            </div>
+
+            {/* Discord Button - Right side (Desktop Only) */}
+            <div className="hidden lg:flex items-center">
               <a
                 href={discordLink}
                 target="_blank"
@@ -362,8 +471,8 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
               </a>
             </div>
 
-            {/* Mobile menu button and Discord */}
-            <div className="md:hidden flex items-center gap-2">
+            {/* Tablet and Mobile Controls */}
+            <div className="flex lg:hidden items-center gap-2">
               <a
                 href={discordLink}
                 target="_blank"
@@ -397,15 +506,15 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div className="fixed inset-0 z-40 lg:hidden">
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/50"
             onClick={() => setIsMobileMenuOpen(false)}
           />
 
-        {/* Mobile Menu */}
-          <div className={`absolute right-0 w-64 bg-black backdrop-blur-xl ${
+        {/* Mobile/Tablet Menu */}
+          <div className={`absolute right-0 w-64 md:w-80 bg-black backdrop-blur-xl ${
             isAnnouncementEnabled && !inModalView && !isScrolled ? 'top-[48px] h-[calc(100vh-48px)]' : 'top-0 h-full'
           }`}>
             <div className="p-6">
@@ -419,8 +528,8 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                 </button>
               </div>
 
-              {/* Mobile Search */}
-              <div className="mb-6 relative">
+              {/* Mobile Search (Mobile Only) */}
+              <div className="mb-6 relative md:hidden">
                 <form onSubmit={handleSearchSubmit}>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -472,7 +581,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                                   alt={title}
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                                   onError={(e) => {
-                                    e.currentTarget.src = 'https://via.placeholder.com/92x138/666666/ffffff?text=No+Image';
+                                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg==';
                                   }}
                                 />
                               </div>
@@ -489,7 +598,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                         })}
                         
                         {/* View More Results */}
-                        {searchResults.length > 8 && (
+                        {searchResults.length > 3 && (
                           <div
                             onClick={() => {
                               setShowSearchPopup(false);

@@ -83,6 +83,8 @@ interface VideoPlayerProps {
   title: string;
   onClose: () => void;
   onNextEpisode?: () => void; // New prop for next episode callback
+  onProgressUpdate?: (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => void; // Progress updates (videoElement only for final screenshots)
+  initialTime?: number; // New prop for starting at a specific time
 }
 
 interface AudioTrack {
@@ -99,13 +101,7 @@ interface StreamingSource {
   language?: string;
 }
 
-interface QualityLevel {
-  height: number;
-  width: number;
-  bitrate: number;
-  index: number;
-  url: string | string[];
-}
+
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
   tmdbId, 
@@ -114,7 +110,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   episode, 
   title, 
   onClose,
-  onNextEpisode 
+  onNextEpisode,
+  onProgressUpdate,
+  initialTime = 0
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -146,9 +144,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showSettings, setShowSettings] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'quality' | 'speed' | 'audio'>('quality');
-  const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
-  const [currentQuality, setCurrentQuality] = useState<number>(-1); // -1 means auto
+  const [settingsTab, setSettingsTab] = useState<'speed' | 'audio'>('speed');
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   
@@ -264,6 +260,33 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         console.log('⚠️ No stream URL found from backend, using iframe fallback');
         // Don't throw error, just use fallback
       }
+      
+      // If we reach here, no primary source was found, check if we have fallback sources
+      const fallbackSources: StreamingSource[] = [];
+      
+      if (type === 'movie') {
+        fallbackSources.push({
+          type: 'iframe',
+          url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
+          name: 'VidSrc Player (Fallback)',
+          language: 'multi'
+        });
+      } else if (type === 'tv' && season && episode) {
+        fallbackSources.push({
+          type: 'iframe',
+          url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`,
+          name: 'VidSrc Player (Fallback)',
+          language: 'multi'
+        });
+      }
+
+      if (fallbackSources.length > 0) {
+        console.log('🔄 Using fallback sources:', fallbackSources);
+        setStreamingSources(fallbackSources);
+        setCurrentSource(fallbackSources[0]);
+      } else {
+        setError('This movie/show is not available on any streaming service at the moment. Please try again later or check back soon.');
+      }
     } catch (error) {
       console.error('❌ Backend request failed:', error);
       
@@ -291,7 +314,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         setStreamingSources(fallbackSources);
         setCurrentSource(fallbackSources[0]);
       } else {
-        setError('Unable to load video. Please try again later.');
+        setError('This movie/show is not available on any streaming service at the moment. Please try again later or check back soon.');
       }
     } finally {
       setLoading(false);
@@ -314,12 +337,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     if (!videoRef.current || currentSource?.type !== 'hls') return;
 
+    // Set initial time if provided
+    if (initialTime > 0) {
+      videoRef.current.currentTime = initialTime;
+    }
+
     const handleTimeUpdate = () => {
       const video = videoRef.current;
       if (!video) return;
 
       const currentTime = video.currentTime;
       const duration = video.duration;
+
+    // Update state
+    setCurrentTime(currentTime);
+    setDuration(duration);
+
+    // Save progress every 5 seconds WITHOUT video element (no screenshot during progress)
+    if (onProgressUpdate && duration > 0) {
+      onProgressUpdate(currentTime, duration);
+    }
 
       // Next Episode button logic (for TV shows only)
       if (type === 'tv' && duration > 0) {
@@ -332,9 +369,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
 
       // Skip Intro button logic
-      if (currentTime <= 40) { // First 40 seconds
+    if (currentTime <= 40) { // First 40 seconds
         setShowSkipIntro(true);
-        setSkipIntroTimeRemaining(Math.max(0, 40 - currentTime));
+      setSkipIntroTimeRemaining(Math.max(0, 40 - currentTime));
       } else {
         setShowSkipIntro(false);
       }
@@ -517,6 +554,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           if (isFullscreen) {
             exitFullscreen();
           } else {
+            // Capture final screenshot before closing
+            if (videoRef.current && onProgressUpdate) {
+              const currentTime = videoRef.current.currentTime;
+              const duration = videoRef.current.duration;
+              console.log('🎬 Closing video - calling onProgressUpdate with video element');
+              console.log('🎬 Current time:', currentTime, 'Duration:', duration);
+              onProgressUpdate(currentTime, duration, videoRef.current);
+            }
             onClose();
           }
           break;
@@ -635,11 +680,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             testBandwidth: true,
             progressive: true,
             lowLatencyMode: false,
-            // Quality switching
-            startLevel: -1, // Auto quality
-            capLevelToPlayerSize: true,
-            // Additional buffer settings
-            maxStarvationDelay: 4, // Maximum delay before switching to lower quality
+            // Buffer settings
             maxLoadingDelay: 4 // Maximum delay for fragment loading
           });
 
@@ -664,28 +705,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           hlsPrefetcher.prefetchSegments(currentSource.url);
         }
 
-        // Get available quality levels
-        const levels = hls.levels.map((level, index) => ({
-          height: level.height,
-          width: level.width,
-          bitrate: level.bitrate,
-          index: index,
-          url: Array.isArray(level.url) ? level.url[0] : level.url
-        }));
 
-        // For now, if no quality levels are available, add a fake 1080p option
-        if (levels.length === 0) {
-          levels.push({
-            height: 1080,
-            width: 1920,
-            bitrate: 5000000,
-            index: 0,
-            url: currentSource.url
-          });
-        }
-        
-        setQualityLevels(levels);
-        setCurrentQuality(-1); // Start with auto quality
 
         // Get available audio tracks
         const tracks = hls.audioTracks.map((track, index) => ({
@@ -706,10 +726,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       });
       
-      // Handle quality level loading
-      hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
-        setCurrentQuality(data.level);
-      });
+
       
       hls.on(Hls.Events.ERROR, (event, data) => {
         console.error('HLS error event:', event, data);
@@ -726,27 +743,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             clearTimeout(bufferStallTimeoutRef.current);
           }
           
-          // Try to recover by switching to a lower quality level
-          if (hls.levels.length > 1) {
-            const currentLevel = hls.currentLevel;
-            const lowerLevel = Math.min(currentLevel + 1, hls.levels.length - 1);
-            
-            if (lowerLevel !== currentLevel) {
-              console.log(`Switching from level ${currentLevel} to level ${lowerLevel} to recover from buffer stall`);
-              hls.currentLevel = lowerLevel;
-              setCurrentQuality(lowerLevel);
-            }
-          }
-          
-          // If multiple stalls occur, try more aggressive recovery
+          // If multiple stalls occur, try to restart the stream
           if (bufferStallCount >= 3) {
             console.log('Multiple buffer stalls detected, attempting aggressive recovery');
-            
-            // Switch to lowest quality
-            if (hls.levels.length > 1) {
-              hls.currentLevel = hls.levels.length - 1;
-              setCurrentQuality(hls.levels.length - 1);
-            }
             
             // Reset stall counter
             setBufferStallCount(0);
@@ -984,34 +983,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowSettings(false);
   };
 
-  // Handle quality change
-  const handleQualityChange = (levelIndex: number) => {
-    if (!hlsRef.current) return;
-    
-    const hls = hlsRef.current;
-    
-    if (levelIndex === -1) {
-      // Auto quality
-      hls.currentLevel = -1;
-      hls.nextLevel = -1;
-    } else {
-      // Manual quality selection
-      hls.currentLevel = levelIndex;
-      hls.nextLevel = levelIndex;
-    }
-    
-    setCurrentQuality(levelIndex);
-  };
 
-  // Format quality label
-  const getQualityLabel = (height: number) => {
-    if (height <= 360) return '360p';
-    if (height <= 480) return '480p';
-    if (height <= 720) return '720p';
-    if (height <= 1080) return '1080p';
-    if (height <= 1440) return '1440p';
-    return '4K';
-  };
 
   // Settings menu auto-close timeout
   useEffect(() => {
@@ -1073,12 +1045,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {/* Settings Tabs */}
         <div className="flex space-x-2 border-b border-white/10 pb-2">
           <button
-            onClick={() => setSettingsTab('quality')}
-            className={`px-3 py-1 rounded-lg text-sm ${settingsTab === 'quality' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
-          >
-            Quality
-          </button>
-          <button
             onClick={() => setSettingsTab('speed')}
             className={`px-3 py-1 rounded-lg text-sm ${settingsTab === 'speed' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
           >
@@ -1094,28 +1060,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           )}
         </div>
 
-        {/* Quality Settings */}
-        {settingsTab === 'quality' && (
-          <div className="space-y-2">
-            <button
-              onClick={() => handleQualityChange(-1)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${currentQuality === -1 ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
-            >
-              <span>Auto</span>
-              {currentQuality === -1 && <span className="text-blue-400">✓</span>}
-            </button>
-            {qualityLevels.map((level) => (
-              <button
-                key={level.index}
-                onClick={() => handleQualityChange(level.index)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${currentQuality === level.index ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
-              >
-                <span>{getQualityLabel(level.height)}</span>
-                {currentQuality === level.index && <span className="text-blue-400">✓</span>}
-              </button>
-            ))}
-          </div>
-        )}
+
 
         {/* Playback Speed Settings */}
         {settingsTab === 'speed' && (
@@ -1209,7 +1154,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             }}
             onError={() => {
               console.error('Iframe failed to load');
-              setError('Video player failed to load. Please try a different source or refresh the page.');
+              setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
               setLoading(false);
             }}
           />
@@ -1246,9 +1191,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {showSkipIntro && (
               <Button
                 onClick={handleSkipIntro}
-                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-white/20"
+                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-blue-400/50 shadow-lg shadow-blue-500/30 hover:shadow-blue-400/50 hover:border-blue-300/70"
               >
-                <SkipIntro className="w-4 h-4" />
+                <SkipIntro className="w-4 h-4 text-blue-400" />
                 <span className="text-sm font-medium">Skip Intro ({Math.ceil(skipIntroTimeRemaining)}s)</span>
               </Button>
             )}
@@ -1308,7 +1253,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   <RefreshCw className="w-4 h-4" />
                   Retry ({retryCount})
                 </Button>
-                <Button onClick={onClose} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => {
+                  // Capture final screenshot before closing
+                  if (videoRef.current && onProgressUpdate) {
+                    const currentTime = videoRef.current.currentTime;
+                    const duration = videoRef.current.duration;
+                    console.log('🎬 Close button clicked - calling onProgressUpdate with video element');
+                    console.log('🎬 Current time:', currentTime, 'Duration:', duration);
+                    onProgressUpdate(currentTime, duration, videoRef.current);
+                  }
+                  onClose();
+                }} className="bg-blue-600 hover:bg-blue-700">
                   Close
               </Button>
               </div>
@@ -1324,7 +1279,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           >
             {/* Back Button - Top Left */}
             <button
-              onClick={onClose}
+              onClick={() => {
+                // Capture final screenshot before closing
+                if (videoRef.current && onProgressUpdate) {
+                  const currentTime = videoRef.current.currentTime;
+                  const duration = videoRef.current.duration;
+                  console.log('🎬 Back button clicked - calling onProgressUpdate with video element');
+                  console.log('🎬 Current time:', currentTime, 'Duration:', duration);
+                  onProgressUpdate(currentTime, duration, videoRef.current);
+                }
+                onClose();
+              }}
               className="absolute top-4 left-4 z-50 flex items-center gap-2 bg-black/70 hover:bg-black/90 text-white px-4 py-2 rounded-lg transition-all duration-300 pointer-events-auto"
             >
               <ArrowLeft size={20} />
@@ -1450,11 +1415,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  {/* Quality Display */}
-                  <div className="text-white text-sm bg-black/50 px-2 py-1 rounded">
-                    {currentQuality === -1 ? 'AUTO' : getQualityLabel(qualityLevels[currentQuality]?.height || 1080)}
-                  </div>
-                  
                   {/* Speed Display */}
                   <div className="text-white text-sm bg-black/50 px-2 py-1 rounded">
                     {playbackSpeed}x
@@ -1501,6 +1461,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Settings Menu - Outside controls overlay */}
         {renderSettingsMenu()}
+
+        {/* Error Overlay */}
+        {error && (
+          <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50">
+            <div className="text-center p-8 max-w-md">
+              <div className="text-red-400 text-6xl mb-4">⚠️</div>
+              <h3 className="text-white text-xl font-semibold mb-4">Video Unavailable</h3>
+              <p className="text-gray-300 mb-6">{error}</p>
+              <div className="flex gap-3 justify-center">
+                <Button
+                  onClick={() => setError(null)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Try Again
+                </Button>
+                <Button
+                  onClick={onClose}
+                  variant="outline"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Custom Styles are handled via global CSS */}

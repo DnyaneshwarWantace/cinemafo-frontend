@@ -12,6 +12,7 @@ import AdBanner from "./AdBanner";
 import MovieCarousel from "./MovieCarousel";
 import api, { Movie, TVShow, Episode } from "@/services/api";
 import useAdminSettings from '@/hooks/useAdminSettings';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 
 interface TVShowPlayerProps {
   show: TVShow;
@@ -29,6 +30,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showExpandedDetails, setShowExpandedDetails] = useState(false);
   const { settings: adminSettings } = useAdminSettings();
+  const { getHistoryItem, updateProgress } = useWatchHistory();
 
   // Debug: Log the show data being passed
   console.log('TVShowPlayer received show data:', show);
@@ -205,6 +207,11 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
         title={`${show.name} - S${selectedSeason}E${selectedEpisode}`}
         onClose={() => setIsPlaying(false)}
         onNextEpisode={handleNextEpisode}
+        onProgressUpdate={(currentTime, duration, videoElement) => {
+          // Only pass videoElement for final screenshots, not regular progress updates
+          updateProgress(show, currentTime, duration, 'tv', selectedSeason, selectedEpisode, undefined, videoElement);
+        }}
+        initialTime={getHistoryItem(show.id, 'tv', selectedSeason, selectedEpisode)?.currentTime || 0}
       />
     );
   }
@@ -257,17 +264,6 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
           <div className="max-h-[90vh] w-full overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Content */}
           <div className="p-3 sm:p-4 md:p-6 pt-20 sm:pt-24 relative z-10">
-            {/* Ad Banner - Moved to top */}
-            {adminSettings?.ads?.playerPageAd?.enabled && (
-              <div className="mb-6">
-                <AdBanner
-                  adKey="playerPageAd"
-                  imageUrl={adminSettings.ads.playerPageAd.imageUrl}
-                  clickUrl={adminSettings.ads.playerPageAd.clickUrl}
-                  enabled={adminSettings.ads.playerPageAd.enabled}
-                />
-              </div>
-            )}
             <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 md:gap-6">
               {/* Poster Image */}
               <div className="flex-shrink-0 flex justify-center lg:justify-start">
@@ -334,24 +330,36 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                     Play S1E1
                   </Button>
                   
-                  <Button
-                    onClick={() => setShowExpandedDetails(!showExpandedDetails)}
-                    variant="outline"
-                    className="flex items-center gap-2 bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60 w-full sm:w-auto"
-                  >
-                    {showExpandedDetails ? (
-                      <>
-                        <ChevronLeft className="w-4 h-4" />
-                        Show Less
-                      </>
-                    ) : (
-                      <>
-                        <ChevronRight className="w-4 h-4" />
-                        Show More Details
-                      </>
-                    )}
-                  </Button>
+                                  <Button
+                  onClick={() => setShowExpandedDetails(!showExpandedDetails)}
+                  variant="outline"
+                  className="flex items-center gap-2 bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60 w-full sm:w-auto"
+                >
+                  {showExpandedDetails ? (
+                    <>
+                      <ChevronLeft className="w-4 h-4" />
+                      Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronRight className="w-4 h-4" />
+                      Show More Details
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Ad Banner - Moved below Play S1E1 button */}
+              {adminSettings?.ads?.playerPageAd?.enabled && (
+                <div className="mt-6">
+                  <AdBanner
+                    adKey="playerPageAd"
+                    imageUrl={adminSettings.ads.playerPageAd.imageUrl}
+                    clickUrl={adminSettings.ads.playerPageAd.clickUrl}
+                    enabled={adminSettings.ads.playerPageAd.enabled}
+                  />
                 </div>
+              )}
 
                 {/* Detailed Information Grid - Hidden by default */}
                 {showExpandedDetails && (
@@ -416,7 +424,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                 {/* Expanded Details Section */}
                 {showExpandedDetails && (
                   <>
-                    {/* Cast Section */}
+                {/* Cast Section */}
                 {mainCast.length > 0 && (
                   <>
                     <Separator className="my-6 bg-gray-600" />

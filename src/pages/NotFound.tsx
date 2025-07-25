@@ -1,10 +1,10 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Home, Film } from "lucide-react";
 
 const NotFound = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     console.error(
@@ -13,12 +13,30 @@ const NotFound = () => {
     );
   }, [location.pathname]);
 
+  const handleGoBack = () => {
+    console.log("Go Back clicked");
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigate('/');
+    }
+  };
+
+  const handleGoHome = () => {
+    console.log("Go Home clicked");
+    navigate('/');
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black">
+    <div className="min-h-screen flex items-center justify-center bg-black relative z-10">
       <div className="text-center max-w-md mx-auto p-8">
         <div className="mb-8">
-          <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center">
-            <Film className="w-16 h-16 text-white" />
+          <div className="w-32 h-32 mx-auto mb-6 rounded-full flex items-center justify-center">
+            <img 
+              src="/logo-icon.svg" 
+              alt="CINEMA.FO" 
+              className="w-32 h-32 transition-all duration-300"
+            />
           </div>
           <h1 className="text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600 mb-4">
             404
@@ -30,20 +48,19 @@ const NotFound = () => {
         </div>
         
         <div className="space-y-4">
-          <Button 
-            onClick={() => window.history.back()}
-            variant="outline"
-            className="w-full border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+          <button 
+            onClick={handleGoBack}
+            className="w-full px-6 py-3 border-2 border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg font-medium transition-all duration-300 cursor-pointer"
           >
             Go Back
-          </Button>
-          <Button 
-            onClick={() => window.location.href = '/'}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+          </button>
+          <button 
+            onClick={handleGoHome}
+            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition-all duration-300 cursor-pointer flex items-center justify-center gap-2"
           >
-            <Home className="w-4 h-4 mr-2" />
-          Return to Home
-          </Button>
+            <Home className="w-4 h-4" />
+            Return to Home
+          </button>
         </div>
       </div>
     </div>

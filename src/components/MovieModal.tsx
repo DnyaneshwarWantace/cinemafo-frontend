@@ -13,6 +13,7 @@ import AdBanner from "./AdBanner";
 import MovieCarousel from "./MovieCarousel";
 import api, { Movie, TVShow, cacheUtils } from "@/services/api";
 import useAdminSettings from '@/hooks/useAdminSettings';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 
 interface MovieModalProps {
   movie: Movie;
@@ -27,6 +28,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
   const [isOpen, setIsOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const { settings: adminSettings } = useAdminSettings();
+  const { getHistoryItem, updateProgress } = useWatchHistory();
 
   // No need to check for detailed data anymore - backend provides complete data
   console.log(`✅ Movie ${initialMovie.id} loaded with complete data from backend`);
@@ -41,7 +43,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-    } else {
+        } else {
       document.body.style.overflow = 'unset';
     }
     
@@ -193,17 +195,6 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
           <div className="max-h-[90vh] w-full overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Content */}
           <div className="p-3 sm:p-4 md:p-6 pt-20 sm:pt-24 relative z-10">
-            {/* Ad Banner - Moved to top */}
-            {adminSettings?.ads?.playerPageAd?.enabled && (
-              <div className="mb-6">
-                <AdBanner
-                  adKey="playerPageAd"
-                  imageUrl={adminSettings.ads.playerPageAd.imageUrl}
-                  clickUrl={adminSettings.ads.playerPageAd.clickUrl}
-                  enabled={adminSettings.ads.playerPageAd.enabled}
-                />
-              </div>
-            )}
             <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 md:gap-6">
               {/* Poster Image */}
               <div className="flex-shrink-0 flex justify-center lg:justify-start">
@@ -289,6 +280,18 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                   )}
                 </Button>
               </div>
+
+              {/* Ad Banner - Moved below Watch Now button */}
+              {adminSettings?.ads?.playerPageAd?.enabled && (
+                <div className="mt-6">
+                  <AdBanner
+                    adKey="playerPageAd"
+                    imageUrl={adminSettings.ads.playerPageAd.imageUrl}
+                    clickUrl={adminSettings.ads.playerPageAd.clickUrl}
+                    enabled={adminSettings.ads.playerPageAd.enabled}
+                  />
+                </div>
+              )}
               
                   {/* Detailed Information Grid - Hidden by default */}
                 {showDetails && (
@@ -350,46 +353,46 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                         {movie.spoken_languages.length > 2 && '...'}
                         </span>
             </div>
-                                      )}
-                </div>
+                    )}
+          </div>
                 )}
 
                   {/* Expanded Details Section */}
                   {showDetails && (
                     <>
-                      {/* Cast Section */}
-                      {mainCast.length > 0 && (
-                        <>
-                          <Separator className="my-6 bg-gray-700" />
-                          <div>
-                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
-                              <Users className="w-5 h-5" />
-                              Cast
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                              {mainCast.map(actor => (
-                                <div key={actor.id} className="flex items-center gap-3">
-                                  {actor.profile_path ? (
-                                    <img
-                                      src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
-                                      alt={actor.name}
-                                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
-                                    />
-                                  ) : (
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                                      <Users className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
-                                    </div>
-                                  )}
-                                  <div className="min-w-0 flex-1">
-                                    <p className="font-medium text-sm text-white truncate">{actor.name}</p>
-                                    <p className="text-xs text-gray-400 truncate">{actor.character}</p>
-                                  </div>
-                                </div>
-                              ))}
+                  {/* Cast Section */}
+                  {mainCast.length > 0 && (
+                    <>
+                    <Separator className="my-6 bg-gray-700" />
+                      <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
+                          <Users className="w-5 h-5" />
+                          Cast
+                        </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                          {mainCast.map(actor => (
+                            <div key={actor.id} className="flex items-center gap-3">
+                              {actor.profile_path ? (
+                                <img
+                                  src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
+                                  alt={actor.name}
+                                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
+                                />
+                              ) : (
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-sm text-white truncate">{actor.name}</p>
+                              <p className="text-xs text-gray-400 truncate">{actor.character}</p>
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      )}
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                     </>
                   )}
               </div>
@@ -420,6 +423,11 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
           type="movie"
           title={movie.title || movie.name}
           onClose={() => setShowFullMovie(false)}
+          onProgressUpdate={(currentTime, duration, videoElement) => {
+            // Only pass videoElement for final screenshots, not regular progress updates
+            updateProgress(movie, currentTime, duration, 'movie', undefined, undefined, undefined, videoElement);
+          }}
+          initialTime={getHistoryItem(movie.id, 'movie')?.currentTime || 0}
         />
       )}
 
