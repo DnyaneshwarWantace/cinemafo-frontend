@@ -58,7 +58,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
       </div>
 
       {/* Content */}
-      <div className="absolute inset-0 p-4 sm:p-8 md:p-16 z-10 flex flex-col justify-start lg:justify-center h-full max-w-screen-xl mx-auto pt-20 sm:pt-20 md:pt-16 lg:pt-0">
+      <div className="absolute inset-0 p-4 sm:p-8 md:p-16 z-10 flex flex-col justify-center h-full max-w-screen-xl mx-auto pt-20 sm:pt-24 md:pt-28 lg:pt-0">
         {/* Rating or Release Date Badge */}
         {isUpcoming ? (
           <div className="inline-flex items-center gap-2 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-semibold mb-4 w-fit">
