@@ -362,6 +362,11 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                 </div>
               )}
 
+              {/* Separator Line - Shows after ad when details are expanded */}
+              {showExpandedDetails && (
+                <Separator className="my-6 bg-gray-700" />
+              )}
+
                 {/* Detailed Information Grid - Hidden by default */}
                 {showExpandedDetails && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm mb-6">
