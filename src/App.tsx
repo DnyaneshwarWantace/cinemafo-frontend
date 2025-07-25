@@ -14,6 +14,7 @@ import Shows from './pages/Shows';
 import Search from './pages/Search';
 import NotFound from './pages/NotFound';
 import Watchlist from './pages/Watchlist';
+import VideoPlayerPage from './pages/VideoPlayerPage';
 import AdminPanel from './components/admin/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -60,7 +61,9 @@ function App() {
             <Route path="/movies" element={<Movies />} />
             <Route path="/shows" element={<Shows />} />
             <Route path="/search" element={<Search />} />
-                <Route path="/watchlist" element={<Watchlist />} />
+            <Route path="/watchlist" element={<Watchlist />} />
+            <Route path="/watch/movie/:id" element={<VideoPlayerPage type="movie" />} />
+            <Route path="/watch/tv/:id/:season/:episode" element={<VideoPlayerPage type="tv" />} />
                 <Route path="/admin" element={
                   <ErrorBoundary>
                     <AdminPanel />

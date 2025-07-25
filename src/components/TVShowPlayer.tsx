@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,7 +8,6 @@ import {
   Play, Star, Calendar, Clock, Loader2, Film, Users, Globe, Info, DollarSign, 
   Award, Building2, MapPin, Languages, Tags, ArrowLeft, ChevronLeft, ChevronRight
 } from "lucide-react";
-import VideoPlayer from "./VideoPlayer";
 import AdBanner from "./AdBanner";
 import MovieCarousel from "./MovieCarousel";
 import api, { Movie, TVShow, Episode } from "@/services/api";
@@ -20,11 +20,11 @@ interface TVShowPlayerProps {
 }
 
 const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
+  const navigate = useNavigate();
   const [showDetails, setShowDetails] = useState<TVShow | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
   const [seasonDetails, setSeasonDetails] = useState<{ episodes: Episode[] } | null>(null);
   const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -101,8 +101,8 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   }, [show.id, selectedSeason]);
 
   const handlePlayEpisode = (episodeNumber: number) => {
-    setSelectedEpisode(episodeNumber);
-    setIsPlaying(true);
+    // Navigate to the video player page
+    navigate(`/watch/tv/${show.id}/${selectedSeason}/${episodeNumber}`);
   };
 
   const handleNextEpisode = () => {
@@ -197,24 +197,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
     setTimeout(() => onClose(), 300);
   };
 
-  if (isPlaying) {
-    return (
-      <VideoPlayer
-        tmdbId={show.id}
-        type="tv"
-        season={selectedSeason}
-        episode={selectedEpisode}
-        title={`${show.name} - S${selectedSeason}E${selectedEpisode}`}
-        onClose={() => setIsPlaying(false)}
-        onNextEpisode={handleNextEpisode}
-        onProgressUpdate={(currentTime, duration, videoElement) => {
-          // Only pass videoElement for final screenshots, not regular progress updates
-          updateProgress(show, currentTime, duration, 'tv', selectedSeason, selectedEpisode, undefined, videoElement);
-        }}
-        initialTime={getHistoryItem(show.id, 'tv', selectedSeason, selectedEpisode)?.currentTime || 0}
-      />
-    );
-  }
+
 
   const seasons = getSeasonOptions();
   const episodes = seasonDetails?.episodes || [];

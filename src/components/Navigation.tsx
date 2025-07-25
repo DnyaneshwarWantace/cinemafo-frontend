@@ -7,6 +7,7 @@ import useAdminSettings from '@/hooks/useAdminSettings';
 import MovieModal from '@/components/MovieModal';
 import TVShowPlayer from '@/components/TVShowPlayer';
 
+
 interface NavigationProps {
   inModalView?: boolean;
 }
@@ -148,6 +149,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
     setShowSearchPopup(false);
     setSearchQuery('');
     setSearchResults([]);
+    
     if ('title' in item) {
       setSelectedMovie(item as Movie);
     } else {
@@ -245,24 +247,32 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                     <input
                       type="text"
                       value={searchQuery}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        onFocus={() => setIsSearchFocused(true)}
-                        onBlur={() => setIsSearchFocused(false)}
-                        onKeyDown={handleSearchKeyDown}
-                        placeholder="Search movies..."
-                        className="w-full bg-white/10 text-white pl-10 pr-10 py-2.5 rounded-full border border-white/20 focus:border-blue-500 focus:outline-none text-sm placeholder-gray-400 transition-all duration-300 focus:bg-white/15"
-                      />
-                      {searchQuery && (
-                        <button
-                          type="button"
-                          onClick={clearSearch}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                        >
-                          <X size={16} />
-                        </button>
-                      )}
-                    </div>
+                      onChange={(e) => handleSearch(e.target.value)}
+                      onFocus={() => {
+                        setIsSearchFocused(true);
+                        if (searchQuery.trim().length > 0) {
+                          setShowSearchPopup(true);
+                          if (searchResults.length === 0) {
+                            handleSearch(searchQuery);
+                          }
+                        }
+                      }}
+                      onBlur={() => setIsSearchFocused(false)}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder="Search movies..."
+                      className="w-full bg-white/10 text-white pl-10 pr-10 py-2.5 rounded-full border border-white/20 focus:border-blue-500 focus:outline-none text-sm placeholder-gray-400 transition-all duration-300 focus:bg-white/15"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={clearSearch}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
                   </div>
+                </div>
                 </form>
 
                 {/* Desktop Search Popup */}
