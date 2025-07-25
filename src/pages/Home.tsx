@@ -139,6 +139,8 @@ const Home = () => {
         />
       </section>
 
+
+
       {/* Trending Movies Section - Overlaps with Hero */}
       {!loading && trendingMovies.length > 0 && (
         <section className="relative -mt-32 lg:-mt-32 z-10">

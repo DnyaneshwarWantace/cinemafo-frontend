@@ -83,7 +83,15 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
   }, [handleScroll]);
 
   const formatReleaseDate = (dateString: string) => {
+    if (!dateString || dateString === 'Invalid Date' || dateString === 'null' || dateString === 'undefined') {
+      return 'Unknown Date';
+    }
+    
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Unknown Date';
+    }
+    
     return date.toLocaleDateString('en-US', { 
       year: 'numeric',
       month: 'long',
@@ -92,11 +100,13 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
   };
 
   const getItemTitle = (item: Movie | TVShow): string => {
-    return 'title' in item ? item.title : item.name;
+    const title = 'title' in item ? item.title : item.name;
+    return title || 'Unknown Title';
   };
 
   const getItemReleaseDate = (item: Movie | TVShow): string => {
-    return 'release_date' in item ? item.release_date : item.first_air_date;
+    const date = 'release_date' in item ? item.release_date : item.first_air_date;
+    return date || '';
   };
 
   const isInWatchlist = (item: Movie | TVShow): boolean => {
@@ -221,7 +231,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
             >
               <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                 <img
-                  src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
+                  src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgdmlld0JveD0iMCAwIDMwMCA0NTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDUwIiBmaWxsPSIjMWYyOTM3Ii8+Cjx0ZXh0IHg9IjE1MCIgeT0iMjI1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2YjcyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
                   alt={getItemTitle(item)}
                   className="w-full h-full object-cover transform group-hover/item:scale-105 transition-transform duration-300"
                   loading="lazy"
@@ -301,7 +311,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
             {/* Poster */}
             <div className="flex-shrink-0 w-16 h-24 bg-gray-700 rounded overflow-hidden">
               <img
-                src={`https://image.tmdb.org/t/p/w92${tooltipItem.poster_path}`}
+                src={tooltipItem.poster_path ? `https://image.tmdb.org/t/p/w92${tooltipItem.poster_path}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg=='}
                 alt={getItemTitle(tooltipItem)}
                 className="w-full h-full object-cover"
                 onError={(e) => {
