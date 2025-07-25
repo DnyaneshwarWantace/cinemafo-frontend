@@ -123,6 +123,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const currentSourceUrlRef = useRef<string>('');
   const skipIntroTimeoutRef = useRef<NodeJS.Timeout>();
   const skipIntroAutoHideRef = useRef<NodeJS.Timeout>();
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -627,6 +628,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
+  const handleScreenClick = (e: React.MouseEvent) => {
+    // Only handle single click if not part of a double click
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+    clickTimeoutRef.current = setTimeout(() => {
+      // Single click: toggle play/pause
+      if (currentSource?.type === 'hls') {
+        togglePlayPause();
+      }
+      // Focus the container for keyboard events
+      playerContainerRef.current?.focus();
+      clickTimeoutRef.current = null;
+    }, 200); // 200ms is a good threshold for double-click
+  };
+
   // Initialize HLS player with quality levels
   useEffect(() => {
     if (!currentSource || currentSource.type !== 'hls' || !videoRef.current) return;
@@ -1112,27 +1130,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {/* Video/Iframe Container */}
       <div 
         className="relative w-full h-full"
+        onClick={handleScreenClick}
+        onDoubleClick={handleScreenDoubleClick}
         onMouseMove={() => setShowControls(true)}
         onMouseLeave={() => isPlaying && setShowControls(false)}
-        onDoubleClick={handleScreenDoubleClick}
-        onClick={(e) => {
-          // Don't toggle if clicking on controls or settings
-          if (e.target instanceof Element) {
-            const target = e.target as Element;
-            if (target.closest('.controls-overlay') || target.closest('.settings-menu')) {
-              return;
-            }
-          }
-          
-          // Single click to toggle play/pause
-          if (currentSource?.type === 'hls') {
-            togglePlayPause();
-          }
-          // Focus the container when clicked to ensure keyboard events work
-          if (playerContainerRef.current) {
-            playerContainerRef.current.focus();
-          }
-        }}
       >
         {currentSource?.type === 'hls' ? (
           <video
