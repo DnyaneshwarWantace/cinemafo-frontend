@@ -28,8 +28,9 @@ const Home = () => {
   const [popularShows, setPopularShows] = useState<TVShow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [continueWatchingKey, setContinueWatchingKey] = useState(0);
   const { settings: adminSettings } = useAdminSettings();
-  const { getContinueWatching, updateProgress, removeFromHistory, getThumbnailUrl } = useWatchHistory();
+  const { getContinueWatching, updateProgress, removeFromHistory, getThumbnailUrl, watchHistory } = useWatchHistory();
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -62,6 +63,11 @@ const Home = () => {
 
     fetchContent();
   }, []);
+
+  // Watch for changes in watch history to update continue watching section
+  useEffect(() => {
+    setContinueWatchingKey(prev => prev + 1);
+  }, [watchHistory]);
 
   const handleContentClick = (content: Movie | TVShow) => {
     // If it has a title, it's a movie; if it has a name, it's a show
@@ -100,6 +106,8 @@ const Home = () => {
   const handleRemoveFromHistory = (historyItem: any) => {
     try {
       removeFromHistory(historyItem.id, historyItem.type, historyItem.season, historyItem.episode);
+      // Force re-render of continue watching section
+      setContinueWatchingKey(prev => prev + 1);
     } catch (error) {
       console.error('Error removing from history:', error);
     }
@@ -120,6 +128,9 @@ const Home = () => {
           undefined, // episodeTitle
           videoElement
         );
+        
+        // Force re-render of continue watching section
+        setContinueWatchingKey(prev => prev + 1);
       } catch (error) {
         console.error('Error updating progress:', error);
       }
@@ -182,14 +193,15 @@ const Home = () => {
             {(() => {
               try {
                 const continueWatchingItems = getContinueWatching(10);
-                return (
+                return continueWatchingItems.length > 0 ? (
                   <ContinueWatching
+                    key={continueWatchingKey}
                     items={continueWatchingItems}
                     onItemClick={handleContinueWatchingClick}
                     onRemoveItem={handleRemoveFromHistory}
                     getThumbnailUrl={getThumbnailUrl}
                   />
-                );
+                ) : null;
               } catch (error) {
                 console.error('Error rendering continue watching section:', error);
                 return null;
