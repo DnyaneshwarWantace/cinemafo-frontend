@@ -301,11 +301,11 @@ const Movies = () => {
                       >
                         <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-800">
                           <img
-                            src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                            alt={movie.title}
+                            src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgdmlld0JveD0iMCAwIDMwMCA0NTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDUwIiBmaWxsPSIjMWYyOTM3Ii8+Cjx0ZXh0IHg9IjE1MCIgeT0iMjI1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2YjcyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
+                            alt={movie.title || 'Unknown Title'}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
-                              e.currentTarget.src = 'https://via.placeholder.com/300x450/666666/ffffff?text=No+Image';
+                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgdmlld0JveD0iMCAwIDMwMCA0NTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDUwIiBmaWxsPSIjMWYyOTM3Ii8+Cjx0ZXh0IHg9IjE1MCIgeT0iMjI1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2YjcyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K';
                             }}
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -315,10 +315,16 @@ const Movies = () => {
                         </div>
                         <div className="mt-2">
                           <h3 className="text-sm font-medium text-white truncate">
-                            {movie.title}
+                            {movie.title || 'Unknown Title'}
                           </h3>
                           <p className="text-xs text-gray-400">
-                            {movie.release_date ? new Date(movie.release_date).getFullYear() : 'Unknown'}
+                            {(() => {
+                              if (!movie.release_date || movie.release_date === 'Invalid Date' || movie.release_date === 'null' || movie.release_date === 'undefined') {
+                                return 'Unknown';
+                              }
+                              const dateObj = new Date(movie.release_date);
+                              return isNaN(dateObj.getTime()) ? 'Unknown' : dateObj.getFullYear();
+                            })()}
                           </p>
                         </div>
                       </div>

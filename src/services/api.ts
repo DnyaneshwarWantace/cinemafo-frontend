@@ -682,8 +682,8 @@ const api = {
       });
   },
 
-  // Search - with caching
-  search: (query: string, language?: string) => {
+  // Search - with caching and fallback
+  search: async (query: string, language?: string) => {
     const cacheKey = getCacheKey('search', undefined, { query, language });
     const cached = getFromCache(cacheKey);
     
@@ -691,11 +691,39 @@ const api = {
       return Promise.resolve({ data: cached });
     }
     
-    return axios.get(`${BASE_URL}/search`, { params: { query, language } })
-      .then(response => {
-        setCache(cacheKey, response.data);
-        return response;
-      });
+    try {
+      console.log('🔍 Searching from backend...');
+      const response = await axios.get(`${BASE_URL}/search`, { params: { query, language } });
+      
+      if (isSampleData(response.data)) {
+        console.log('⚠️ Backend returned sample data, trying TMDB fallback...');
+        clearSampleDataCache('search');
+        throw new Error('Backend returned sample data');
+      }
+      
+      console.log('✅ Backend returned real data');
+      const cleanedData = validateAndCleanData(response.data);
+      setCache(cacheKey, cleanedData);
+      return { data: cleanedData };
+    } catch (error) {
+      console.log('🔄 Backend failed, using TMDB fallback...');
+      
+      try {
+        // Fallback to direct TMDB API
+        const tmdbData = await fetchFromTMDB('/search/multi', { 
+          query, 
+          language,
+          include_adult: false,
+          page: 1
+        });
+        const cleanedData = validateAndCleanData(tmdbData);
+        setCache(cacheKey, cleanedData);
+        return { data: cleanedData };
+      } catch (fallbackError) {
+        console.error('❌ Both backend and fallback failed:', fallbackError);
+        throw error; // Throw original error
+      }
+    }
   },
   
   // Genres - with caching (longer cache since genres rarely change)
