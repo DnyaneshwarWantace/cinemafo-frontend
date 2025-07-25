@@ -62,7 +62,7 @@ const AdBanner: React.FC<AdBannerProps> = ({
   }
 
   return (
-    <div className={`relative max-w-sm md:max-w-md lg:max-w-lg mx-auto ${className}`}>
+    <div className={`relative max-w-sm md:max-w-md lg:max-w-lg ${className}`}>
       {/* Sponsored label */}
       <div className="absolute top-1 left-1 z-10">
         <span className="bg-black/70 text-white text-xs px-1.5 py-0.5 rounded text-[10px]">
