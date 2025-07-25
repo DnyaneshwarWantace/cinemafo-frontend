@@ -78,15 +78,35 @@ const Home = () => {
     }
   };
 
-  const handleContinueWatchingClick = (historyItem: any) => {
+  const handleContinueWatchingClick = async (historyItem: any) => {
     try {
       // Find the actual content from our data
       let content: Movie | TVShow | null = null;
-      
+
       if (historyItem.type === 'movie') {
         content = [...trendingMovies, ...popularMovies].find(m => m.id === historyItem.id) || null;
+        if (!content) {
+          // Fetch full movie details if not found
+          try {
+            const response = await api.getMovieDetails(historyItem.id);
+            content = response.data;
+          } catch (err) {
+            console.error('Failed to fetch movie details:', err);
+            return;
+          }
+        }
       } else {
         content = [...trendingShows, ...popularShows].find(s => s.id === historyItem.id) || null;
+        if (!content) {
+          // Fetch full show details if not found
+          try {
+            const response = await api.getShowDetails(historyItem.id);
+            content = response.data;
+          } catch (err) {
+            console.error('Failed to fetch show details:', err);
+            return;
+          }
+        }
       }
 
       if (content) {
@@ -105,7 +125,7 @@ const Home = () => {
 
   const handleRemoveFromHistory = (historyItem: any) => {
     try {
-      removeFromHistory(historyItem.id, historyItem.type, historyItem.season, historyItem.episode);
+    removeFromHistory(historyItem.id, historyItem.type, historyItem.season, historyItem.episode);
       // Force re-render of continue watching section
       setContinueWatchingKey(prev => prev + 1);
     } catch (error) {
@@ -116,18 +136,18 @@ const Home = () => {
   const handleProgressUpdate = (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => {
     if (playingContent) {
       try {
-        // Only pass videoElement for final screenshots (when user closes)
-        // Regular progress updates don't include videoElement to avoid lag
-        updateProgress(
-          playingContent.item,
-          currentTime,
-          duration,
-          playingContent.type,
-          playingContent.season,
-          playingContent.episode,
-          undefined, // episodeTitle
-          videoElement
-        );
+      // Only pass videoElement for final screenshots (when user closes)
+      // Regular progress updates don't include videoElement to avoid lag
+      updateProgress(
+        playingContent.item,
+        currentTime,
+        duration,
+        playingContent.type,
+        playingContent.season,
+        playingContent.episode,
+        undefined, // episodeTitle
+        videoElement
+      );
         
         // Force re-render of continue watching section
         setContinueWatchingKey(prev => prev + 1);
@@ -155,7 +175,7 @@ const Home = () => {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black">
       {/* Hero Section */}
       <section className="w-full">
         <HeroSlider 
@@ -194,13 +214,13 @@ const Home = () => {
               try {
                 const continueWatchingItems = getContinueWatching(10);
                 return continueWatchingItems.length > 0 ? (
-                  <ContinueWatching
+            <ContinueWatching
                     key={continueWatchingKey}
                     items={continueWatchingItems}
-                    onItemClick={handleContinueWatchingClick}
-                    onRemoveItem={handleRemoveFromHistory}
-                    getThumbnailUrl={getThumbnailUrl}
-                  />
+              onItemClick={handleContinueWatchingClick}
+              onRemoveItem={handleRemoveFromHistory}
+              getThumbnailUrl={getThumbnailUrl}
+            />
                 ) : null;
               } catch (error) {
                 console.error('Error rendering continue watching section:', error);
@@ -311,7 +331,7 @@ const Home = () => {
           initialTime={playingContent.initialTime}
         />
       )}
-      </div>
+    </div>
     </ErrorBoundary>
   );
 };

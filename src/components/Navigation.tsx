@@ -4,6 +4,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api, { Movie, TVShow } from '@/services/api';
 import useAdminSettings from '@/hooks/useAdminSettings';
+import MovieModal from '@/components/MovieModal';
+import TVShowPlayer from '@/components/TVShowPlayer';
 
 interface NavigationProps {
   inModalView?: boolean;
@@ -19,6 +21,9 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const [searchResults, setSearchResults] = useState<(Movie | TVShow)[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchPopup, setShowSearchPopup] = useState(false);
+  // Add state for modal/player
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
 
   // Check if announcement bar is enabled (simplified)
   const isAnnouncementEnabled = true;
@@ -140,14 +145,14 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   };
 
   const handleSearchItemClick = (item: Movie | TVShow) => {
-    // Close search popup and clear search
     setShowSearchPopup(false);
     setSearchQuery('');
     setSearchResults([]);
-    
-    // Navigate to search page with the query
-    const title = 'title' in item ? item.title : item.name;
-    navigate(`/search?q=${encodeURIComponent(title)}`);
+    if ('title' in item) {
+      setSelectedMovie(item as Movie);
+    } else {
+      setSelectedShow(item as TVShow);
+    }
   };
 
   const clearSearch = () => {
@@ -803,6 +808,15 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
             </div>
           </div>
         )}
+
+      {/* Movie Modal */}
+      {selectedMovie && (
+        <MovieModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
+      )}
+      {/* TV Show Player */}
+      {selectedShow && (
+        <TVShowPlayer show={selectedShow} onClose={() => setSelectedShow(null)} />
+      )}
     </>
   );
 };

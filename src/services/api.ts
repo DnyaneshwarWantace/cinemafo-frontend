@@ -417,8 +417,8 @@ const api = {
       }
       
       console.log('✅ Backend returned real data');
-      setCache(cacheKey, response.data);
-      return response;
+        setCache(cacheKey, response.data);
+        return response;
     } catch (error) {
       console.log('🔄 Backend failed, using TMDB fallback...');
       

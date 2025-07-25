@@ -25,15 +25,15 @@ export const useWatchHistory = () => {
   // Load watch history from localStorage on mount - only once
   useEffect(() => {
     if (!isInitialized) {
-      try {
-        const stored = localStorage.getItem('watchHistory');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          setWatchHistory(parsed);
-        }
+    try {
+      const stored = localStorage.getItem('watchHistory');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setWatchHistory(parsed);
+      }
         setIsInitialized(true);
-      } catch (error) {
-        console.error('Error loading watch history:', error);
+    } catch (error) {
+      console.error('Error loading watch history:', error);
         setIsInitialized(true);
       }
     }
@@ -43,29 +43,29 @@ export const useWatchHistory = () => {
   useEffect(() => {
     if (isInitialized) {
       const timeoutId = setTimeout(() => {
-        try {
-          // Create a clean version without circular references
-          const cleanHistory = watchHistory.map(item => ({
-            id: item.id,
-            type: item.type,
-            title: item.title,
-            poster_path: item.poster_path,
-            backdrop_path: item.backdrop_path,
-            currentTime: item.currentTime,
-            duration: item.duration,
-            progress: item.progress,
-            lastWatched: item.lastWatched,
-            season: item.season,
-            episode: item.episode,
-            episodeTitle: item.episodeTitle,
-            thumbnailTime: item.thumbnailTime,
-            thumbnailDataUrl: item.thumbnailDataUrl
-          }));
-          
-          localStorage.setItem('watchHistory', JSON.stringify(cleanHistory));
-        } catch (error) {
-          console.error('Error saving watch history:', error);
-        }
+    try {
+      // Create a clean version without circular references
+      const cleanHistory = watchHistory.map(item => ({
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        poster_path: item.poster_path,
+        backdrop_path: item.backdrop_path,
+        currentTime: item.currentTime,
+        duration: item.duration,
+        progress: item.progress,
+        lastWatched: item.lastWatched,
+        season: item.season,
+        episode: item.episode,
+        episodeTitle: item.episodeTitle,
+        thumbnailTime: item.thumbnailTime,
+        thumbnailDataUrl: item.thumbnailDataUrl
+      }));
+      
+      localStorage.setItem('watchHistory', JSON.stringify(cleanHistory));
+    } catch (error) {
+      console.error('Error saving watch history:', error);
+    }
       }, 100); // Debounce saves to prevent excessive localStorage writes
 
       return () => clearTimeout(timeoutId);
