@@ -330,24 +330,24 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                     Play S1E1
                   </Button>
                   
-                                  <Button
-                  onClick={() => setShowExpandedDetails(!showExpandedDetails)}
-                  variant="outline"
-                  className="flex items-center gap-2 bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60 w-full sm:w-auto"
-                >
-                  {showExpandedDetails ? (
-                    <>
-                      <ChevronLeft className="w-4 h-4" />
-                      Show Less
-                    </>
-                  ) : (
-                    <>
-                      <ChevronRight className="w-4 h-4" />
-                      Show More Details
-                    </>
-                  )}
-                </Button>
-              </div>
+                  <Button
+                    onClick={() => setShowExpandedDetails(!showExpandedDetails)}
+                    variant="outline"
+                    className="flex items-center gap-2 bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60 w-full sm:w-auto"
+                  >
+                    {showExpandedDetails ? (
+                      <>
+                        <ChevronLeft className="w-4 h-4" />
+                        Show Less
+                      </>
+                    ) : (
+                      <>
+                        <ChevronRight className="w-4 h-4" />
+                        Show More Details
+                      </>
+                    )}
+                  </Button>
+                </div>
 
               {/* Ad Banner - Moved below Play S1E1 button */}
               {adminSettings?.ads?.playerPageAd?.enabled && (

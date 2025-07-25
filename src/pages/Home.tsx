@@ -10,6 +10,7 @@ import AdBanner from '@/components/AdBanner';
 import { Loader2 } from 'lucide-react';
 import useAdminSettings from '@/hooks/useAdminSettings';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const Home = () => {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
@@ -72,44 +73,56 @@ const Home = () => {
   };
 
   const handleContinueWatchingClick = (historyItem: any) => {
-    // Find the actual content from our data
-    let content: Movie | TVShow | null = null;
-    
-    if (historyItem.type === 'movie') {
-      content = [...trendingMovies, ...popularMovies].find(m => m.id === historyItem.id) || null;
-    } else {
-      content = [...trendingShows, ...popularShows].find(s => s.id === historyItem.id) || null;
-    }
+    try {
+      // Find the actual content from our data
+      let content: Movie | TVShow | null = null;
+      
+      if (historyItem.type === 'movie') {
+        content = [...trendingMovies, ...popularMovies].find(m => m.id === historyItem.id) || null;
+      } else {
+        content = [...trendingShows, ...popularShows].find(s => s.id === historyItem.id) || null;
+      }
 
-    if (content) {
-      setPlayingContent({
-        item: content,
-        type: historyItem.type,
-        season: historyItem.season,
-        episode: historyItem.episode,
-        initialTime: historyItem.currentTime
-      });
+      if (content) {
+        setPlayingContent({
+          item: content,
+          type: historyItem.type,
+          season: historyItem.season,
+          episode: historyItem.episode,
+          initialTime: historyItem.currentTime
+        });
+      }
+    } catch (error) {
+      console.error('Error handling continue watching click:', error);
     }
   };
 
   const handleRemoveFromHistory = (historyItem: any) => {
-    removeFromHistory(historyItem.id, historyItem.type, historyItem.season, historyItem.episode);
+    try {
+      removeFromHistory(historyItem.id, historyItem.type, historyItem.season, historyItem.episode);
+    } catch (error) {
+      console.error('Error removing from history:', error);
+    }
   };
 
   const handleProgressUpdate = (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => {
     if (playingContent) {
-      // Only pass videoElement for final screenshots (when user closes)
-      // Regular progress updates don't include videoElement to avoid lag
-      updateProgress(
-        playingContent.item,
-        currentTime,
-        duration,
-        playingContent.type,
-        playingContent.season,
-        playingContent.episode,
-        undefined, // episodeTitle
-        videoElement
-      );
+      try {
+        // Only pass videoElement for final screenshots (when user closes)
+        // Regular progress updates don't include videoElement to avoid lag
+        updateProgress(
+          playingContent.item,
+          currentTime,
+          duration,
+          playingContent.type,
+          playingContent.season,
+          playingContent.episode,
+          undefined, // episodeTitle
+          videoElement
+        );
+      } catch (error) {
+        console.error('Error updating progress:', error);
+      }
     }
   };
 
@@ -130,7 +143,8 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-black">
       {/* Hero Section */}
       <section className="w-full">
         <HeroSlider 
@@ -165,12 +179,22 @@ const Home = () => {
         ) : (
           <>
             {/* Continue Watching Section */}
-            <ContinueWatching
-              items={getContinueWatching(10)}
-              onItemClick={handleContinueWatchingClick}
-              onRemoveItem={handleRemoveFromHistory}
-              getThumbnailUrl={getThumbnailUrl}
-            />
+            {(() => {
+              try {
+                const continueWatchingItems = getContinueWatching(10);
+                return (
+                  <ContinueWatching
+                    items={continueWatchingItems}
+                    onItemClick={handleContinueWatchingClick}
+                    onRemoveItem={handleRemoveFromHistory}
+                    getThumbnailUrl={getThumbnailUrl}
+                  />
+                );
+              } catch (error) {
+                console.error('Error rendering continue watching section:', error);
+                return null;
+              }
+            })()}
 
             {/* Ad after Hero Section */}
             {adminSettings?.ads?.mainPageAd1?.enabled && (
@@ -275,7 +299,8 @@ const Home = () => {
           initialTime={playingContent.initialTime}
         />
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 

@@ -16,12 +16,102 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
   getThumbnailUrl: customGetThumbnailUrl
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
 
+  // Carousel functionality
+  const scroll = useCallback((direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = 1200;
+      const newScrollLeft = scrollRef.current.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
+      
+      // Use requestAnimationFrame to prevent forced reflow during scroll
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTo({
+            left: newScrollLeft,
+            behavior: 'smooth'
+          });
+        }
+      });
+    }
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (scrollRef.current) {
+      // Use requestAnimationFrame to batch DOM reads and prevent forced reflow
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+          setShowLeftArrow(scrollLeft > 0);
+          setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
+        }
+      });
+    }
+  }, []);
+
+  // Debounced scroll handler to reduce frequency of calculations
+  const debouncedHandleScroll = useCallback(() => {
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    scrollTimeoutRef.current = setTimeout(handleScroll, 16); // ~60fps
+  }, [handleScroll]);
+
+  // Mouse drag functionality
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeft(scrollRef.current.scrollLeft);
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    
+    // Use requestAnimationFrame to prevent forced reflow during drag
+    requestAnimationFrame(() => {
+      if (scrollRef.current) {
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = (x - startX) * 2;
+        scrollRef.current.scrollLeft = scrollLeft - walk;
+      }
+    });
+  }, [isDragging, startX, scrollLeft]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    if (scrollElement) {
+      scrollElement.addEventListener('scroll', debouncedHandleScroll);
+      
+      // Use requestAnimationFrame for initial check to prevent forced reflow
+      requestAnimationFrame(() => {
+        handleScroll();
+      });
+      
+      return () => {
+        scrollElement.removeEventListener('scroll', debouncedHandleScroll);
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+      };
+    }
+  }, [handleScroll, debouncedHandleScroll]);
+
+  // Early return after all hooks are called
   if (items.length === 0) {
     return null;
   }
@@ -68,59 +158,7 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
     return `https://image.tmdb.org/t/p/w500${item.poster_path}`;
   };
 
-  // Carousel functionality
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const scrollAmount = 1200;
-      const newScrollLeft = scrollRef.current.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
-      
-      scrollRef.current.scrollTo({
-        left: newScrollLeft,
-        behavior: 'smooth'
-      });
-    }
-  };
 
-  const handleScroll = useCallback(() => {
-    if (scrollRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      setShowLeftArrow(scrollLeft > 0);
-      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
-    }
-  }, []);
-
-  // Mouse drag functionality
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!scrollRef.current) return;
-    setIsDragging(true);
-    setStartX(e.pageX - scrollRef.current.offsetLeft);
-    setScrollLeft(scrollRef.current.scrollLeft);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !scrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 2;
-    scrollRef.current.scrollLeft = scrollLeft - walk;
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseLeave = () => {
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    const scrollElement = scrollRef.current;
-    if (scrollElement) {
-      scrollElement.addEventListener('scroll', handleScroll);
-      handleScroll(); // Initial check
-      return () => scrollElement.removeEventListener('scroll', handleScroll);
-    }
-  }, [handleScroll]);
 
   return (
     <div className="mb-12 group">
@@ -174,6 +212,7 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
                 alt={item.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyNSIgdmlld0JveD0iMCAwIDQwMCAyMjUiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjI1IiBmaWxsPSIjMWYyOTM3Ii8+Cjx0ZXh0IHg9IjIwMCIgeT0iMTEyLjUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZiNzI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPgo=';
