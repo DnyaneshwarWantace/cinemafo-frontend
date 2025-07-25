@@ -293,11 +293,6 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                   />
                 </div>
               )}
-
-              {/* Separator Line - Shows after ad when details are expanded */}
-              {showDetails && (
-                <Separator className="my-6 bg-gray-700" />
-              )}
               
                   {/* Detailed Information Grid - Hidden by default */}
                 {showDetails && (
