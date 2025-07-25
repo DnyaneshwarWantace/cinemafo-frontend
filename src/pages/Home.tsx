@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api, { Movie, TVShow } from '@/services/api';
 import MovieCarousel from '@/components/MovieCarousel';
 import MovieModal from '@/components/MovieModal';
@@ -13,15 +14,9 @@ import { useWatchHistory } from '@/hooks/useWatchHistory';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 const Home = () => {
+  const navigate = useNavigate();
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
-  const [playingContent, setPlayingContent] = useState<{
-    item: Movie | TVShow;
-    type: 'movie' | 'tv';
-    season?: number;
-    episode?: number;
-    initialTime?: number;
-  } | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
   const [trendingShows, setTrendingShows] = useState<TVShow[]>([]);
@@ -80,43 +75,13 @@ const Home = () => {
 
   const handleContinueWatchingClick = async (historyItem: any) => {
     try {
-    // Find the actual content from our data
-    let content: Movie | TVShow | null = null;
-    
-    if (historyItem.type === 'movie') {
-      content = [...trendingMovies, ...popularMovies].find(m => m.id === historyItem.id) || null;
-        if (!content) {
-          // Fetch full movie details if not found
-          try {
-            const response = await api.getMovieDetails(historyItem.id);
-            content = response.data;
-          } catch (err) {
-            console.error('Failed to fetch movie details:', err);
-            return;
-          }
-        }
-    } else {
-      content = [...trendingShows, ...popularShows].find(s => s.id === historyItem.id) || null;
-        if (!content) {
-          // Fetch full show details if not found
-          try {
-            const response = await api.getShowDetails(historyItem.id);
-            content = response.data;
-          } catch (err) {
-            console.error('Failed to fetch show details:', err);
-            return;
-          }
-        }
-    }
-
-    if (content) {
-      setPlayingContent({
-        item: content,
-        type: historyItem.type,
-        season: historyItem.season,
-        episode: historyItem.episode,
-        initialTime: historyItem.currentTime
-      });
+      // Navigate to the appropriate route instead of opening modal
+      if (historyItem.type === 'movie') {
+        const title = encodeURIComponent(historyItem.title || 'Movie');
+        navigate(`/movie/${historyItem.id}?title=${title}&time=${historyItem.currentTime}`);
+      } else {
+        const title = encodeURIComponent(historyItem.title || 'TV Show');
+        navigate(`/tv/${historyItem.id}?title=${title}&season=${historyItem.season}&episode=${historyItem.episode}&time=${historyItem.currentTime}`);
       }
     } catch (error) {
       console.error('Error handling continue watching click:', error);
@@ -133,29 +98,7 @@ const Home = () => {
     }
   };
 
-  const handleProgressUpdate = (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => {
-    if (playingContent) {
-      try {
-      // Only pass videoElement for final screenshots (when user closes)
-      // Regular progress updates don't include videoElement to avoid lag
-      updateProgress(
-        playingContent.item,
-        currentTime,
-        duration,
-        playingContent.type,
-        playingContent.season,
-        playingContent.episode,
-        undefined, // episodeTitle
-        videoElement
-      );
-        
-        // Force re-render of continue watching section
-        setContinueWatchingKey(prev => prev + 1);
-      } catch (error) {
-        console.error('Error updating progress:', error);
-      }
-    }
-  };
+
 
   if (error) {
     return (
@@ -318,19 +261,7 @@ const Home = () => {
         />
       )}
 
-      {/* Video Player for Continue Watching */}
-      {playingContent && (
-        <VideoPlayer
-          tmdbId={playingContent.item.id}
-          type={playingContent.type}
-          season={playingContent.season}
-          episode={playingContent.episode}
-          title={'title' in playingContent.item ? playingContent.item.title : playingContent.item.name}
-          onClose={() => setPlayingContent(null)}
-          onProgressUpdate={handleProgressUpdate}
-          initialTime={playingContent.initialTime}
-        />
-      )}
+
     </div>
     </ErrorBoundary>
   );

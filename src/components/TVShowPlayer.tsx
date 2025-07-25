@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,12 +8,10 @@ import {
   Play, Star, Calendar, Clock, Loader2, Film, Users, Globe, Info, DollarSign, 
   Award, Building2, MapPin, Languages, Tags, ArrowLeft, ChevronLeft, ChevronRight
 } from "lucide-react";
-import VideoPlayer from "./VideoPlayer";
 import AdBanner from "./AdBanner";
 import MovieCarousel from "./MovieCarousel";
 import api, { Movie, TVShow, Episode } from "@/services/api";
 import useAdminSettings from '@/hooks/useAdminSettings';
-import { useWatchHistory } from '@/hooks/useWatchHistory';
 
 interface TVShowPlayerProps {
   show: TVShow;
@@ -20,17 +19,16 @@ interface TVShowPlayerProps {
 }
 
 const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
+  const navigate = useNavigate();
   const [showDetails, setShowDetails] = useState<TVShow | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
   const [seasonDetails, setSeasonDetails] = useState<{ episodes: Episode[] } | null>(null);
   const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [showExpandedDetails, setShowExpandedDetails] = useState(false);
   const { settings: adminSettings } = useAdminSettings();
-  const { getHistoryItem, updateProgress } = useWatchHistory();
 
   // Debug: Log the show data being passed
   console.log('TVShowPlayer received show data:', show);
@@ -101,44 +99,13 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   }, [show.id, selectedSeason]);
 
   const handlePlayEpisode = (episodeNumber: number) => {
-    setSelectedEpisode(episodeNumber);
-    setIsPlaying(true);
+    // Navigate to TV show player page instead of opening modal
+    const title = encodeURIComponent(show.name || 'TV Show');
+    navigate(`/tv/${show.id}?title=${title}&season=${selectedSeason}&episode=${episodeNumber}`);
+    onClose();
   };
 
-  const handleNextEpisode = () => {
-    console.log('🔄 Next Episode clicked!');
-    console.log('Current episode:', selectedEpisode);
-    console.log('Current season:', selectedSeason);
-    console.log('Available episodes:', seasonDetails?.episodes);
-    
-    const currentEpisodes = seasonDetails?.episodes || [];
-    const currentEpisodeIndex = currentEpisodes.findIndex(ep => ep.episode_number === selectedEpisode);
-    
-    console.log('Current episode index:', currentEpisodeIndex);
-    console.log('Total episodes in season:', currentEpisodes.length);
-    
-    if (currentEpisodeIndex >= 0 && currentEpisodeIndex < currentEpisodes.length - 1) {
-      // Next episode in same season
-      const nextEpisode = currentEpisodes[currentEpisodeIndex + 1];
-      console.log('🎬 Going to next episode:', nextEpisode.episode_number);
-      setSelectedEpisode(nextEpisode.episode_number);
-      // Keep playing - the VideoPlayer will re-render with new episode
-    } else if (currentEpisodeIndex === currentEpisodes.length - 1) {
-      // Last episode of season, go to next season
-      const nextSeason = selectedSeason + 1;
-      console.log('🎬 Going to next season:', nextSeason);
-      if (nextSeason <= (showDetails?.number_of_seasons || 1)) {
-        setSelectedSeason(nextSeason);
-        setSelectedEpisode(1);
-        // Keep playing - the VideoPlayer will re-render with new season/episode
-      }
-    } else {
-      console.log('❌ No next episode available');
-    }
-    
-    // If we're at the very last episode of the last season, do nothing
-    // (or you could show a message that this is the final episode)
-  };
+
 
   const getSeasonOptions = () => {
     if (showDetails?.seasons) {
@@ -197,24 +164,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
     setTimeout(() => onClose(), 300);
   };
 
-  if (isPlaying) {
-    return (
-      <VideoPlayer
-        tmdbId={show.id}
-        type="tv"
-        season={selectedSeason}
-        episode={selectedEpisode}
-        title={`${show.name} - S${selectedSeason}E${selectedEpisode}`}
-        onClose={() => setIsPlaying(false)}
-        onNextEpisode={handleNextEpisode}
-        onProgressUpdate={(currentTime, duration, videoElement) => {
-          // Only pass videoElement for final screenshots, not regular progress updates
-          updateProgress(show, currentTime, duration, 'tv', selectedSeason, selectedEpisode, undefined, videoElement);
-        }}
-        initialTime={getHistoryItem(show.id, 'tv', selectedSeason, selectedEpisode)?.currentTime || 0}
-      />
-    );
-  }
+
 
   const seasons = getSeasonOptions();
   const episodes = seasonDetails?.episodes || [];

@@ -257,15 +257,11 @@ export const useWatchHistory = () => {
 
       // Always generate thumbnail if video element is provided (final screenshot on close)
       if (videoElement) {
-        console.log('🎬 Video element provided, generating thumbnail...');
         try {
           thumbnailDataUrl = await generateThumbnail(videoElement, currentTime);
-          console.log('🎬 Thumbnail generated:', !!thumbnailDataUrl);
         } catch (error) {
           console.warn('Failed to generate thumbnail:', error);
         }
-      } else {
-        console.log('🎬 No video element provided, skipping thumbnail');
       }
 
       const historyItem: WatchHistoryItem = {
@@ -285,6 +281,8 @@ export const useWatchHistory = () => {
         thumbnailDataUrl
       };
 
+
+
       setWatchHistory(prev => {
         // Ensure prev is an array to prevent state corruption
         if (!Array.isArray(prev)) {
@@ -297,13 +295,38 @@ export const useWatchHistory = () => {
         );
 
         if (existingIndex >= 0) {
-          // Update existing item
+          // Update existing item, but preserve existing thumbnail if no new one is provided
           const updated = [...prev];
+          const existingItem = updated[existingIndex];
+          
+          // Preserve existing thumbnail if no new thumbnail is being generated
+          if (!thumbnailDataUrl && existingItem.thumbnailDataUrl) {
+            historyItem.thumbnailDataUrl = existingItem.thumbnailDataUrl;
+            historyItem.thumbnailTime = existingItem.thumbnailTime;
+          }
+          
           updated[existingIndex] = historyItem;
+          
+          // Force immediate save to localStorage
+          try {
+            localStorage.setItem('watchHistory', JSON.stringify(updated));
+          } catch (error) {
+            console.warn('Failed to save watch history to localStorage:', error);
+          }
+          
           return updated;
         } else {
           // Add new item
-          return [historyItem, ...prev];
+          const newHistory = [historyItem, ...prev];
+          
+          // Force immediate save to localStorage
+          try {
+            localStorage.setItem('watchHistory', JSON.stringify(newHistory));
+          } catch (error) {
+            console.warn('Failed to save watch history to localStorage:', error);
+          }
+          
+          return newHistory;
         }
       });
     } else if (progress >= 90) {

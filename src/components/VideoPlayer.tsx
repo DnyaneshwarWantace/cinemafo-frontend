@@ -149,6 +149,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const skipIntroTimeoutRef = useRef<NodeJS.Timeout>();
   const skipIntroAutoHideRef = useRef<NodeJS.Timeout>();
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastProgressUpdateRef = useRef<number>(0);
   
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -379,9 +380,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setCurrentTime(currentTime);
     setDuration(duration);
 
-    // Save progress every 5 seconds WITHOUT video element (no screenshot during progress)
+    // Save progress every 10 seconds with throttling
     if (onProgressUpdate && duration > 0) {
-      onProgressUpdate(currentTime, duration);
+      const now = Date.now();
+      const timeSinceLastUpdate = now - lastProgressUpdateRef.current;
+      
+      // Only update if at least 10 seconds have passed
+      if (timeSinceLastUpdate >= 10000) {
+        lastProgressUpdateRef.current = now;
+        
+        // Generate thumbnail every 60 seconds (every 6th progress update)
+        const shouldGenerateThumbnail = Math.floor(currentTime / 60) > Math.floor((currentTime - 10) / 60);
+        
+        if (shouldGenerateThumbnail && video) {
+          onProgressUpdate(currentTime, duration, video);
+        } else {
+          onProgressUpdate(currentTime, duration);
+        }
+      }
     }
 
       // Next Episode button logic (for TV shows only)

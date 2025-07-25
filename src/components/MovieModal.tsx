@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,13 +8,11 @@ import {
   Play, Star, Calendar, Clock, Loader2, Film, Users, Globe, Info, DollarSign, 
   Award, Building2, MapPin, Languages, Tags, ArrowLeft, ChevronLeft, ChevronRight
 } from "lucide-react";
-import VideoPlayer from "./VideoPlayer";
 import TVShowPlayer from "./TVShowPlayer";
 import AdBanner from "./AdBanner";
 import MovieCarousel from "./MovieCarousel";
 import api, { Movie, TVShow, cacheUtils } from "@/services/api";
 import useAdminSettings from '@/hooks/useAdminSettings';
-import { useWatchHistory } from '@/hooks/useWatchHistory';
 
 interface MovieModalProps {
   movie: Movie;
@@ -21,14 +20,13 @@ interface MovieModalProps {
 }
 
 const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose }) => {
+  const navigate = useNavigate();
   const [movie, setMovie] = useState<Movie>(initialMovie);
   const [loading, setLoading] = useState(false);
-  const [showFullMovie, setShowFullMovie] = useState(false);
   const [showTVShowPlayer, setShowTVShowPlayer] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const { settings: adminSettings } = useAdminSettings();
-  const { getHistoryItem, updateProgress } = useWatchHistory();
 
   // No need to check for detailed data anymore - backend provides complete data
   console.log(`✅ Movie ${initialMovie.id} loaded with complete data from backend`);
@@ -76,7 +74,10 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
       onClose();
       setShowTVShowPlayer(true);
     } else {
-      setShowFullMovie(true);
+      // Navigate to movie player page instead of opening modal
+      const title = encodeURIComponent(movie.title || movie.name || 'Movie');
+      navigate(`/movie/${movie.id}?title=${title}`);
+      onClose();
     }
   };
 
@@ -414,21 +415,6 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
             first_air_date: movie.first_air_date || movie.release_date
           } as TVShow}
           onClose={() => setShowTVShowPlayer(false)}
-        />
-      )}
-
-      {/* Full Movie Player */}
-      {showFullMovie && (
-        <VideoPlayer
-          tmdbId={movie.id}
-          type="movie"
-          title={movie.title || movie.name}
-          onClose={() => setShowFullMovie(false)}
-          onProgressUpdate={(currentTime, duration, videoElement) => {
-            // Only pass videoElement for final screenshots, not regular progress updates
-            updateProgress(movie, currentTime, duration, 'movie', undefined, undefined, undefined, videoElement);
-          }}
-          initialTime={getHistoryItem(movie.id, 'movie')?.currentTime || 0}
         />
       )}
 
