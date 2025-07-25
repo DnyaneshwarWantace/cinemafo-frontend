@@ -289,6 +289,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                     imageUrl={adminSettings.ads.playerPageAd.imageUrl}
                     clickUrl={adminSettings.ads.playerPageAd.clickUrl}
                     enabled={adminSettings.ads.playerPageAd.enabled}
+                    className="mx-auto lg:!mx-0"
                   />
                 </div>
               )}
