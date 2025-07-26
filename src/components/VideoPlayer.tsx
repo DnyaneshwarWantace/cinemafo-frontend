@@ -657,6 +657,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleScreenDoubleClick = (e: React.MouseEvent) => {
     if (currentSource?.type !== 'hls') return;
     
+    // Clear the single click timeout to prevent play/pause toggle
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+    
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const screenWidth = rect.width;
@@ -670,13 +676,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const handleScreenClick = (e: React.MouseEvent) => {
+    // Check if the click is on a control element
+    const target = e.target as HTMLElement;
+    const isControlClick = target.closest('button') || 
+                          target.closest('input') || 
+                          target.closest('.controls-overlay') ||
+                          target.closest('.settings-menu') ||
+                          target.closest('.settings-button') ||
+                          target.closest('[type="range"]') ||
+                          target.tagName === 'INPUT' ||
+                          target.tagName === 'BUTTON';
+    
+    // Don't handle clicks on controls
+    if (isControlClick) {
+      return;
+    }
+    
     // Only handle single click if not part of a double click
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
       clickTimeoutRef.current = null;
     }
     clickTimeoutRef.current = setTimeout(() => {
-      // Single click: toggle play/pause
+      // Single click: toggle play/pause only if not clicking on controls
       if (currentSource?.type === 'hls') {
         togglePlayPause();
       }
@@ -1232,7 +1254,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {/* Skip Intro Button */}
             {showSkipIntro && (
               <Button
-                onClick={handleSkipIntro}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSkipIntro(e);
+                }}
                 className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-blue-400/50 shadow-lg shadow-blue-500/30 hover:shadow-blue-400/50 hover:border-blue-300/70"
               >
                 <SkipIntro className="w-4 h-4 text-blue-400" />
@@ -1243,7 +1268,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {/* Next Episode Button - Only for TV shows */}
             {showNextEpisode && type === 'tv' && (
               <Button
-                onClick={handleNextEpisode}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextEpisode(e);
+                }}
                 className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-white/20"
               >
                 <NextEpisode className="w-4 h-4" />
@@ -1318,10 +1346,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           <div 
             className="controls-overlay absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20 pointer-events-none"
             style={{ pointerEvents: 'none' }}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Back Button - Top Left */}
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 // Capture final screenshot before closing
                 if (videoRef.current && onProgressUpdate) {
                   const currentTime = videoRef.current.currentTime;
@@ -1371,7 +1401,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   min="0"
                   max={duration || 0}
                   value={currentTime}
-                  onChange={handleSeek}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    handleSeek(e);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 </div>
@@ -1387,7 +1421,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={skipBackward}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      skipBackward();
+                    }}
                     className="text-white hover:bg-white/20"
                   >
                     <SkipBack className="w-5 h-5" />
@@ -1396,7 +1433,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={togglePlayPause}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePlayPause();
+                    }}
                     disabled={isPlayPausePending}
                     className={`text-white hover:bg-white/20 ${isPlayPausePending ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
@@ -1412,22 +1452,38 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={skipForward}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      skipForward();
+                    }}
                     className="text-white hover:bg-white/20"
                   >
                     <SkipForward className="w-5 h-5" />
                   </Button>
                   
-                  <div className="flex items-center gap-2">
+                  <div 
+                    className="flex items-center gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onMouseUp={(e) => e.stopPropagation()}
+                  >
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={toggleMute}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMute();
+                      }}
                       className="text-white hover:bg-white/20"
                     >
                       {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                     </Button>
-                    <div className="relative w-20 h-2">
+                    <div 
+                      className="relative w-20 h-2"
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onMouseUp={(e) => e.stopPropagation()}
+                    >
                       {/* Background track */}
                       <div className="absolute inset-0 bg-gray-700 rounded-lg"></div>
                       
@@ -1444,7 +1500,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       max="1"
                       step="0.1"
                       value={volume}
-                      onChange={handleVolumeChange}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleVolumeChange(e);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onMouseUp={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onPointerUp={(e) => e.stopPropagation()}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
                   </div>
@@ -1478,7 +1542,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={toggleFullscreen}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFullscreen();
+                  }}
                   className="text-white hover:bg-white/20"
                 >
                   {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
