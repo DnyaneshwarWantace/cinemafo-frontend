@@ -19,6 +19,7 @@ import TVShowPlayerPage from './pages/TVShowPlayerPage';
 import AdminPanel from './components/admin/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import VideoPlayer from './components/VideoPlayer';
+import { useNavbarSpacing } from './hooks/useNavbarSpacing';
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const queryClient = new QueryClient();
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
+  const topSpacing = useNavbarSpacing();
 
   // Trigger admin settings event on app load to ensure ads show
   useEffect(() => {
@@ -40,7 +42,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen bg-black">
       {!isAdminPage && <AnnouncementBar />}
       {!isAdminPage && <Navigation inModalView={false} />}
-      <main className="w-full">
+      <main className="w-full navbar-transition" style={{ paddingTop: topSpacing }}>
         {children}
       </main>
       {!isAdminPage && <FloatingSocialButtons />}
