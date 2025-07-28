@@ -17,7 +17,7 @@ const Search = () => {
   const [results, setResults] = useState<(Movie | TVShow)[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Movie | TVShow | null>(null);
-  const [mediaType, setMediaType] = useState('multi');
+  const [mediaType] = useState('multi');
   const [filters, setFilters] = useState({
     genre: 'all',
     year: '',
@@ -336,7 +336,7 @@ const Search = () => {
             <div className="relative flex-1 min-w-[300px]">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Search movies, TV shows, or people..."
+                placeholder="Search movies and TV shows..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -360,17 +360,6 @@ const Search = () => {
                 </Button>
               )}
             </div>
-            <Select value={mediaType} onValueChange={setMediaType}>
-              <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white h-12">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="multi">All</SelectItem>
-                <SelectItem value="movie">Movies</SelectItem>
-                <SelectItem value="tv">TV Shows</SelectItem>
-                <SelectItem value="person">People</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
