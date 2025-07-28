@@ -37,6 +37,13 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
     return () => clearTimeout(timer);
   }, []);
 
+  // Hide any tooltips when modal opens
+  useEffect(() => {
+    // Dispatch a custom event to hide tooltips
+    const hideTooltipsEvent = new CustomEvent('hideTooltips');
+    document.dispatchEvent(hideTooltipsEvent);
+  }, []);
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -155,7 +162,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
     <>
       {/* Backdrop */}
       <div 
-        className={`fixed inset-0 z-50 transition-opacity duration-300 overflow-hidden ${
+        className={`fixed inset-0 z-[60] transition-opacity duration-300 overflow-hidden ${
           isOpen ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={handleClose}
@@ -175,7 +182,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
 
       {/* Modal Content - Centered */}
       <div 
-        className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 overflow-hidden ${
+        className={`fixed inset-0 z-[60] flex items-center justify-center transition-opacity duration-300 overflow-hidden ${
           isOpen ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={(e) => e.stopPropagation()}

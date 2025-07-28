@@ -29,18 +29,27 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const isAnnouncementEnabled = true;
 
   useEffect(() => {
+    let ticking = false;
+    
     const handleScroll = () => {
-      const announcementClosed = localStorage.getItem('announcementClosed') === 'true';
-      if (announcementClosed) {
-        setIsScrolled(true); // Always at top when announcement is manually closed
-      } else {
-        // When announcement is not manually closed, show/hide based on scroll
-        const shouldShowAnnouncement = window.scrollY <= 48;
-        setIsScrolled(!shouldShowAnnouncement);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const announcementClosed = localStorage.getItem('announcementClosed') === 'true';
+          if (announcementClosed) {
+            setIsScrolled(true); // Always at top when announcement is manually closed
+          } else {
+            // When announcement is not manually closed, show/hide based on scroll
+            // Reduced threshold to 15px for faster response
+            const shouldShowAnnouncement = window.scrollY <= 15;
+            setIsScrolled(!shouldShowAnnouncement);
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -58,7 +67,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
         setIsScrolled(true);
       } else {
         // When announcement is re-enabled, check current scroll position
-        const shouldShowAnnouncement = window.scrollY <= 48;
+        const shouldShowAnnouncement = window.scrollY <= 15;
         setIsScrolled(!shouldShowAnnouncement);
       }
     };
@@ -145,14 +154,22 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   };
 
   const handleSearchItemClick = (item: Movie | TVShow) => {
+    console.log('🎬 Search item clicked:', item); // Debug log
     setShowSearchPopup(false);
     setSearchQuery('');
     setSearchResults([]);
-    if ('title' in item) {
-      setSelectedMovie(item as Movie);
-    } else {
-      setSelectedShow(item as TVShow);
-    }
+    setIsMobileMenuOpen(false); // Close mobile menu when item is clicked
+    
+    // Add a small delay to ensure mobile menu closes before opening modal
+    setTimeout(() => {
+      if ('title' in item) {
+        console.log('🎬 Opening movie modal for:', item.title);
+        setSelectedMovie(item as Movie);
+      } else {
+        console.log('📺 Opening TV show player for:', item.name);
+        setSelectedShow(item as TVShow);
+      }
+    }, 100);
   };
 
   const clearSearch = () => {
@@ -181,7 +198,13 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
-      if (!target.closest('.search-container')) {
+      const searchContainer = target.closest('.search-container');
+      const searchPopup = target.closest('[data-search-popup]');
+      const searchInput = target.closest('input[type="text"]');
+      
+      // Don't close if clicking inside search container, search popup, or search input
+      if (!searchContainer && !searchPopup && !searchInput) {
+        console.log('🖱️ Clicking outside, closing popup');
         setShowSearchPopup(false);
       }
     };
@@ -197,7 +220,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
 
   return (
     <>
-      <nav className={`fixed left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-gray-800/30 transition-all duration-300 h-[80px] ${
+      <nav className={`fixed left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-gray-800/30 transition-all duration-100 h-[80px] ${
         isAnnouncementEnabled && !inModalView && !isScrolled ? 'top-[48px]' : 'top-0'
       }`}>
         <div className="w-full h-full px-3 sm:px-4 md:px-6 lg:px-8">
@@ -250,7 +273,10 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                         setIsSearchFocused(true);
                         if (searchQuery.trim().length > 0) {
                           setShowSearchPopup(true);
-                          if (searchResults.length === 0) {
+                          // Always show results if we have them, even if clicking back into search
+                          if (searchResults.length > 0) {
+                            setShowSearchPopup(true);
+                          } else {
                             handleSearch(searchQuery);
                           }
                         }
@@ -275,7 +301,10 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
 
                 {/* Desktop Search Popup */}
                 {showSearchPopup && (
-                  <div className="absolute top-full left-0 mt-2 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl z-50 w-full">
+                  <div 
+                    data-search-popup="true"
+                    className="absolute top-full left-0 mt-2 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl z-50 w-full"
+                  >
                     {isSearching ? (
                       <div className="p-4 text-center text-gray-400">
                         <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
@@ -384,7 +413,18 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => handleSearch(e.target.value)}
-                      onFocus={() => setIsSearchFocused(true)}
+                      onFocus={() => {
+                        setIsSearchFocused(true);
+                        if (searchQuery.trim().length > 0) {
+                          setShowSearchPopup(true);
+                          // Always show results if we have them, even if clicking back into search
+                          if (searchResults.length > 0) {
+                            setShowSearchPopup(true);
+                          } else {
+                            handleSearch(searchQuery);
+                          }
+                        }
+                      }}
                       onBlur={() => setIsSearchFocused(false)}
                       onKeyDown={handleSearchKeyDown}
                       placeholder="Search..."
@@ -404,7 +444,10 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
 
                 {/* Tablet Search Popup */}
                 {showSearchPopup && (
-                  <div className="absolute top-full left-0 mt-2 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl z-50 w-80">
+                  <div 
+                    data-search-popup="true"
+                    className="absolute top-full left-0 mt-2 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl z-50 w-80"
+                  >
                     {isSearching ? (
                       <div className="p-4 text-center text-gray-400">
                         <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
@@ -493,7 +536,18 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => handleSearch(e.target.value)}
-                      onFocus={() => setIsSearchFocused(true)}
+                      onFocus={() => {
+                        setIsSearchFocused(true);
+                        if (searchQuery.trim().length > 0) {
+                          setShowSearchPopup(true);
+                          // Always show results if we have them, even if clicking back into search
+                          if (searchResults.length > 0) {
+                            setShowSearchPopup(true);
+                          } else {
+                            handleSearch(searchQuery);
+                          }
+                        }
+                      }}
                       onBlur={() => setIsSearchFocused(false)}
                       onKeyDown={handleSearchKeyDown}
                       placeholder="Search movies..."
@@ -513,7 +567,10 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
 
                 {/* Tablet Search Popup */}
                 {showSearchPopup && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl z-50">
+                  <div 
+                    data-search-popup="true"
+                    className="absolute top-full left-0 right-0 mt-2 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl z-50"
+                  >
                     {isSearching ? (
                       <div className="p-4 text-center text-gray-400">
                         <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
@@ -709,6 +766,13 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => handleSearch(e.target.value)}
+                      onFocus={() => {
+                        console.log('📱 Mobile search focused, query:', searchQuery, 'results:', searchResults.length);
+                        // Only show popup if we have results and it's not already showing
+                        if (searchQuery.trim().length > 0 && searchResults.length > 0 && !showSearchPopup) {
+                          setShowSearchPopup(true);
+                        }
+                      }}
                       onKeyDown={handleSearchKeyDown}
                       placeholder="Search movies..."
                       className="w-full bg-white/10 text-white pl-10 pr-4 py-3 rounded-lg border border-white/20 focus:border-blue-500 focus:outline-none text-sm placeholder-gray-400"
@@ -727,7 +791,10 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
 
                 {/* Mobile Search Popup */}
                 {showSearchPopup && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl z-50 max-h-96 overflow-y-auto">
+                  <div 
+                    data-search-popup="true"
+                    className="absolute top-full left-0 right-0 mt-2 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl z-[60] max-h-96 overflow-y-auto"
+                  >
                     {isSearching ? (
                       <div className="p-4 text-center text-gray-400">
                         <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
@@ -743,7 +810,11 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                           return (
                             <div
                               key={item.id}
-                              onClick={() => handleSearchItemClick(item)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSearchItemClick(item);
+                              }}
                               className="flex items-center gap-3 p-3 hover:bg-gray-800/50 rounded-lg cursor-pointer transition-colors group"
                             >
                               {/* Poster */}
@@ -772,8 +843,12 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                         {/* View More Results */}
                         {searchResults.length > 3 && (
                           <div
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('🔍 Navigating to search page with query:', searchQuery);
                               setShowSearchPopup(false);
+                              setIsMobileMenuOpen(false); // Close mobile menu when navigating
                               navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
                             }}
                             className="p-3 text-center text-blue-400 hover:text-blue-300 cursor-pointer border-t border-gray-700/50 mt-2"

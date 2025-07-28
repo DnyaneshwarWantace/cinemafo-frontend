@@ -25,7 +25,7 @@ const AnnouncementBar = () => {
 
   return (
     <div 
-      className="text-center shadow-lg h-[48px] flex items-center"
+      className="text-center shadow-lg h-[48px] flex items-center transition-all duration-100"
       style={{ 
         backgroundColor,
         background: `linear-gradient(135deg, ${backgroundColor}ee, ${backgroundColor}cc)`

@@ -29,6 +29,14 @@ const Search = () => {
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const [watchlistUpdate, setWatchlistUpdate] = useState(0);
 
+  const hideTooltip = () => {
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
+    }
+    setTooltipItem(null);
+  };
+
   // Read query from URL on component mount
   useEffect(() => {
     const urlQuery = searchParams.get('q');
@@ -57,6 +65,64 @@ const Search = () => {
 
     return () => clearTimeout(delayDebounceFn);
   }, [query, mediaType, filters]);
+
+  // Cleanup tooltip on component unmount or when items change
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      // If mouse moves outside the search area, hide tooltip
+      const searchElement = document.querySelector('.search-container');
+      if (searchElement && !searchElement.contains(e.target as Node)) {
+        hideTooltip();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      // Hide tooltip when page becomes hidden (user switches tabs)
+      if (document.hidden) {
+        hideTooltip();
+      }
+    };
+
+    const handleGlobalClick = () => {
+      // Hide tooltip when clicking anywhere
+      hideTooltip();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Hide tooltip on Escape key
+      if (e.key === 'Escape') {
+        hideTooltip();
+      }
+    };
+
+    const handleScroll = () => {
+      // Hide tooltip when scrolling
+      hideTooltip();
+    };
+
+    const handleHideTooltips = () => {
+      // Hide tooltip when modal opens
+      hideTooltip();
+    };
+
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('click', handleGlobalClick);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('scroll', handleScroll);
+    document.addEventListener('hideTooltips', handleHideTooltips);
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('click', handleGlobalClick);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('hideTooltips', handleHideTooltips);
+      
+      hideTooltip();
+    };
+  }, [tooltipTimeout, results]);
 
   const performSearch = async () => {
     if (!query.trim()) return;
@@ -139,10 +205,39 @@ const Search = () => {
 
   const handleMouseEnter = (e: React.MouseEvent, item: Movie | TVShow) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    setTooltipPosition({
-      x: rect.left + rect.width / 2,
-      y: rect.bottom + 10
-    });
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate initial position
+    let x = rect.left + rect.width / 2;
+    let y = rect.bottom + 10;
+    
+    // Tooltip dimensions (approximate)
+    const tooltipWidth = 320; // max-w-xs = 320px
+    const tooltipHeight = 120; // approximate height
+    
+    // Adjust X position to keep tooltip within viewport
+    if (x - tooltipWidth / 2 < 10) {
+      // Too close to left edge
+      x = tooltipWidth / 2 + 10;
+    } else if (x + tooltipWidth / 2 > viewportWidth - 10) {
+      // Too close to right edge
+      x = viewportWidth - tooltipWidth / 2 - 10;
+    }
+    
+    // Adjust Y position to keep tooltip within viewport
+    if (y + tooltipHeight > viewportHeight - 10) {
+      // Too close to bottom edge, show above the card
+      y = rect.top - tooltipHeight - 10;
+      
+      // If showing above would also be outside viewport, show at top with margin
+      if (y < 10) {
+        y = 10;
+      }
+    }
+    
+    setTooltipPosition({ x, y });
+    
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
