@@ -15,7 +15,12 @@ const AnnouncementBar = () => {
   React.useEffect(() => {
     const userDismissed = localStorage.getItem('announcementUserDismissed') === 'true';
     setIsUserDismissed(userDismissed);
-  }, []);
+    
+    // If announcement is visible, notify navbar to move down
+    if (!userDismissed && isEnabled && text) {
+      window.dispatchEvent(new Event('announcementOpened'));
+    }
+  }, [isEnabled, text]);
 
   // Reset user dismissal when admin setting changes
   React.useEffect(() => {

@@ -35,11 +35,16 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
     setIsAnnouncementVisible(!announcementClosed);
   }, []);
 
-  // Listen for announcement bar close
+  // Listen for announcement bar events
   useEffect(() => {
     const handleAnnouncementClosed = () => {
       // When announcement is manually closed, hide it
       setIsAnnouncementVisible(false);
+    };
+
+    const handleAnnouncementOpened = () => {
+      // When announcement becomes visible, show it
+      setIsAnnouncementVisible(true);
     };
 
     const handleStorageChange = () => {
@@ -48,9 +53,11 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
     };
 
     window.addEventListener('announcementClosed', handleAnnouncementClosed);
+    window.addEventListener('announcementOpened', handleAnnouncementOpened);
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('announcementClosed', handleAnnouncementClosed);
+      window.removeEventListener('announcementOpened', handleAnnouncementOpened);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
