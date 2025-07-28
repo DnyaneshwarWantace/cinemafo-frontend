@@ -146,16 +146,15 @@ const Index = () => {
               <span>{new Date(movie.release_date || movie.first_air_date).getFullYear()}</span>
             </div>
           </div>
-          <Button 
-            size="sm" 
-            className="absolute top-4 right-4 bg-red-600 hover:bg-red-700"
-            onClick={(e) => {
+          {/* Play Button Overlay */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="crystal-play-button" onClick={(e) => {
               e.stopPropagation();
               handleMovieClick(movie);
-            }}
-          >
-            <Play className="w-3 h-3" />
-          </Button>
+            }}>
+              {/* Triangle is created via CSS ::before pseudo-element */}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>;

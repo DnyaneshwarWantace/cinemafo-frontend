@@ -9,6 +9,9 @@ const Watchlist = () => {
   const [watchlist, setWatchlist] = useState<(Movie | TVShow)[]>([]);
   const [selectedItem, setSelectedItem] = useState<Movie | TVShow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tooltipItem, setTooltipItem] = useState<Movie | TVShow | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadWatchlist();
@@ -23,6 +26,57 @@ const Watchlist = () => {
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
+
+  // Cleanup tooltip on component unmount or when items change
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      // If mouse moves outside the watchlist area, hide tooltip
+      const watchlistElement = document.querySelector('.watchlist-container');
+      if (watchlistElement && !watchlistElement.contains(e.target as Node)) {
+        hideTooltip();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      // Hide tooltip when page becomes hidden (user switches tabs)
+      if (document.hidden) {
+        hideTooltip();
+      }
+    };
+
+    const handleGlobalClick = () => {
+      // Hide tooltip when clicking anywhere
+      hideTooltip();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Hide tooltip on Escape key
+      if (e.key === 'Escape') {
+        hideTooltip();
+      }
+    };
+
+    const handleScroll = () => {
+      // Hide tooltip when scrolling
+      hideTooltip();
+    };
+
+    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('click', handleGlobalClick);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('scroll', handleScroll);
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('click', handleGlobalClick);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('scroll', handleScroll);
+      
+      hideTooltip();
+    };
+  }, [tooltipTimeout, watchlist]);
 
   const loadWatchlist = () => {
     try {
@@ -87,10 +141,49 @@ const Watchlist = () => {
     });
   };
 
+  // Tooltip functionality
+  const handleMouseEnter = (e: React.MouseEvent, item: Movie | TVShow) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.bottom + 10
+    });
+    
+    // Clear any existing timeout
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
+    }
+    
+    // Set timeout for 1.5 seconds
+    const timeout = setTimeout(() => {
+      setTooltipItem(item);
+    }, 1500);
+    
+    setTooltipTimeout(timeout);
+  };
+
+  const handleTooltipMouseLeave = () => {
+    // Clear timeout and hide tooltip immediately
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
+    }
+    setTooltipItem(null);
+  };
+
+  const hideTooltip = () => {
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
+    }
+    setTooltipItem(null);
+  };
+
   if (loading) {
-    return (
-      <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+      return (
+    <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 watchlist-container">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
@@ -140,36 +233,39 @@ const Watchlist = () => {
             <p className="text-gray-500">Start browsing movies and TV shows to add them to your watchlist.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
             {watchlist.map((item) => (
               <div
                 key={`${item.id}-${item.media_type}`}
-                className="group relative bg-gray-900/50 rounded-lg overflow-hidden hover:scale-105 transition-all duration-300 cursor-pointer"
+                className="cursor-pointer group/item"
                 onClick={() => handleItemClick(item)}
+                onMouseEnter={(e) => handleMouseEnter(e, item)}
+                onMouseLeave={handleTooltipMouseLeave}
+                onMouseOut={handleTooltipMouseLeave}
               >
-                <div className="aspect-[2/3] relative overflow-hidden">
+                <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                   <img
-                    src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
+                    src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgdmlld0JveD0iMCAwIDMwMCA0NTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDUwIiBmaWxsPSIjMWYyOTM3Ii8+Cjx0ZXh0IHg9IjE1MCIgeT0iMjI1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2YjcyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
                     alt={getItemTitle(item)}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    className="w-full h-full object-cover transform group-hover/item:scale-105 transition-transform duration-300"
                     loading="lazy"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = 'https://via.placeholder.com/300x450/1f2937/6b7280?text=No+Image';
+                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgdmlld0JveD0iMCAwIDMwMCA0NTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDUwIiBmaWxsPSIjMWYyOTM3Ii8+Cjx0ZXh0IHg9IjE1MCIgeT0iMjI1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2YjcyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K';
                     }}
                   />
                   
                   {/* Individual Delete Button */}
                   <button
                     onClick={(e) => removeFromWatchlist(e, item)}
-                    className="absolute top-2 left-2 bg-black/80 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 z-20"
+                    className="absolute top-2 left-2 bg-black/40 hover:bg-red-600 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover/item:opacity-100 z-20"
                     title="Remove from watchlist"
                   >
-                    <X size={14} />
+                    <X size={16} />
                   </button>
 
                   {/* Play Button Overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
                     <div className="crystal-play-button">
                       {/* Triangle is created via CSS ::before pseudo-element */}
                     </div>
@@ -177,13 +273,13 @@ const Watchlist = () => {
                   
                   {/* Rating Badge */}
                   {typeof item.vote_average === 'number' && (
-                    <div className="absolute top-2 right-2 bg-black/80 text-yellow-400 px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
+                    <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                       <Star className="w-3 h-3" />
                       {item.vote_average.toFixed(1)}
                     </div>
                   )}
                   
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
                     <div>
                       <h3 className="text-white font-semibold text-sm line-clamp-2">
                         {getItemTitle(item)}
@@ -216,6 +312,61 @@ const Watchlist = () => {
           onClose={() => setSelectedItem(null)}
         />
       )}
+
+      {/* Tooltip */}
+      {tooltipItem && (
+        <div
+          className="fixed z-50 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+        style={{ 
+            left: tooltipPosition.x,
+            top: tooltipPosition.y,
+            transform: 'translateX(-50%)',
+            marginTop: '0px'
+          }}
+        >
+          <div className="flex items-start gap-3">
+            {/* Poster */}
+            <div className="flex-shrink-0 w-16 h-24 bg-gray-700 rounded overflow-hidden">
+              <img
+                src={tooltipItem.poster_path ? `https://image.tmdb.org/t/p/w92${tooltipItem.poster_path}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg=='}
+                alt={getItemTitle(tooltipItem)}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg==';
+                }}
+                />
+                  </div>
+
+            {/* Details */}
+            <div className="flex-1 min-w-0">
+              <h4 className="text-white font-semibold text-sm line-clamp-2 mb-2">
+                {getItemTitle(tooltipItem)}
+              </h4>
+              
+              <div className="space-y-1 text-xs text-gray-300">
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  <span>{formatReleaseDate(getItemReleaseDate(tooltipItem))}</span>
+                </div>
+                
+                {typeof tooltipItem.vote_average === 'number' && (
+                  <div className="flex items-center gap-1">
+                    <Star className="w-3 h-3 text-yellow-400" />
+                    <span>{tooltipItem.vote_average.toFixed(1)}</span>
+                  </div>
+                )}
+                
+                {tooltipItem.overview && (
+                  <p className="text-gray-400 line-clamp-2 mt-2">
+                    {tooltipItem.overview}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+          </div>
+        )}
     </div>
   );
 };
