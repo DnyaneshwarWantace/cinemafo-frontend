@@ -40,7 +40,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen bg-black">
       {!isAdminPage && <AnnouncementBar />}
       {!isAdminPage && <Navigation inModalView={false} />}
-      <main className="w-full">
+      <main className="w-full pt-[128px]">
         {children}
       </main>
       {!isAdminPage && <FloatingSocialButtons />}

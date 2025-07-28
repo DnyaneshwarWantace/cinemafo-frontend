@@ -30,38 +30,26 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const isAnnouncementEnabled = true;
 
   useEffect(() => {
-    const handleScroll = () => {
-      const announcementClosed = localStorage.getItem('announcementClosed') === 'true';
-      if (announcementClosed) {
-        setIsScrolled(true); // Always at top when announcement is manually closed
-      } else {
-                    // When announcement is not manually closed, show/hide based on scroll
-            // Respond to any scroll movement for instant response
-            const shouldShowAnnouncement = window.scrollY <= 1;
-            setIsScrolled(!shouldShowAnnouncement);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Check if announcement is closed on mount
+    const announcementClosed = localStorage.getItem('announcementUserDismissed') === 'true';
+    setIsScrolled(announcementClosed);
   }, []);
 
   // Listen for announcement bar close
   useEffect(() => {
     const handleAnnouncementClosed = () => {
-      // When announcement is manually closed, always keep navbar at top
+      // When announcement is manually closed, move navbar to top
       setIsScrolled(true);
     };
 
     const handleStorageChange = () => {
-      const announcementClosed = localStorage.getItem('announcementClosed');
+      const announcementClosed = localStorage.getItem('announcementUserDismissed');
       if (announcementClosed === 'true') {
-        // When announcement is manually closed, always keep navbar at top
+        // When announcement is manually closed, move navbar to top
         setIsScrolled(true);
       } else {
-        // When announcement is re-enabled, check current scroll position
-        const shouldShowAnnouncement = window.scrollY <= 1;
-        setIsScrolled(!shouldShowAnnouncement);
+        // When announcement is re-enabled, show it below announcement
+        setIsScrolled(false);
       }
     };
 
@@ -259,7 +247,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
 
   return (
     <>
-      <nav className={`fixed left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-gray-800/30 transition-all duration-[15ms] h-[80px] ${
+      <nav className={`fixed left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-gray-800/30 h-[80px] ${
         isAnnouncementEnabled && !inModalView && !isScrolled ? 'top-[48px]' : 'top-0'
       }`}>
         <div className="w-full h-full px-3 sm:px-4 md:px-6 lg:px-8">

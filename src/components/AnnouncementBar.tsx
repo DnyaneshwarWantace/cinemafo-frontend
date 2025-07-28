@@ -3,29 +3,44 @@ import { X } from 'lucide-react';
 import useAdminSettings from '@/hooks/useAdminSettings';
 
 const AnnouncementBar = () => {
-  const [isVisible, setIsVisible] = React.useState(true);
+  const [isUserDismissed, setIsUserDismissed] = React.useState(false);
   const { settings: adminSettings } = useAdminSettings();
 
-  // Default values for better UX
-  const isEnabled = adminSettings?.appearance?.announcementBar?.enabled ?? true;
-  const text = adminSettings?.appearance?.announcementBar?.text || 'Welcome to CINEMA.FO - Your ultimate streaming destination!';
-  const backgroundColor = adminSettings?.appearance?.announcementBar?.backgroundColor || '#1e40af';
+  // Get values from admin settings
+  const isEnabled = adminSettings?.appearance?.announcementBar?.enabled;
+  const text = adminSettings?.appearance?.announcementBar?.text;
   const textColor = adminSettings?.appearance?.announcementBar?.textColor || '#ffffff';
 
+  // Check admin setting and user dismissal on mount
+  React.useEffect(() => {
+    const userDismissed = localStorage.getItem('announcementUserDismissed') === 'true';
+    setIsUserDismissed(userDismissed);
+  }, []);
+
+  // Reset user dismissal when admin setting changes
+  React.useEffect(() => {
+    if (isEnabled && text) {
+      // If admin enables announcement, reset user dismissal
+      localStorage.removeItem('announcementUserDismissed');
+      setIsUserDismissed(false);
+    }
+  }, [isEnabled, text]);
+
   const handleClose = () => {
-    setIsVisible(false);
-    localStorage.setItem('announcementClosed', 'true');
+    setIsUserDismissed(true);
+    localStorage.setItem('announcementUserDismissed', 'true');
     // Dispatch event to notify navbar
     window.dispatchEvent(new Event('announcementClosed'));
   };
 
-  if (!isEnabled || !text || !isVisible) {
+  // Show announcement only if admin enabled AND user hasn't dismissed it
+  if (!isEnabled || !text || isUserDismissed) {
     return null;
   }
 
   return (
     <div 
-      className="text-center shadow-lg h-[48px] flex items-center transition-all duration-[15ms]"
+      className="fixed top-0 left-0 right-0 z-40 text-center shadow-lg h-[48px] flex items-center"
       style={{ 
         background: "linear-gradient(135deg, #1e40af, #1e3a8a)"
       }}
