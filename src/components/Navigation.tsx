@@ -25,26 +25,30 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
 
-  // Check if announcement bar is enabled (simplified)
+  // Get admin settings to check announcement bar status
+  const { settings: adminSettings } = useAdminSettings();
+  
   // Check if announcement is visible
-  const [isAnnouncementVisible, setIsAnnouncementVisible] = React.useState(true);
+  const [isAnnouncementVisible, setIsAnnouncementVisible] = React.useState(false);
 
   useEffect(() => {
-    // Check if announcement is closed on mount
-    const announcementClosed = localStorage.getItem('announcementUserDismissed') === 'true';
-    setIsAnnouncementVisible(!announcementClosed);
-  }, []);
+    // Wait for admin settings to load before determining announcement visibility
+    if (adminSettings) {
+      const isEnabled = adminSettings?.appearance?.announcementBar?.enabled;
+      const text = adminSettings?.appearance?.announcementBar?.text;
+      const announcementClosed = localStorage.getItem('announcementUserDismissed') === 'true';
+      
+      // Only show announcement if admin enabled, has text, and user hasn't dismissed
+      const shouldShow = isEnabled && text && !announcementClosed;
+      setIsAnnouncementVisible(shouldShow);
+    }
+  }, [adminSettings]);
 
-  // Listen for announcement bar events
+  // Listen for announcement bar close
   useEffect(() => {
     const handleAnnouncementClosed = () => {
       // When announcement is manually closed, hide it
       setIsAnnouncementVisible(false);
-    };
-
-    const handleAnnouncementOpened = () => {
-      // When announcement becomes visible, show it
-      setIsAnnouncementVisible(true);
     };
 
     const handleStorageChange = () => {
@@ -53,11 +57,9 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
     };
 
     window.addEventListener('announcementClosed', handleAnnouncementClosed);
-    window.addEventListener('announcementOpened', handleAnnouncementOpened);
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('announcementClosed', handleAnnouncementClosed);
-      window.removeEventListener('announcementOpened', handleAnnouncementOpened);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
