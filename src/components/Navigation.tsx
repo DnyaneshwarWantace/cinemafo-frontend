@@ -89,6 +89,9 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       
+      // Close mobile menu when Enter is pressed
+      setIsMobileMenuOpen(false);
+      
       // If there are search results and an item is selected, click that item
       if (searchResults.length > 0 && selectedSearchIndex >= 0 && selectedSearchIndex < searchResults.length) {
         handleSearchItemClick(searchResults[selectedSearchIndex]);
