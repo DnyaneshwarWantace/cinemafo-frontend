@@ -8,7 +8,16 @@ const Footer = () => {
   // Get content from settings
   const disclaimer = adminSettings?.content?.disclaimer;
   const aboutUs = adminSettings?.content?.aboutUs;
-  const socialLinks = adminSettings?.content?.socialLinks || { discord: '', telegram: '' };
+  
+  // Get social links from content or fallback to appearance settings, with defaults
+  const socialLinks = {
+    discord: adminSettings?.content?.socialLinks?.discord || 
+             adminSettings?.appearance?.floatingSocialButtons?.discordUrl || 
+             'https://discord.gg/cinema-fo',
+    telegram: adminSettings?.content?.socialLinks?.telegram || 
+              adminSettings?.appearance?.floatingSocialButtons?.telegramUrl || 
+              'https://t.me/cinema-fo'
+  };
 
   const handleSocialClick = (url: string, platform: string) => {
     if (url) {
