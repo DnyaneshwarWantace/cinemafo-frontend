@@ -29,6 +29,10 @@ interface AdminSettings {
   content: {
     disclaimer: string;
     aboutUs: string;
+    socialLinks: {
+      discord: string;
+      telegram: string;
+    };
   };
   ads: {
     mainPageAd1: { enabled: boolean; imageUrl: string; clickUrl: string; };
@@ -678,6 +682,53 @@ const AdminPanel: React.FC = () => {
                     } : null)}
                     className="bg-gray-700 border-gray-600 text-white"
                     rows={4}
+                  />
+                </div>
+                
+                <Separator className="bg-gray-600" />
+                
+                <div>
+                  <Label className="text-white text-lg font-semibold">Social Media Links</Label>
+                  <p className="text-gray-400 text-sm mb-4">Configure social media links for the footer</p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="discordLink" className="text-white">Discord URL</Label>
+                  <Input
+                    id="discordLink"
+                    value={settings.content.socialLinks?.discord || ''}
+                    onChange={(e) => setSettings(prev => prev ? {
+                      ...prev,
+                      content: { 
+                        ...prev.content, 
+                        socialLinks: { 
+                          ...prev.content.socialLinks, 
+                          discord: e.target.value 
+                        } 
+                      }
+                    } : null)}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="https://discord.gg/your-server"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="telegramLink" className="text-white">Telegram URL</Label>
+                  <Input
+                    id="telegramLink"
+                    value={settings.content.socialLinks?.telegram || ''}
+                    onChange={(e) => setSettings(prev => prev ? {
+                      ...prev,
+                      content: { 
+                        ...prev.content, 
+                        socialLinks: { 
+                          ...prev.content.socialLinks, 
+                          telegram: e.target.value 
+                        } 
+                      }
+                    } : null)}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="https://t.me/your-channel"
                   />
                 </div>
                 <Button 

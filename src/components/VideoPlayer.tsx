@@ -182,6 +182,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isPlayPausePending, setIsPlayPausePending] = useState(false);
   const [bufferStallCount, setBufferStallCount] = useState(0);
   const bufferStallTimeoutRef = useRef<NodeJS.Timeout>();
+  const [showSourceSwitchNotification, setShowSourceSwitchNotification] = useState(false);
+  const sourceSwitchTimeoutRef = useRef<NodeJS.Timeout>();
   
   // Skip intro functionality removed
 
@@ -309,6 +311,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       if (fallbackSources.length > 0) {
         console.log('🔄 Using fallback sources:', fallbackSources);
+        
+        // Show notification for automatic fallback to secondary source
+        setShowSourceSwitchNotification(true);
+        
+        // Auto-hide notification after 3 seconds
+        if (sourceSwitchTimeoutRef.current) {
+          clearTimeout(sourceSwitchTimeoutRef.current);
+        }
+        sourceSwitchTimeoutRef.current = setTimeout(() => {
+          setShowSourceSwitchNotification(false);
+        }, 3000);
+        
         setStreamingSources(fallbackSources);
         setCurrentSource(fallbackSources[0]);
       } else {
@@ -338,6 +352,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       if (fallbackSources.length > 0) {
         console.log('🔄 Using fallback sources:', fallbackSources);
+        
+        // Show notification for automatic fallback to secondary source
+        setShowSourceSwitchNotification(true);
+        
+        // Auto-hide notification after 3 seconds
+        if (sourceSwitchTimeoutRef.current) {
+          clearTimeout(sourceSwitchTimeoutRef.current);
+        }
+        sourceSwitchTimeoutRef.current = setTimeout(() => {
+          setShowSourceSwitchNotification(false);
+        }, 3000);
+        
         setStreamingSources(fallbackSources);
         setCurrentSource(fallbackSources[0]);
       } else {
@@ -359,6 +385,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       initializedRef.current = false;
     };
   }, [tmdbId, type, season, episode]); // Re-run when these props change
+
+  // Cleanup source switch notification timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (sourceSwitchTimeoutRef.current) {
+        clearTimeout(sourceSwitchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Netflix-style features logic
   useEffect(() => {
@@ -857,6 +892,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         const iframeSource = streamingSources.find(s => s.type === 'iframe');
         if (iframeSource) {
           console.log('Switching to iframe fallback:', iframeSource.url);
+          
+          // Show notification for source switch
+          setShowSourceSwitchNotification(true);
+          
+          // Auto-hide notification after 3 seconds
+          if (sourceSwitchTimeoutRef.current) {
+            clearTimeout(sourceSwitchTimeoutRef.current);
+          }
+          sourceSwitchTimeoutRef.current = setTimeout(() => {
+            setShowSourceSwitchNotification(false);
+          }, 3000);
+          
           setCurrentSource(iframeSource);
           setError(null);
           setLoading(true);
@@ -995,6 +1042,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const index = parseInt(sourceIndex);
     const source = streamingSources[index];
     if (source) {
+      // Show notification for manual source switch
+      setShowSourceSwitchNotification(true);
+      
+      // Auto-hide notification after 3 seconds
+      if (sourceSwitchTimeoutRef.current) {
+        clearTimeout(sourceSwitchTimeoutRef.current);
+      }
+      sourceSwitchTimeoutRef.current = setTimeout(() => {
+        setShowSourceSwitchNotification(false);
+      }, 3000);
+      
       setCurrentSource(source);
       setError(null);
       setLoading(true);
@@ -1243,6 +1301,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <div className="flex items-center gap-2 bg-black/80 text-white px-4 py-2 rounded-lg">
                 <SkipBack className="w-6 h-6" />
                 <span className="text-sm font-medium">-30s</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Source Switch Notification */}
+        {showSourceSwitchNotification && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+            <div className="animate-pulse">
+              <div className="flex items-center gap-2 bg-black/90 backdrop-blur-sm text-white px-6 py-4 rounded-xl border border-blue-400/50 shadow-lg shadow-blue-500/30">
+                <RefreshCw className="w-5 h-5 text-blue-400 animate-spin" />
+                <span className="text-sm font-medium">Switching to secondary source...</span>
               </div>
             </div>
           </div>
