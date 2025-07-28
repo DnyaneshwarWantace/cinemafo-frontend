@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api, { Movie, TVShow } from '@/services/api';
 import useAdminSettings from '@/hooks/useAdminSettings';
+import { useAnnouncementVisibility } from '@/hooks/useAnnouncementVisibility';
 import MovieModal from '@/components/MovieModal';
 import TVShowPlayer from '@/components/TVShowPlayer';
 
@@ -28,41 +29,8 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   // Get admin settings to check announcement bar status
   const { settings: adminSettings } = useAdminSettings();
   
-  // Check if announcement is visible
-  const [isAnnouncementVisible, setIsAnnouncementVisible] = React.useState(false);
-
-  useEffect(() => {
-    // Wait for admin settings to load before determining announcement visibility
-    if (adminSettings) {
-      const isEnabled = adminSettings?.appearance?.announcementBar?.enabled;
-      const text = adminSettings?.appearance?.announcementBar?.text;
-      const announcementClosed = localStorage.getItem('announcementUserDismissed') === 'true';
-      
-      // Only show announcement if admin enabled, has text, and user hasn't dismissed
-      const shouldShow = isEnabled && text && !announcementClosed;
-      setIsAnnouncementVisible(shouldShow);
-    }
-  }, [adminSettings]);
-
-  // Listen for announcement bar close
-  useEffect(() => {
-    const handleAnnouncementClosed = () => {
-      // When announcement is manually closed, hide it
-      setIsAnnouncementVisible(false);
-    };
-
-    const handleStorageChange = () => {
-      const announcementClosed = localStorage.getItem('announcementUserDismissed');
-      setIsAnnouncementVisible(announcementClosed !== 'true');
-    };
-
-    window.addEventListener('announcementClosed', handleAnnouncementClosed);
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('announcementClosed', handleAnnouncementClosed);
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+  // Use shared announcement visibility hook
+  const isAnnouncementVisible = useAnnouncementVisibility();
 
   const navItems = [
     { name: 'Home', path: '/', icon: Home },

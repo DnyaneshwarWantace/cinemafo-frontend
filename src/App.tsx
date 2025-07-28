@@ -19,6 +19,7 @@ import TVShowPlayerPage from './pages/TVShowPlayerPage';
 import AdminPanel from './components/admin/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import VideoPlayer from './components/VideoPlayer';
+import { useAnnouncementVisibility } from './hooks/useAnnouncementVisibility';
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const queryClient = new QueryClient();
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
+  const isAnnouncementVisible = useAnnouncementVisibility();
 
   // Trigger admin settings event on app load to ensure ads show
   useEffect(() => {
@@ -36,11 +38,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  // Calculate dynamic padding based on announcement bar visibility
+  const mainPadding = isAnnouncementVisible ? 'pt-[128px]' : 'pt-[80px]';
+
   return (
     <div className="min-h-screen bg-black">
       {!isAdminPage && <AnnouncementBar />}
       {!isAdminPage && <Navigation inModalView={false} />}
-      <main className="w-full pt-[128px]">
+      <main className={`w-full ${mainPadding}`}>
         {children}
       </main>
       {!isAdminPage && <FloatingSocialButtons />}
