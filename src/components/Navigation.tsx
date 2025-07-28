@@ -16,7 +16,6 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<(Movie | TVShow)[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -27,30 +26,25 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
 
   // Check if announcement bar is enabled (simplified)
-  const isAnnouncementEnabled = true;
+  // Check if announcement is visible
+  const [isAnnouncementVisible, setIsAnnouncementVisible] = React.useState(true);
 
   useEffect(() => {
     // Check if announcement is closed on mount
     const announcementClosed = localStorage.getItem('announcementUserDismissed') === 'true';
-    setIsScrolled(announcementClosed);
+    setIsAnnouncementVisible(!announcementClosed);
   }, []);
 
   // Listen for announcement bar close
   useEffect(() => {
     const handleAnnouncementClosed = () => {
-      // When announcement is manually closed, move navbar to top
-      setIsScrolled(true);
+      // When announcement is manually closed, hide it
+      setIsAnnouncementVisible(false);
     };
 
     const handleStorageChange = () => {
       const announcementClosed = localStorage.getItem('announcementUserDismissed');
-      if (announcementClosed === 'true') {
-        // When announcement is manually closed, move navbar to top
-        setIsScrolled(true);
-      } else {
-        // When announcement is re-enabled, show it below announcement
-        setIsScrolled(false);
-      }
+      setIsAnnouncementVisible(announcementClosed !== 'true');
     };
 
     window.addEventListener('announcementClosed', handleAnnouncementClosed);
@@ -248,7 +242,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   return (
     <>
       <nav className={`fixed left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-gray-800/30 h-[80px] ${
-        isAnnouncementEnabled && !inModalView && !isScrolled ? 'top-[48px]' : 'top-0'
+        isAnnouncementVisible && !inModalView ? 'top-[48px]' : 'top-0'
       }`}>
         <div className="w-full h-full px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex items-center justify-between h-full gap-2 sm:gap-4">
@@ -775,7 +769,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
 
         {/* Mobile/Tablet Menu */}
           <div className={`absolute right-0 w-64 md:w-80 bg-black backdrop-blur-xl ${
-            isAnnouncementEnabled && !inModalView && !isScrolled ? 'top-[48px] h-[calc(100vh-48px)]' : 'top-0 h-full'
+            isAnnouncementVisible && !inModalView ? 'top-[48px] h-[calc(100vh-48px)]' : 'top-0 h-full'
           }`}>
             <div className="p-6">
               {/* Close button */}
