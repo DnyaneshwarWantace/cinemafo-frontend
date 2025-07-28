@@ -133,8 +133,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
     setIsMobileMenuOpen(false);
   };
 
-  // Get admin settings for Discord link
-  const { settings: adminSettings } = useAdminSettings();
+  // Get Discord link from admin settings
   const discordLink = adminSettings?.appearance?.floatingSocialButtons?.discordUrl || 'https://discord.gg/cinema-fo';
 
   // Search functionality with debounce
