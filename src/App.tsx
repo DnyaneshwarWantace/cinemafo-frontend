@@ -45,13 +45,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const navbarHeight = 80;
   
   // Calculate dynamic padding based on announcement bar visibility (only for non-admin pages)
-  const mainPadding = isAdminPage ? 'pt-0' : (isAnnouncementVisible ? `pt-[${announcementHeight + navbarHeight}px]` : `pt-[${navbarHeight}px]`);
+  const mainPaddingTop = isAdminPage ? 0 : (isAnnouncementVisible ? announcementHeight + navbarHeight : navbarHeight);
 
   return (
     <div className="min-h-screen bg-black">
       {!isAdminPage && <AnnouncementBar />}
       {!isAdminPage && <Navigation inModalView={false} />}
-      <main className={`w-full ${mainPadding}`}>
+      <main className="w-full" style={{ paddingTop: `${mainPaddingTop}px` }}>
         {children}
       </main>
       {!isAdminPage && <FloatingSocialButtons />}
