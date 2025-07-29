@@ -190,8 +190,13 @@ const Shows = () => {
 
     setIsSearching(true);
     try {
-      const response = await api.search(query);
-      setSearchResults(response.data?.results || []);
+      const response = await api.search(query, 'tv');
+      let searchResults = response.data?.results || [];
+      
+      // Filter to only show TV shows
+      searchResults = searchResults.filter(item => item.media_type === 'tv');
+      
+      setSearchResults(searchResults);
     } catch (error) {
       console.error('Error searching shows:', error);
       setSearchResults([]);

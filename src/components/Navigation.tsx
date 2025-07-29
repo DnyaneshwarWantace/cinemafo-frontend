@@ -134,7 +134,14 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
         const response = await api.search(query);
         console.log('📡 API Response:', response);
         console.log('📋 Results:', response.data?.results?.length || 0);
-        setSearchResults(response.data?.results || []);
+        
+        // Filter out people results, only keep movies and TV shows
+        let searchResults = response.data?.results || [];
+        searchResults = searchResults.filter(item => 
+          item.media_type === 'movie' || item.media_type === 'tv'
+        );
+        
+        setSearchResults(searchResults);
         setSelectedSearchIndex(-1); // Reset selection when new results come in
       } catch (error) {
         console.error('❌ Error searching:', error);

@@ -132,6 +132,11 @@ const Search = () => {
       const response = await api.search(query, mediaType);
       let searchResults = response.data?.results || [];
       
+      // Filter out people results, only keep movies and TV shows
+      searchResults = searchResults.filter(item => 
+        item.media_type === 'movie' || item.media_type === 'tv'
+      );
+      
       // Apply filters
       if (filters.year) {
         searchResults = searchResults.filter(item => {

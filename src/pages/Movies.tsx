@@ -190,8 +190,13 @@ const Movies = () => {
 
     setIsSearching(true);
     try {
-      const response = await api.search(query);
-      setSearchResults(response.data?.results || []);
+      const response = await api.search(query, 'movie');
+      let searchResults = response.data?.results || [];
+      
+      // Filter to only show movies
+      searchResults = searchResults.filter(item => item.media_type === 'movie');
+      
+      setSearchResults(searchResults);
     } catch (error) {
       console.error('Error searching movies:', error);
       setSearchResults([]);
