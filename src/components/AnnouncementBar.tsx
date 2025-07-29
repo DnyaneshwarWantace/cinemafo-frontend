@@ -45,7 +45,7 @@ const AnnouncementBar = () => {
 
   return (
     <div 
-      className={`fixed top-0 left-0 right-0 z-[60] text-center shadow-lg flex items-center`}
+      className={`fixed top-0 left-0 right-0 z-40 text-center shadow-lg flex items-center`}
       style={{ 
         background: backgroundColor,
         height: `${height}px`
