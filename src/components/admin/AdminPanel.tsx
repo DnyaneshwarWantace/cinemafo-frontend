@@ -56,7 +56,7 @@ interface AdminSettings {
 // API functions
 const adminApi = {
   login: async (username: string, password: string) => {
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/login`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -73,7 +73,7 @@ const adminApi = {
 
   getSettings: async () => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -86,7 +86,7 @@ const adminApi = {
 
   updateAnnouncement: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/announcement`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings/announcement`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ const adminApi = {
 
   updateSocialButtons: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/social-buttons`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings/social-buttons`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ const adminApi = {
 
   updateContent: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/content`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings/content`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -140,7 +140,7 @@ const adminApi = {
 
   updateAds: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/ads`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings/ads`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ const adminApi = {
 
   updateCSS: async (css: string) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/css`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings/css`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -1014,27 +1014,14 @@ const AdminPanel: React.FC = () => {
               <CardHeader>
                 <CardTitle className="text-white">Custom CSS</CardTitle>
                 <CardDescription className="text-gray-300">
-                  Generated CSS for the announcement bar and custom CSS for advanced styling
+                  Edit and customize CSS for the announcement bar and advanced styling
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label className="text-white">Generated CSS (Announcement Bar)</Label>
+                  <Label className="text-white">CSS Editor</Label>
                   <Textarea
-                    value={generateAnnouncementCSS()}
-                    readOnly
-                    className="bg-gray-900 border-gray-600 text-green-400 font-mono text-sm h-48 resize-none"
-                    placeholder="CSS will be generated based on your announcement bar settings..."
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    This CSS is automatically generated based on your announcement bar settings. Copy and paste this CSS into the custom CSS field below for advanced modifications.
-                  </p>
-                </div>
-                
-                <div>
-                  <Label className="text-white">Custom CSS (Advanced)</Label>
-                  <Textarea
-                    value={settings.appearance.customCSS || ''}
+                    value={settings.appearance.customCSS || generateAnnouncementCSS()}
                     onChange={(e) => setSettings(prev => prev ? {
                       ...prev,
                       appearance: {
@@ -1042,11 +1029,11 @@ const AdminPanel: React.FC = () => {
                         customCSS: e.target.value
                       }
                     } : null)}
-                    className="bg-gray-900 border-gray-600 text-white font-mono text-sm h-32 resize-none"
-                    placeholder="/* Add your custom CSS here for advanced styling... */"
+                    className="bg-gray-900 border-gray-600 text-white font-mono text-sm h-64 resize-none"
+                    placeholder="/* Generated CSS for announcement bar and custom styling... */"
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    Add custom CSS to override default styles. This will be applied globally to the site.
+                    Edit the generated CSS or add your own custom styles. This will be applied globally to the site.
                   </p>
                 </div>
                 
@@ -1055,7 +1042,7 @@ const AdminPanel: React.FC = () => {
                   disabled={updateCSSMutation.isPending}
                   className="bg-green-600 hover:bg-green-700"
                 >
-                  {updateCSSMutation.isPending ? 'Saving...' : 'Save Custom CSS'}
+                  {updateCSSMutation.isPending ? 'Saving...' : 'Save CSS'}
                 </Button>
               </CardContent>
             </Card>
