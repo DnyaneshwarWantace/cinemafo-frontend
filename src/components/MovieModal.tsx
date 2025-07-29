@@ -140,7 +140,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
 
   const mainCast = useMemo(() => {
     if (!movie.cast) return [];
-    return movie.cast.slice(0, 6);
+    return movie.cast; // Show all cast members
   }, [movie.cast]);
 
   const isUpcoming = useMemo(() => {
@@ -300,6 +300,11 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                     className="mx-auto lg:!mx-0"
                   />
                 </div>
+              )}
+
+              {/* Separator Line - Shows after ad when details are expanded */}
+              {showDetails && (
+                <Separator className="my-6 bg-gray-700" />
               )}
               
                   {/* Detailed Information Grid - Hidden by default */}

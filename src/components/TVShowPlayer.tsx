@@ -152,8 +152,8 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
     }).format(amount);
   };
 
-  // Get main cast (first 10 actors)
-  const mainCast = showDetails?.cast?.slice(0, 10) || [];
+  // Get all cast members
+  const mainCast = showDetails?.cast || [];
   
   // Get director from crew
   const director = showDetails?.crew?.find(member => 
