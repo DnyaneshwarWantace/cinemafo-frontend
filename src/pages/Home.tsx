@@ -76,12 +76,13 @@ const Home = () => {
   const handleContinueWatchingClick = async (historyItem: any) => {
     try {
       // Navigate to the appropriate route instead of opening modal
+      const currentPage = window.location.pathname;
       if (historyItem.type === 'movie') {
         const title = encodeURIComponent(historyItem.title || 'Movie');
-        navigate(`/movie/${historyItem.id}?title=${title}&time=${historyItem.currentTime}`);
+        navigate(`/movie/${historyItem.id}?title=${title}&time=${historyItem.currentTime}&from=${encodeURIComponent(currentPage)}`);
       } else {
         const title = encodeURIComponent(historyItem.title || 'TV Show');
-        navigate(`/tv/${historyItem.id}?title=${title}&season=${historyItem.season}&episode=${historyItem.episode}&time=${historyItem.currentTime}`);
+        navigate(`/tv/${historyItem.id}?title=${title}&season=${historyItem.season}&episode=${historyItem.episode}&time=${historyItem.currentTime}&from=${encodeURIComponent(currentPage)}`);
       }
     } catch (error) {
       console.error('Error handling continue watching click:', error);

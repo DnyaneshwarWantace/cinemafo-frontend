@@ -498,6 +498,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     console.log('🎬 Next Episode button clicked in VideoPlayer');
     console.log('onNextEpisode callback exists:', !!onNextEpisode);
     
+    // Hide the next episode button immediately
+    setShowNextEpisode(false);
+    
     if (onNextEpisode) {
       console.log('🎬 Calling onNextEpisode callback');
       onNextEpisode();

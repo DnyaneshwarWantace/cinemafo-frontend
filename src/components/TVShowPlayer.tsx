@@ -101,7 +101,8 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   const handlePlayEpisode = (episodeNumber: number) => {
     // Navigate to TV show player page instead of opening modal
     const title = encodeURIComponent(show.name || 'TV Show');
-    navigate(`/tv/${show.id}?title=${title}&season=${selectedSeason}&episode=${episodeNumber}`);
+    const currentPage = window.location.pathname;
+    navigate(`/tv/${show.id}?title=${title}&season=${selectedSeason}&episode=${episodeNumber}&from=${encodeURIComponent(currentPage)}`);
     onClose();
   };
 
