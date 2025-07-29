@@ -115,6 +115,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onProgressUpdate: propOnProgressUpdate,
   initialTime: propInitialTime = 0
 }) => {
+  // Suppress LT.JS TCF errors from iframe content
+  useEffect(() => {
+    const originalError = console.error;
+    console.error = (...args) => {
+      const message = args[0]?.toString() || '';
+      if (message.includes('TCF IFRAME LOCATOR API') || message.includes('__tcfapiLocator')) {
+        return; // Suppress LT.JS TCF errors
+      }
+      originalError.apply(console, args);
+    };
+
+    return () => {
+      console.error = originalError;
+    };
+  }, []);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
@@ -1273,6 +1288,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             className="w-full h-full border-0"
             allowFullScreen
             allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
             onLoad={() => {
               setLoading(false);
               setError(null);

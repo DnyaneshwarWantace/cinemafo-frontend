@@ -43,7 +43,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
   const isUpcoming = new Date(releaseDate) > new Date();
 
   return (
-    <div className="relative w-full h-[calc(100vh-80px)] min-h-[400px] overflow-hidden group">
+    <div className="relative w-full h-screen min-h-[400px] overflow-hidden group -mt-[80px]">
       {/* Background Image */}
       <div 
         className="absolute inset-0 w-full h-full"
@@ -59,6 +59,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
 
       {/* Content */}
       <div className="absolute inset-0 p-4 sm:p-8 md:p-16 z-10 flex flex-col justify-center h-full max-w-screen-xl mx-auto pt-20 sm:pt-24 md:pt-28 lg:pt-0">
+
         {/* Rating or Release Date Badge */}
         {isUpcoming ? (
           <div className="inline-flex items-center gap-2 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-semibold mb-4 w-fit">
