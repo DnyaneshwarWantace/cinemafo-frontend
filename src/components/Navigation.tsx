@@ -218,7 +218,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   return (
     <>
       <nav className={`fixed left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-gray-800/30 h-[80px] ${
-        isAnnouncementVisible && !inModalView ? 'top-[48px]' : 'top-0'
+        isAnnouncementVisible && !inModalView ? `top-[${adminSettings?.appearance?.announcementBar?.height || 48}px]` : 'top-0'
       }`}>
         <div className="w-full h-full px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex items-center justify-between h-full gap-2 sm:gap-4">
@@ -745,7 +745,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
 
         {/* Mobile/Tablet Menu */}
           <div className={`absolute right-0 w-64 md:w-80 bg-black backdrop-blur-xl ${
-            isAnnouncementVisible && !inModalView ? 'top-[48px] h-[calc(100vh-48px)]' : 'top-0 h-full'
+            isAnnouncementVisible && !inModalView ? `top-[${adminSettings?.appearance?.announcementBar?.height || 48}px] h-[calc(100vh-${adminSettings?.appearance?.announcementBar?.height || 48}px)]` : 'top-0 h-full'
           }`}>
             <div className="p-6">
               {/* Close button */}

@@ -7,6 +7,10 @@ interface AdminSettings {
       text: string;
       backgroundColor: string;
       textColor: string;
+      height: number;
+      textSize: string;
+      textWeight: string;
+      textStyle: string;
     };
     floatingSocialButtons: {
       enabled: boolean;

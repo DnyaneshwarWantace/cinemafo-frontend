@@ -18,6 +18,10 @@ interface AdminSettings {
       text: string;
       backgroundColor: string;
       textColor: string;
+      height: number;
+      textSize: string;
+      textWeight: string;
+      textStyle: string;
     };
     floatingSocialButtons: {
       enabled: boolean;
@@ -265,17 +269,61 @@ const AdminPanel: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['adminSettings'] });
       toast({
         title: "Success",
-        description: "Ads settings saved successfully!",
+        description: "Ad settings saved successfully!",
       });
     },
     onError: (error) => {
-      setError('Failed to save ads settings. Please try again.');
-      console.error('Error saving ads settings:', error);
+      setError('Failed to save ad settings. Please try again.');
+      console.error('Error saving ad settings:', error);
     }
   });
 
+  // Function to generate CSS for announcement bar
+  const generateAnnouncementCSS = () => {
+    if (!settings?.appearance?.announcementBar) return '';
+    
+    const { backgroundColor, textColor, height, textSize, textWeight, textStyle } = settings.appearance.announcementBar;
+    
+    return `
+/* Announcement Bar Custom CSS */
+.announcement-bar {
+  background: ${backgroundColor} !important;
+  height: ${height}px !important;
+}
+
+.announcement-bar-text {
+  color: ${textColor} !important;
+  font-size: ${textSize === 'text-xs' ? '0.75rem' : 
+               textSize === 'text-sm' ? '0.875rem' : 
+               textSize === 'text-base' ? '1rem' : 
+               textSize === 'text-lg' ? '1.125rem' : 
+               textSize === 'text-xl' ? '1.25rem' : '0.875rem'} !important;
+  font-weight: ${textWeight === 'font-light' ? '300' : 
+                textWeight === 'font-normal' ? '400' : 
+                textWeight === 'font-medium' ? '500' : 
+                textWeight === 'font-semibold' ? '600' : 
+                textWeight === 'font-bold' ? '700' : '500'} !important;
+  font-style: ${textStyle} !important;
+}
+
+/* Adjust navbar position based on announcement height */
+.navbar-with-announcement {
+  top: ${height}px !important;
+}
+
+/* Adjust main content padding */
+.main-content-with-announcement {
+  padding-top: ${height + 80}px !important;
+}
+
+.main-content-without-announcement {
+  padding-top: 80px !important;
+}
+    `.trim();
+  };
+
   const updateCSSMutation = useMutation({
-    mutationFn: adminApi.updateCSS,
+    mutationFn: (css: { customCSS: string }) => adminApi.updateCSS(css.customCSS),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminSettings'] });
       toast({
@@ -795,23 +843,43 @@ const AdminPanel: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="backgroundColor" className="text-white">Background Color</Label>
-                        <Input
-                          id="backgroundColor"
-                          type="color"
-                          value={settings.appearance.announcementBar.backgroundColor}
-                          onChange={(e) => setSettings(prev => prev ? {
-                            ...prev,
-                            appearance: {
-                              ...prev.appearance,
-                              announcementBar: {
-                                ...prev.appearance.announcementBar,
-                                backgroundColor: e.target.value
+                        <Label htmlFor="backgroundColor" className="text-white">Background Color/Style</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="backgroundColor"
+                            value={settings.appearance.announcementBar.backgroundColor}
+                            onChange={(e) => setSettings(prev => prev ? {
+                              ...prev,
+                              appearance: {
+                                ...prev.appearance,
+                                announcementBar: {
+                                  ...prev.appearance.announcementBar,
+                                  backgroundColor: e.target.value
+                                }
                               }
-                            }
-                          } : null)}
-                          className="bg-gray-700 border-gray-600 h-10"
-                        />
+                            } : null)}
+                            className="bg-gray-700 border-gray-600 text-white flex-1"
+                            placeholder="linear-gradient(135deg, #1e40af, #1e3a8a) or #3b82f6"
+                          />
+                          <Input
+                            type="color"
+                            value={settings.appearance.announcementBar.backgroundColor.startsWith('#') ? settings.appearance.announcementBar.backgroundColor : '#3b82f6'}
+                            onChange={(e) => setSettings(prev => prev ? {
+                              ...prev,
+                              appearance: {
+                                ...prev.appearance,
+                                announcementBar: {
+                                  ...prev.appearance.announcementBar,
+                                  backgroundColor: e.target.value
+                                }
+                              }
+                            } : null)}
+                            className="bg-gray-700 border-gray-600 h-10 w-16"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Use hex colors (#3b82f6) or gradients (linear-gradient(135deg, #1e40af, #1e3a8a))
+                        </p>
                       </div>
                       <div>
                         <Label htmlFor="textColor" className="text-white">Text Color</Label>
@@ -833,6 +901,103 @@ const AdminPanel: React.FC = () => {
                         />
                       </div>
                     </div>
+                    
+
+                    
+                    <div>
+                      <Label htmlFor="height" className="text-white">Height (px)</Label>
+                      <Input
+                        id="height"
+                        type="number"
+                        value={settings.appearance.announcementBar.height}
+                        onChange={(e) => setSettings(prev => prev ? {
+                          ...prev,
+                          appearance: {
+                            ...prev.appearance,
+                            announcementBar: {
+                              ...prev.appearance.announcementBar,
+                              height: parseInt(e.target.value) || 48
+                            }
+                          }
+                        } : null)}
+                        className="bg-gray-700 border-gray-600 text-white"
+                        min="30"
+                        max="100"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="textSize" className="text-white">Text Size</Label>
+                        <select
+                          id="textSize"
+                          value={settings.appearance.announcementBar.textSize}
+                          onChange={(e) => setSettings(prev => prev ? {
+                            ...prev,
+                            appearance: {
+                              ...prev.appearance,
+                              announcementBar: {
+                                ...prev.appearance.announcementBar,
+                                textSize: e.target.value
+                              }
+                            }
+                          } : null)}
+                          className="w-full bg-gray-700 border-gray-600 text-white rounded-md px-3 py-2"
+                        >
+                          <option value="text-xs">Extra Small</option>
+                          <option value="text-sm">Small</option>
+                          <option value="text-base">Base</option>
+                          <option value="text-lg">Large</option>
+                          <option value="text-xl">Extra Large</option>
+                          <option value="text-sm md:text-base">Responsive</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label htmlFor="textWeight" className="text-white">Text Weight</Label>
+                        <select
+                          id="textWeight"
+                          value={settings.appearance.announcementBar.textWeight}
+                          onChange={(e) => setSettings(prev => prev ? {
+                            ...prev,
+                            appearance: {
+                              ...prev.appearance,
+                              announcementBar: {
+                                ...prev.appearance.announcementBar,
+                                textWeight: e.target.value
+                              }
+                            }
+                          } : null)}
+                          className="w-full bg-gray-700 border-gray-600 text-white rounded-md px-3 py-2"
+                        >
+                          <option value="font-light">Light</option>
+                          <option value="font-normal">Normal</option>
+                          <option value="font-medium">Medium</option>
+                          <option value="font-semibold">Semi Bold</option>
+                          <option value="font-bold">Bold</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label htmlFor="textStyle" className="text-white">Text Style</Label>
+                        <select
+                          id="textStyle"
+                          value={settings.appearance.announcementBar.textStyle}
+                          onChange={(e) => setSettings(prev => prev ? {
+                            ...prev,
+                            appearance: {
+                              ...prev.appearance,
+                              announcementBar: {
+                                ...prev.appearance.announcementBar,
+                                textStyle: e.target.value
+                              }
+                            }
+                          } : null)}
+                          className="w-full bg-gray-700 border-gray-600 text-white rounded-md px-3 py-2"
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="italic">Italic</option>
+                        </select>
+                      </div>
+                    </div>
                     <Button 
                       onClick={() => updateAnnouncementMutation.mutate(settings.appearance.announcementBar)}
                       disabled={updateAnnouncementMutation.isPending}
@@ -849,26 +1014,48 @@ const AdminPanel: React.FC = () => {
               <CardHeader>
                 <CardTitle className="text-white">Custom CSS</CardTitle>
                 <CardDescription className="text-gray-300">
-                  Add custom CSS to modify the site appearance
+                  Generated CSS for the announcement bar and custom CSS for advanced styling
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Textarea
-                  value={settings.appearance.customCSS}
-                  onChange={(e) => setSettings(prev => prev ? {
-                    ...prev,
-                    appearance: { ...prev.appearance, customCSS: e.target.value }
-                  } : null)}
-                  className="bg-gray-700 border-gray-600 text-white font-mono"
-                  rows={10}
-                  placeholder="/* Add your custom CSS here */"
-                />
+                <div>
+                  <Label className="text-white">Generated CSS (Announcement Bar)</Label>
+                  <Textarea
+                    value={generateAnnouncementCSS()}
+                    readOnly
+                    className="bg-gray-900 border-gray-600 text-green-400 font-mono text-sm h-48 resize-none"
+                    placeholder="CSS will be generated based on your announcement bar settings..."
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    This CSS is automatically generated based on your announcement bar settings. Copy and paste this CSS into the custom CSS field below for advanced modifications.
+                  </p>
+                </div>
+                
+                <div>
+                  <Label className="text-white">Custom CSS (Advanced)</Label>
+                  <Textarea
+                    value={settings.appearance.customCSS || ''}
+                    onChange={(e) => setSettings(prev => prev ? {
+                      ...prev,
+                      appearance: {
+                        ...prev.appearance,
+                        customCSS: e.target.value
+                      }
+                    } : null)}
+                    className="bg-gray-900 border-gray-600 text-white font-mono text-sm h-32 resize-none"
+                    placeholder="/* Add your custom CSS here for advanced styling... */"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Add custom CSS to override default styles. This will be applied globally to the site.
+                  </p>
+                </div>
+                
                 <Button 
-                  onClick={() => updateCSSMutation.mutate(settings.appearance.customCSS)}
+                  onClick={() => updateCSSMutation.mutate({ customCSS: settings.appearance.customCSS })}
                   disabled={updateCSSMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-green-600 hover:bg-green-700"
                 >
-                  {updateCSSMutation.isPending ? 'Saving...' : 'Save CSS'}
+                  {updateCSSMutation.isPending ? 'Saving...' : 'Save Custom CSS'}
                 </Button>
               </CardContent>
             </Card>

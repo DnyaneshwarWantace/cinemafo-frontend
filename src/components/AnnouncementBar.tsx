@@ -10,6 +10,11 @@ const AnnouncementBar = () => {
   const isEnabled = adminSettings?.appearance?.announcementBar?.enabled;
   const text = adminSettings?.appearance?.announcementBar?.text;
   const textColor = adminSettings?.appearance?.announcementBar?.textColor || '#ffffff';
+  const backgroundColor = adminSettings?.appearance?.announcementBar?.backgroundColor || 'linear-gradient(135deg, #1e40af, #1e3a8a)';
+  const height = adminSettings?.appearance?.announcementBar?.height || 48;
+  const textSize = adminSettings?.appearance?.announcementBar?.textSize || 'text-sm md:text-base';
+  const textWeight = adminSettings?.appearance?.announcementBar?.textWeight || 'font-medium';
+  const textStyle = adminSettings?.appearance?.announcementBar?.textStyle || 'normal';
 
   // Check admin setting and user dismissal on mount
   React.useEffect(() => {
@@ -40,9 +45,10 @@ const AnnouncementBar = () => {
 
   return (
     <div 
-      className="fixed top-0 left-0 right-0 z-40 text-center shadow-lg h-[48px] flex items-center"
+      className={`fixed top-0 left-0 right-0 z-40 text-center shadow-lg flex items-center`}
       style={{ 
-        background: "linear-gradient(135deg, #1e40af, #1e3a8a)"
+        background: backgroundColor,
+        height: `${height}px`
       }}
     >
       {/* Gradient overlay for better visual appeal */}
@@ -51,17 +57,18 @@ const AnnouncementBar = () => {
       <div className="relative w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-center">
           <p 
-            className="text-sm md:text-base font-medium leading-relaxed"
+            className={`${textSize} ${textWeight} leading-relaxed`}
             style={{ 
               color: textColor,
-              textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+              textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+              fontStyle: textStyle
             }}
           >
             {text}
           </p>
         <button
           onClick={handleClose}
-            className="absolute right-4 text-white hover:text-gray-200 transition-colors"
+            className="absolute right-4 hover:text-gray-200 transition-colors"
             style={{ color: textColor }}
         >
             <X size={16} />

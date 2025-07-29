@@ -20,6 +20,7 @@ import AdminPanel from './components/admin/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import VideoPlayer from './components/VideoPlayer';
 import { useAnnouncementVisibility } from './hooks/useAnnouncementVisibility';
+import useAdminSettings from './hooks/useAdminSettings';
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
   const isAnnouncementVisible = useAnnouncementVisibility();
+  const { settings: adminSettings } = useAdminSettings();
 
   // Trigger admin settings event on app load to ensure ads show
   useEffect(() => {
@@ -38,8 +40,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  // Get announcement bar height from admin settings
+  const announcementHeight = adminSettings?.appearance?.announcementBar?.height || 48;
+  const navbarHeight = 80;
+  
   // Calculate dynamic padding based on announcement bar visibility (only for non-admin pages)
-  const mainPadding = isAdminPage ? 'pt-0' : (isAnnouncementVisible ? 'pt-[128px]' : 'pt-[80px]');
+  const mainPadding = isAdminPage ? 'pt-0' : (isAnnouncementVisible ? `pt-[${announcementHeight + navbarHeight}px]` : `pt-[${navbarHeight}px]`);
 
   return (
     <div className="min-h-screen bg-black">
