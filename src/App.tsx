@@ -38,8 +38,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Calculate dynamic padding based on announcement bar visibility
-  const mainPadding = isAnnouncementVisible ? 'pt-[128px]' : 'pt-[80px]';
+  // Calculate dynamic padding based on announcement bar visibility (only for non-admin pages)
+  const mainPadding = isAdminPage ? 'pt-0' : (isAnnouncementVisible ? 'pt-[128px]' : 'pt-[80px]');
 
   return (
     <div className="min-h-screen bg-black">
