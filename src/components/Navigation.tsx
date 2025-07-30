@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Home, Film, Tv, X, Calendar, Bookmark, Menu, Star } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api, { Movie, TVShow } from '@/services/api';
 import useAdminSettings from '@/hooks/useAdminSettings';
 import { useAnnouncementVisibility } from '@/hooks/useAnnouncementVisibility';
-import MovieModal from '@/components/MovieModal';
-import TVShowPlayer from '@/components/TVShowPlayer';
+
 
 interface NavigationProps {
   inModalView?: boolean;
@@ -15,6 +14,7 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -22,9 +22,6 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchPopup, setShowSearchPopup] = useState(false);
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(-1);
-  // Add state for modal/player
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
 
   // Get admin settings to check announcement bar status
   const { settings: adminSettings } = useAdminSettings();
@@ -163,16 +160,17 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
     setSelectedSearchIndex(-1);
     setIsMobileMenuOpen(false); // Close mobile menu when item is clicked
     
-    // Add a small delay to ensure mobile menu closes before opening modal
-    setTimeout(() => {
-      if ('title' in item) {
-        console.log('🎬 Opening movie modal for:', item.title);
-        setSelectedMovie(item as Movie);
-      } else {
-        console.log('📺 Opening TV show player for:', item.name);
-        setSelectedShow(item as TVShow);
-      }
-    }, 100);
+    // Get current page to pass as 'from' parameter
+    const currentPage = location.pathname + location.search;
+    
+    // Navigate to the appropriate modal page
+    if ('title' in item) {
+      console.log('🎬 Navigating to movie modal for:', item.title);
+      navigate(`/movie-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
+    } else {
+      console.log('📺 Navigating to TV show modal for:', item.name);
+      navigate(`/tv-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
+    }
   };
 
   const clearSearch = () => {
@@ -907,14 +905,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
           </div>
         )}
 
-      {/* Movie Modal */}
-      {selectedMovie && (
-        <MovieModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
-      )}
-      {/* TV Show Player */}
-      {selectedShow && (
-        <TVShowPlayer show={selectedShow} onClose={() => setSelectedShow(null)} />
-        )}
+
     </>
   );
 };

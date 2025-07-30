@@ -81,10 +81,14 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
       onClose();
       setShowTVShowPlayer(true);
     } else {
-      // Navigate to movie player page instead of opening modal
+      // Navigate to movie player page with current modal page as 'from' parameter
       const title = encodeURIComponent(movie.title || movie.name || 'Movie');
-      navigate(`/movie/${movie.id}?title=${title}`);
-      onClose();
+      const currentModalPath = `/movie-modal/${movie.id}`;
+      const playerUrl = `/movie/${movie.id}?title=${title}&from=${encodeURIComponent(currentModalPath)}`;
+      console.log('🎬 MovieModal: Navigating to player:', playerUrl);
+      console.log('🎬 MovieModal: Movie ID:', movie.id, 'Title:', movie.title);
+      navigate(playerUrl);
+      // Don't call onClose() here - let the navigation happen naturally
     }
   };
 

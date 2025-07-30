@@ -48,6 +48,18 @@ export const cacheUtils = {
     keysToDelete.forEach(key => movieCache.delete(key));
     console.log(`🗑️ Cleared cache for movie ${movieId}`);
   },
+
+  // Check if movie details are cached
+  getMovieFromCache: (movieId: number) => {
+    const cacheKey = getCacheKey('movie_details', movieId);
+    return getFromCache(cacheKey);
+  },
+
+  // Check if show details are cached
+  getShowFromCache: (showId: number) => {
+    const cacheKey = getCacheKey('show_details', showId);
+    return getFromCache(cacheKey);
+  },
   
   getStats: () => ({
     size: movieCache.size,

@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Bookmark, Trash2, Play, Info, Heart, Star, Calendar, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import MovieModal from '@/components/MovieModal';
-import TVShowPlayer from '@/components/TVShowPlayer';
+import { useNavigate } from 'react-router-dom';
 import { Movie, TVShow } from '@/services/api';
 
 const Watchlist = () => {
+  const navigate = useNavigate();
   const [watchlist, setWatchlist] = useState<(Movie | TVShow)[]>([]);
-  const [selectedItem, setSelectedItem] = useState<Movie | TVShow | null>(null);
   const [loading, setLoading] = useState(true);
   const [tooltipItem, setTooltipItem] = useState<Movie | TVShow | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
@@ -116,7 +115,14 @@ const Watchlist = () => {
   };
 
   const handleItemClick = (item: Movie | TVShow) => {
-    setSelectedItem(item);
+    // Get current page to pass as 'from' parameter  
+    const currentPage = location.pathname + location.search;
+    
+    if ('title' in item) {
+      navigate(`/movie-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
+    } else {
+      navigate(`/tv-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
+    }
   };
 
   const clearWatchlist = () => {
@@ -332,21 +338,7 @@ const Watchlist = () => {
 
       </div>
 
-      {/* Movie Modal */}
-      {selectedItem && 'title' in selectedItem && (
-        <MovieModal
-          movie={selectedItem as Movie}
-          onClose={() => setSelectedItem(null)}
-        />
-      )}
 
-      {/* TV Show Player */}
-      {selectedItem && 'name' in selectedItem && (
-        <TVShowPlayer
-          show={selectedItem as TVShow}
-          onClose={() => setSelectedItem(null)}
-        />
-      )}
 
       {/* Tooltip */}
       {tooltipItem && (

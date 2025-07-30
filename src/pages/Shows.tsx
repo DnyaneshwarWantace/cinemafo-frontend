@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, X, Star, Calendar, Play, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import TVShowPlayer from '@/components/TVShowPlayer';
+import { useNavigate } from 'react-router-dom';
 import MovieCarousel from '@/components/MovieCarousel';
 import AdBanner from '@/components/AdBanner';
 import api, { TVShow } from '@/services/api';
@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import useAdminSettings from '@/hooks/useAdminSettings';
 
 const Shows = () => {
-  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
+  const navigate = useNavigate();
   const [trendingShows, setTrendingShows] = useState<TVShow[]>([]);
   const [popularShows, setPopularShows] = useState<TVShow[]>([]);
   const [topRatedShows, setTopRatedShows] = useState<TVShow[]>([]);
@@ -94,9 +94,28 @@ const Shows = () => {
         api.getTopRatedShows()
       ]);
 
-      setTrendingShows(trending.data?.results || []);
-      setPopularShows(popular.data?.results || []);
-      setTopRatedShows(topRated.data?.results || []);
+      const trendingShows = trending.data?.results || [];
+      const popularShows = popular.data?.results || [];
+      const topRatedShows = topRated.data?.results || [];
+
+      setTrendingShows(trendingShows);
+      setPopularShows(popularShows);
+      setTopRatedShows(topRatedShows);
+
+      // Prefetch details for first few shows for instant modal loading
+      setTimeout(() => {
+        const showsToPrefetch = [
+          ...trendingShows.slice(0, 8),
+          ...popularShows.slice(0, 8),
+          ...topRatedShows.slice(0, 8)
+        ];
+        
+        console.log(`🚀 Prefetching ${showsToPrefetch.length} show details...`);
+        showsToPrefetch.forEach(show => {
+          api.getShowDetails(show.id).catch(() => {});
+        });
+      }, 100);
+
     } catch (error) {
       console.error('Error fetching shows:', error);
       setError('Failed to load shows. Please try again later.');
@@ -176,7 +195,9 @@ const Shows = () => {
   }, [tooltipTimeout, searchResults]);
 
   const handleShowClick = (show: TVShow) => {
-    setSelectedShow(show);
+    // Get current page to pass as 'from' parameter  
+    const currentPage = location.pathname + location.search;
+    navigate(`/tv-modal/${show.id}?from=${encodeURIComponent(currentPage)}`);
   };
 
   // Search functionality
@@ -363,17 +384,17 @@ const Shows = () => {
                           <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                             <Star className="w-3 h-3" />
                             {show.vote_average.toFixed(1)}
-                          </div>
+                      </div>
                         )}
                         
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
                           <div>
                             <h3 className="text-white font-semibold text-sm line-clamp-2">
                               {getItemTitle(show)}
-                            </h3>
+                        </h3>
                             <p className="text-gray-300 text-xs mt-1">
                               {formatReleaseDate(getItemReleaseDate(show))}
-                            </p>
+                        </p>
                           </div>
                         </div>
                       </div>
@@ -622,13 +643,7 @@ const Shows = () => {
         </div>
       </div>
 
-      {/* TV Show Modal */}
-      {selectedShow && (
-        <TVShowPlayer
-          show={selectedShow}
-          onClose={() => setSelectedShow(null)}
-        />
-      )}
+
 
       {/* Tooltip */}
       {tooltipItem && (
@@ -659,7 +674,7 @@ const Shows = () => {
             <div className="flex-1 min-w-0">
               <h4 className="text-white font-semibold text-sm line-clamp-2 mb-2">
                 {getItemTitle(tooltipItem)}
-              </h4>
+          </h4>
               
               <div className="space-y-1 text-xs text-gray-300">
                 <div className="flex items-center gap-1">
@@ -669,7 +684,7 @@ const Shows = () => {
                 
                 {typeof tooltipItem.vote_average === 'number' && (
                   <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-400" />
+              <Star className="w-3 h-3 text-yellow-400" />
                     <span>{tooltipItem.vote_average.toFixed(1)}</span>
                   </div>
                 )}
@@ -682,8 +697,8 @@ const Shows = () => {
               </div>
             </div>
           </div>
-          </div>
-        )}
+        </div>
+      )}
     </div>
   );
 };

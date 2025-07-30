@@ -16,6 +16,8 @@ import NotFound from './pages/NotFound';
 import Watchlist from './pages/Watchlist';
 import MoviePlayer from './pages/MoviePlayer';
 import TVShowPlayerPage from './pages/TVShowPlayerPage';
+import MovieModalPage from './pages/MovieModalPage';
+import TVShowModalPage from './pages/TVShowModalPage';
 import AdminPanel from './components/admin/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import VideoPlayer from './components/VideoPlayer';
@@ -28,6 +30,7 @@ const queryClient = new QueryClient();
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
+  const isModalPage = location.pathname.startsWith('/movie-modal/') || location.pathname.startsWith('/tv-modal/');
   const isAnnouncementVisible = useAnnouncementVisibility();
   const { settings: adminSettings } = useAdminSettings();
 
@@ -44,18 +47,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const announcementHeight = adminSettings?.appearance?.announcementBar?.height || 48;
   const navbarHeight = 80;
   
-  // Calculate dynamic padding based on announcement bar visibility (only for non-admin pages)
-  const mainPaddingTop = isAdminPage ? 0 : (isAnnouncementVisible ? announcementHeight + navbarHeight : navbarHeight);
+  // Calculate dynamic padding based on announcement bar visibility (only for non-admin and non-modal pages)
+  const mainPaddingTop = (isAdminPage || isModalPage) ? 0 : (isAnnouncementVisible ? announcementHeight + navbarHeight : navbarHeight);
 
   return (
     <div className="min-h-screen bg-black">
-      {!isAdminPage && <AnnouncementBar />}
-      {!isAdminPage && <Navigation inModalView={false} />}
+      {!isAdminPage && !isModalPage && <AnnouncementBar />}
+      {!isAdminPage && !isModalPage && <Navigation inModalView={false} />}
       <main className="w-full" style={{ paddingTop: `${mainPaddingTop}px` }}>
         {children}
       </main>
-      {!isAdminPage && <FloatingSocialButtons />}
-      {!isAdminPage && <Footer />}
+      {!isAdminPage && !isModalPage && <FloatingSocialButtons />}
+      {!isAdminPage && !isModalPage && <Footer />}
     </div>
   );
 };
@@ -78,6 +81,8 @@ function App() {
             <Route path="/watch" element={<VideoPlayer />} />
             <Route path="/movie/:id" element={<MoviePlayer />} />
             <Route path="/tv/:id" element={<TVShowPlayerPage />} />
+            <Route path="/movie-modal/:id" element={<MovieModalPage />} />
+            <Route path="/tv-modal/:id" element={<TVShowModalPage />} />
             <Route path="/admin" element={
               <ErrorBoundary>
                 <AdminPanel />

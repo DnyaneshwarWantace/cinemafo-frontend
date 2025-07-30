@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { Movie, TVShow } from '@/services/api';
 import MovieCarousel from '@/components/MovieCarousel';
-import MovieModal from '@/components/MovieModal';
-import TVShowPlayer from '@/components/TVShowPlayer';
 import VideoPlayer from '@/components/VideoPlayer';
 import HeroSlider from '@/components/HeroSlider';
 import ContinueWatching from '@/components/ContinueWatching';
@@ -15,8 +13,6 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 
 const Home = () => {
   const navigate = useNavigate();
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
   const [trendingShows, setTrendingShows] = useState<TVShow[]>([]);
@@ -44,10 +40,52 @@ const Home = () => {
           api.getPopularShows()
         ]);
 
-        setTrendingMovies(trendingMoviesRes.data?.results || []);
-        setPopularMovies(popularMoviesRes.data?.results || []);
-        setTrendingShows(trendingShowsRes.data?.results || []);
-        setPopularShows(popularShowsRes.data?.results || []);
+        const trendingMovies = trendingMoviesRes.data?.results || [];
+        const popularMovies = popularMoviesRes.data?.results || [];
+        const trendingShows = trendingShowsRes.data?.results || [];
+        const popularShows = popularShowsRes.data?.results || [];
+
+        setTrendingMovies(trendingMovies);
+        setPopularMovies(popularMovies);
+        setTrendingShows(trendingShows);
+        setPopularShows(popularShows);
+
+        // Prefetch details for the first few items to make modal opening instant
+        const prefetchDetails = async () => {
+          try {
+            console.log('🚀 Prefetching movie/show details for instant modal loading...');
+            
+            // Prefetch first 10 movies from each category
+            const moviesToPrefetch = [
+              ...trendingMovies.slice(0, 10),
+              ...popularMovies.slice(0, 10)
+            ];
+            
+            const showsToPrefetch = [
+              ...trendingShows.slice(0, 10),
+              ...popularShows.slice(0, 10)
+            ];
+
+            // Prefetch movie details in background
+            moviesToPrefetch.forEach(movie => {
+              api.getMovieDetails(movie.id).catch(() => {}); // Silent fail for prefetch
+            });
+
+            // Prefetch show details in background
+            showsToPrefetch.forEach(show => {
+              api.getShowDetails(show.id).catch(() => {}); // Silent fail for prefetch
+            });
+            
+            console.log(`🚀 Prefetching ${moviesToPrefetch.length} movies and ${showsToPrefetch.length} shows`);
+          } catch (err) {
+            // Silent fail for prefetch
+            console.log('Prefetch completed with some errors (normal)');
+          }
+        };
+
+        // Start prefetching in background (don't wait for it)
+        setTimeout(prefetchDetails, 100);
+        
       } catch (err) {
         console.error('Error fetching content:', err);
         setError('Failed to load content. Please try again later.');
@@ -65,11 +103,14 @@ const Home = () => {
   }, [watchHistory]);
 
   const handleContentClick = (content: Movie | TVShow) => {
+    // Get current page to pass as 'from' parameter  
+    const currentPage = location.pathname + location.search;
+    
     // If it has a title, it's a movie; if it has a name, it's a show
     if ('title' in content) {
-      setSelectedMovie(content as Movie);
+      navigate(`/movie-modal/${content.id}?from=${encodeURIComponent(currentPage)}`);
     } else {
-      setSelectedShow(content as TVShow);
+      navigate(`/tv-modal/${content.id}?from=${encodeURIComponent(currentPage)}`);
     }
   };
 
@@ -247,20 +288,7 @@ const Home = () => {
         )}
       </div>
 
-      {/* Movie Modal */}
-      {selectedMovie && (
-        <MovieModal
-          movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
-        />
-      )}
-      {/* TV Show Player */}
-      {selectedShow && (
-        <TVShowPlayer
-          show={selectedShow}
-          onClose={() => setSelectedShow(null)}
-        />
-      )}
+
 
 
     </div>

@@ -3,8 +3,7 @@ import { Search as SearchIcon, Filter, X, Star, Calendar, TrendingUp, Play, Book
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import MovieModal from '@/components/MovieModal';
-import TVShowPlayer from '@/components/TVShowPlayer';
+import { useNavigate } from 'react-router-dom';
 import AdBanner from '@/components/AdBanner';
 import api, { Movie, TVShow } from '@/services/api';
 import { Loader2 } from 'lucide-react';
@@ -13,10 +12,10 @@ import { useSearchParams } from 'react-router-dom';
 
 const Search = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<(Movie | TVShow)[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<Movie | TVShow | null>(null);
   const [mediaType] = useState('multi');
   const [filters, setFilters] = useState({
     genre: 'all',
@@ -196,7 +195,14 @@ const Search = () => {
   };
 
   const handleItemClick = (item: Movie | TVShow) => {
-    setSelectedItem(item);
+    // Get current page to pass as 'from' parameter  
+    const currentPage = location.pathname + location.search;
+    
+    if ('title' in item) {
+      navigate(`/movie-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
+    } else {
+      navigate(`/tv-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
+    }
   };
 
   const clearFilters = () => {
@@ -544,21 +550,7 @@ const Search = () => {
         )}
       </div>
 
-      {/* Movie Modal */}
-      {selectedItem && 'title' in selectedItem && (
-        <MovieModal
-          movie={selectedItem as Movie}
-          onClose={() => setSelectedItem(null)}
-        />
-      )}
 
-      {/* TV Show Player */}
-      {selectedItem && 'name' in selectedItem && (
-        <TVShowPlayer
-          show={selectedItem as TVShow}
-          onClose={() => setSelectedItem(null)}
-        />
-      )}
 
       {/* Tooltip */}
       {tooltipItem && (
@@ -589,7 +581,7 @@ const Search = () => {
             <div className="flex-1 min-w-0">
               <h4 className="text-white font-semibold text-sm line-clamp-2 mb-2">
                 {getItemTitle(tooltipItem)}
-              </h4>
+          </h4>
               
               <div className="space-y-1 text-xs text-gray-300">
                 <div className="flex items-center gap-1">
@@ -599,7 +591,7 @@ const Search = () => {
                 
                 {typeof tooltipItem.vote_average === 'number' && (
                   <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-400" />
+              <Star className="w-3 h-3 text-yellow-400" />
                     <span>{tooltipItem.vote_average.toFixed(1)}</span>
                   </div>
                 )}
@@ -612,8 +604,8 @@ const Search = () => {
               </div>
             </div>
           </div>
-          </div>
-        )}
+        </div>
+      )}
     </div>
   );
 };

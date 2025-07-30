@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, X, Star, Calendar, Play, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import MovieModal from '@/components/MovieModal';
+import { useNavigate } from 'react-router-dom';
 import MovieCarousel from '@/components/MovieCarousel';
 import AdBanner from '@/components/AdBanner';
 import api, { Movie } from '@/services/api';
@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import useAdminSettings from '@/hooks/useAdminSettings';
 
 const Movies = () => {
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const navigate = useNavigate();
   const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
   const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
@@ -94,9 +94,28 @@ const Movies = () => {
         api.getTopRatedMovies()
       ]);
 
-      setTrendingMovies(trending.data?.results || []);
-      setPopularMovies(popular.data?.results || []);
-      setTopRatedMovies(topRated.data?.results || []);
+      const trendingMovies = trending.data?.results || [];
+      const popularMovies = popular.data?.results || [];
+      const topRatedMovies = topRated.data?.results || [];
+
+      setTrendingMovies(trendingMovies);
+      setPopularMovies(popularMovies);
+      setTopRatedMovies(topRatedMovies);
+
+      // Prefetch details for first few movies for instant modal loading
+      setTimeout(() => {
+        const moviesToPrefetch = [
+          ...trendingMovies.slice(0, 8),
+          ...popularMovies.slice(0, 8),
+          ...topRatedMovies.slice(0, 8)
+        ];
+        
+        console.log(`🚀 Prefetching ${moviesToPrefetch.length} movie details...`);
+        moviesToPrefetch.forEach(movie => {
+          api.getMovieDetails(movie.id).catch(() => {});
+        });
+      }, 100);
+
     } catch (error) {
       console.error('Error fetching movies:', error);
       setError('Failed to load movies. Please try again later.');
@@ -176,7 +195,9 @@ const Movies = () => {
   }, [tooltipTimeout, searchResults]);
 
   const handleMovieClick = (movie: Movie) => {
-    setSelectedMovie(movie);
+    // Get current page to pass as 'from' parameter  
+    const currentPage = location.pathname + location.search;
+    navigate(`/movie-modal/${movie.id}?from=${encodeURIComponent(currentPage)}`);
   };
 
   // Search functionality
@@ -363,17 +384,17 @@ const Movies = () => {
                           <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                             <Star className="w-3 h-3" />
                             {movie.vote_average.toFixed(1)}
-                          </div>
+                      </div>
                         )}
                         
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
                           <div>
                             <h3 className="text-white font-semibold text-sm line-clamp-2">
                               {getItemTitle(movie)}
-                            </h3>
+                        </h3>
                             <p className="text-gray-300 text-xs mt-1">
                               {formatReleaseDate(getItemReleaseDate(movie))}
-                            </p>
+                        </p>
                           </div>
                         </div>
                       </div>
@@ -622,13 +643,7 @@ const Movies = () => {
         </div>
       </div>
 
-      {/* Movie Modal */}
-      {selectedMovie && (
-        <MovieModal
-          movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
-        />
-      )}
+
       {/* Tooltip */}
       {tooltipItem && (
         <div
@@ -658,7 +673,7 @@ const Movies = () => {
             <div className="flex-1 min-w-0">
               <h4 className="text-white font-semibold text-sm line-clamp-2 mb-2">
                 {getItemTitle(tooltipItem)}
-              </h4>
+          </h4>
               
               <div className="space-y-1 text-xs text-gray-300">
                 <div className="flex items-center gap-1">
@@ -668,7 +683,7 @@ const Movies = () => {
                 
                 {typeof tooltipItem.vote_average === 'number' && (
                   <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-400" />
+              <Star className="w-3 h-3 text-yellow-400" />
                     <span>{tooltipItem.vote_average.toFixed(1)}</span>
                   </div>
                 )}
@@ -681,8 +696,8 @@ const Movies = () => {
               </div>
             </div>
           </div>
-          </div>
-        )}
+        </div>
+      )}
     </div>
   );
 };

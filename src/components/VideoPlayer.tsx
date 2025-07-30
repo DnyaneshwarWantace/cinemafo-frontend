@@ -140,9 +140,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const episode = propEpisode || parseInt(searchParams.get('episode') || '0');
   const title = propTitle || searchParams.get('title') || 'Video';
   const initialTime = propInitialTime || parseFloat(searchParams.get('time') || '0');
-  
+
+  console.log('🎬 VideoPlayer props:', { tmdbId, type, season, episode, title, propTmdbId, propType });
+
   // Use prop callbacks if provided, otherwise use navigation
   const onClose = propOnClose || (() => navigate(-1));
+
+  // If no valid tmdbId, don't render the player
+  if (!tmdbId || tmdbId === 0) {
+    console.error('❌ VideoPlayer: No valid tmdbId provided');
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Invalid Video ID</h2>
+          <button 
+            onClick={onClose}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
   const onNextEpisode = propOnNextEpisode || (() => {
     // For route usage, navigate to next episode
     const nextEpisode = episode + 1;

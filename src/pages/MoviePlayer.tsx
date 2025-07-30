@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import VideoPlayer from '@/components/VideoPlayer';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import api from '@/services/api';
@@ -7,12 +7,21 @@ import api from '@/services/api';
 const MoviePlayer: React.FC = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { getHistoryItem, updateProgress } = useWatchHistory();
   const [movieData, setMovieData] = useState<any>(null);
   
   const tmdbId = parseInt(id || '0');
   const title = searchParams.get('title') || 'Movie';
   const initialTime = parseFloat(searchParams.get('time') || '0');
+  const fromPage = searchParams.get('from') || '/';
+
+  console.log('🎬 MoviePlayer initialized:', { tmdbId, title, initialTime, fromPage });
+
+  const handleClose = () => {
+    console.log('🎬 MoviePlayer: Closing, navigating to:', fromPage);
+    navigate(fromPage);
+  };
   
   // Get saved progress for this movie
   const historyItem = getHistoryItem(tmdbId, 'movie');
@@ -55,6 +64,7 @@ const MoviePlayer: React.FC = () => {
       type="movie"
       title={title}
       initialTime={savedTime}
+      onClose={handleClose}
       onProgressUpdate={(currentTime, duration, videoElement) => {
         // Use fetched movie data for proper progress tracking
         if (movieData) {
