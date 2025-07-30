@@ -66,10 +66,21 @@ const MoviePlayer: React.FC = () => {
       initialTime={savedTime}
       onClose={handleClose}
       onProgressUpdate={(currentTime, duration, videoElement) => {
-        // Use fetched movie data for proper progress tracking
-        if (movieData) {
-          updateProgress(movieData, currentTime, duration, 'movie', undefined, undefined, undefined, videoElement);
-        }
+        // Use fetched movie data for proper progress tracking, or fallback data
+        const dataToUse = movieData || {
+          id: tmdbId,
+          title: title,
+          name: title,
+          media_type: 'movie' as const,
+          poster_path: '',
+          backdrop_path: '',
+          overview: '',
+          vote_average: 0,
+          vote_count: 0
+        };
+        
+        console.log('🎬 MoviePlayer: Updating progress for:', dataToUse.title, 'Time:', currentTime);
+        updateProgress(dataToUse, currentTime, duration, 'movie', undefined, undefined, undefined, videoElement);
       }}
     />
   );

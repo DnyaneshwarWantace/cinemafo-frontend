@@ -450,13 +450,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setCurrentTime(currentTime);
     setDuration(duration);
 
-    // Save progress every 10 seconds with throttling
+    // Save progress every 5 seconds with throttling  
     if (onProgressUpdate && duration > 0) {
       const now = Date.now();
       const timeSinceLastUpdate = now - lastProgressUpdateRef.current;
       
-      // Only update if at least 10 seconds have passed
-      if (timeSinceLastUpdate >= 10000) {
+      // Only update if at least 5 seconds have passed
+      if (timeSinceLastUpdate >= 5000) {
         lastProgressUpdateRef.current = now;
         
         // Generate thumbnail every 60 seconds (every 6th progress update)
@@ -983,7 +983,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       });
       
-      video.addEventListener('play', () => setIsPlaying(true));
+      video.addEventListener('play', () => {
+        setIsPlaying(true);
+        // Initial progress update when video starts playing
+        if (onProgressUpdate && video.duration > 0) {
+          console.log('🎬 Initial progress update on play start');
+          onProgressUpdate(video.currentTime, video.duration);
+        }
+      });
       video.addEventListener('pause', () => setIsPlaying(false));
       
       video.addEventListener('error', (videoError) => {

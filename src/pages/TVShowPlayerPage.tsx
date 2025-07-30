@@ -126,10 +126,22 @@ const TVShowPlayerPage: React.FC = () => {
       onClose={handleClose}
       onNextEpisode={handleNextEpisode}
       onProgressUpdate={(currentTime, duration, videoElement) => {
-        // Use fetched show data for proper progress tracking
-        if (showData) {
-          updateProgress(showData, currentTime, duration, 'tv', season, episode, undefined, videoElement);
-        }
+        // Use fetched show data for proper progress tracking, or fallback data
+        const dataToUse = showData || {
+          id: tmdbId,
+          name: title,
+          title: title,
+          media_type: 'tv' as const,
+          poster_path: '',
+          backdrop_path: '',
+          overview: '',
+          vote_average: 0,
+          vote_count: 0,
+          first_air_date: '2024-01-01'
+        };
+        
+        console.log('📺 TVShowPlayerPage: Updating progress for:', dataToUse.name, 'S' + season + 'E' + episode, 'Time:', currentTime);
+        updateProgress(dataToUse, currentTime, duration, 'tv', season, episode, undefined, videoElement);
       }}
     />
   );
