@@ -482,12 +482,16 @@ const AdminPanel: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
-                <Monitor className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">CINEMA.FO Admin</h1>
-                <p className="text-gray-300 text-sm">Content Management System</p>
+              <div className="flex items-center">
+                <img 
+                  src="/logo.svg" 
+                  alt="CINEMA.FO" 
+                  className="h-10 w-auto transition-all duration-300 filter brightness-110"
+                />
+                <div className="ml-4">
+                  <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
+                  <p className="text-gray-300 text-sm">Content Management System</p>
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-4">
