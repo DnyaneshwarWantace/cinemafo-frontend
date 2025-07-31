@@ -102,6 +102,29 @@ const Home = () => {
     setContinueWatchingKey(prev => prev + 1);
   }, [watchHistory]);
 
+  // Refresh continue watching data when page becomes visible (user returns from player)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Force refresh of continue watching section when page becomes visible
+        setContinueWatchingKey(prev => prev + 1);
+      }
+    };
+
+    const handleFocus = () => {
+      // Force refresh of continue watching section when window gains focus
+      setContinueWatchingKey(prev => prev + 1);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
   const handleContentClick = (content: Movie | TVShow) => {
     // Get current page to pass as 'from' parameter  
     const currentPage = location.pathname + location.search;
@@ -169,20 +192,39 @@ const Home = () => {
         />
       </section>
 
-
-
-      {/* Trending Movies Section - Overlaps with Hero */}
-      {!loading && trendingMovies.length > 0 && (
+      {/* Continue Watching Section - Overlaps with Hero */}
+      {!loading && (() => {
+        try {
+          const continueWatchingItems = getContinueWatching(10);
+          return continueWatchingItems.length > 0 ? (
         <section className="relative -mt-32 lg:-mt-32 z-10">
           <div className="bg-gradient-to-t from-black via-black/90 to-transparent pt-8 pb-8">
             <div className="w-full px-4 sm:px-6 lg:px-8">
+                  <ContinueWatching
+                    key={continueWatchingKey}
+                    items={continueWatchingItems}
+                    onItemClick={handleContinueWatchingClick}
+                    onRemoveItem={handleRemoveFromHistory}
+                    getThumbnailUrl={getThumbnailUrl}
+                  />
+                </div>
+              </div>
+            </section>
+          ) : null;
+        } catch (error) {
+          console.error('Error rendering continue watching section:', error);
+          return null;
+        }
+      })()}
+
+      {/* Trending Movies Section */}
+      {!loading && trendingMovies.length > 0 && (
+        <section className="w-full px-4 sm:px-6 lg:px-8 py-8">
               <MovieCarousel
                 title="Trending Movies"
                 items={trendingMovies}
                 onItemClick={handleContentClick}
               />
-            </div>
-          </div>
         </section>
       )}
 
@@ -194,25 +236,6 @@ const Home = () => {
           </div>
         ) : (
           <>
-            {/* Continue Watching Section */}
-            {(() => {
-              try {
-                const continueWatchingItems = getContinueWatching(10);
-                return continueWatchingItems.length > 0 ? (
-            <ContinueWatching
-                    key={continueWatchingKey}
-                    items={continueWatchingItems}
-              onItemClick={handleContinueWatchingClick}
-              onRemoveItem={handleRemoveFromHistory}
-              getThumbnailUrl={getThumbnailUrl}
-            />
-                ) : null;
-              } catch (error) {
-                console.error('Error rendering continue watching section:', error);
-                return null;
-              }
-            })()}
-
             {/* Ad after Hero Section */}
             {adminSettings?.ads?.mainPageAd1?.enabled && (
               <div className="max-w-4xl mx-auto">
