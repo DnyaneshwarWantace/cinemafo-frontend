@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import MovieCarousel from '@/components/MovieCarousel';
 import AdBanner from '@/components/AdBanner';
 import api, { TVShow } from '@/services/api';
-import { Loader2 } from 'lucide-react';
+import LoadingBar from '@/components/LoadingBar';
 import useAdminSettings from '@/hooks/useAdminSettings';
 
 const Shows = () => {
@@ -302,6 +302,8 @@ const Shows = () => {
 
   return (
     <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20 shows-container" style={{ position: 'relative' }}>
+      {/* Loading Bar */}
+      <LoadingBar isLoading={loading} />
       {/* Mobile Header - Netflix Style */}
       <div className="lg:hidden">
         <div className="px-4 py-6">
@@ -339,7 +341,7 @@ const Shows = () => {
                 <h3 className="text-white font-semibold">
                   Search Results for "{searchQuery}"
                 </h3>
-                {isSearching && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
+                {isSearching && <div className="w-4 h-4 animate-spin border-2 border-blue-500 border-t-transparent rounded-full" />}
               </div>
               {searchResults.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3">
@@ -456,11 +458,7 @@ const Shows = () => {
         )}
 
         {/* Shows Content */}
-        {loading ? (
-          <div className="flex items-center justify-center min-h-[50vh] px-4">
-            <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          </div>
-        ) : (
+        {!loading && (
           <div className="space-y-8">
                 <section>
               <MovieCarousel
@@ -524,7 +522,7 @@ const Shows = () => {
                   <h3 className="text-white text-xl font-semibold">
                     Search Results for "{searchQuery}"
                   </h3>
-                  {isSearching && <Loader2 className="w-5 h-5 animate-spin text-blue-500" />}
+                  {isSearching && <div className="w-5 h-5 animate-spin border-2 border-blue-500 border-t-transparent rounded-full" />}
                 </div>
                 {searchResults.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
@@ -597,11 +595,7 @@ const Shows = () => {
           )}
 
           {/* Shows Content */}
-          {loading ? (
-            <div className="flex items-center justify-center min-h-[50vh]">
-              <Loader2 className="w-12 h-12 animate-spin text-primary" />
-            </div>
-          ) : (
+                  {!loading && (
             <div className="space-y-8">
               <section>
                     <MovieCarousel

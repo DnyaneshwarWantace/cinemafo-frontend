@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import AdBanner from '@/components/AdBanner';
 import api, { Movie, TVShow } from '@/services/api';
-import { Loader2 } from 'lucide-react';
+import LoadingBar from '@/components/LoadingBar';
 import useAdminSettings from '@/hooks/useAdminSettings';
 import { useSearchParams } from 'react-router-dom';
 
@@ -322,6 +322,8 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20" style={{ position: 'relative' }}>
+      {/* Loading Bar */}
+      <LoadingBar isLoading={loading} />
       <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -446,12 +448,7 @@ const Search = () => {
             </div>
           </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin" />
-          </div>
-        )}
+
 
         {/* Results */}
         {!loading && query && (

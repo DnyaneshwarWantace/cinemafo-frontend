@@ -6,7 +6,7 @@ import VideoPlayer from '@/components/VideoPlayer';
 import HeroSlider from '@/components/HeroSlider';
 import ContinueWatching from '@/components/ContinueWatching';
 import AdBanner from '@/components/AdBanner';
-import { Loader2 } from 'lucide-react';
+import LoadingBar from '@/components/LoadingBar';
 import useAdminSettings from '@/hooks/useAdminSettings';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -184,6 +184,9 @@ const Home = () => {
   return (
     <ErrorBoundary>
     <div className="min-h-screen bg-black">
+      {/* Loading Bar */}
+      <LoadingBar isLoading={loading} />
+      
       {/* Hero Section */}
       <section className="w-full">
         <HeroSlider 
@@ -217,6 +220,47 @@ const Home = () => {
         }
       })()}
 
+      {/* Ad after Continue Watching (when it exists) or after Trending Movies (when no continue watching) */}
+      {!loading && adminSettings?.ads?.mainPageAd1?.enabled && (() => {
+        try {
+          const continueWatchingItems = getContinueWatching(10);
+          const hasContinueWatching = continueWatchingItems.length > 0;
+          
+          // Show ad after continue watching if it exists, otherwise after trending movies
+          if (hasContinueWatching) {
+            return (
+              <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+                <div className="max-w-4xl mx-auto">
+                  <AdBanner 
+                    adKey="mainPageAd1"
+                    imageUrl={adminSettings.ads.mainPageAd1.imageUrl}
+                    clickUrl={adminSettings.ads.mainPageAd1.clickUrl}
+                    enabled={adminSettings.ads.mainPageAd1.enabled}
+                  />
+                </div>
+              </div>
+            );
+          } else if (trendingMovies.length > 0) {
+            return (
+              <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+                <div className="max-w-4xl mx-auto">
+                  <AdBanner 
+                    adKey="mainPageAd1"
+                    imageUrl={adminSettings.ads.mainPageAd1.imageUrl}
+                    clickUrl={adminSettings.ads.mainPageAd1.clickUrl}
+                    enabled={adminSettings.ads.mainPageAd1.enabled}
+                  />
+                </div>
+              </div>
+            );
+          }
+          return null;
+        } catch (error) {
+          console.error('Error rendering mainPageAd1:', error);
+          return null;
+        }
+      })()}
+
       {/* Trending Movies Section */}
       {!loading && trendingMovies.length > 0 && (
         <section className="w-full px-4 sm:px-6 lg:px-8 py-8">
@@ -230,23 +274,9 @@ const Home = () => {
 
       {/* Content Sections */}
       <div className="w-full px-4 sm:px-6 lg:px-8 space-y-12 py-8">
-        {loading ? (
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          </div>
-        ) : (
+        {!loading && (
           <>
-            {/* Ad after Hero Section */}
-            {adminSettings?.ads?.mainPageAd1?.enabled && (
-              <div className="max-w-4xl mx-auto">
-                <AdBanner 
-                  adKey="mainPageAd1"
-                  imageUrl={adminSettings.ads.mainPageAd1.imageUrl}
-                  clickUrl={adminSettings.ads.mainPageAd1.clickUrl}
-                  enabled={adminSettings.ads.mainPageAd1.enabled}
-                />
-              </div>
-            )}
+
 
             <section>
               <MovieCarousel
