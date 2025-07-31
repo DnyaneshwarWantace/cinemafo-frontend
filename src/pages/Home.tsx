@@ -220,46 +220,7 @@ const Home = () => {
         }
       })()}
 
-      {/* Ad after Continue Watching (when it exists) or after Trending Movies (when no continue watching) */}
-      {!loading && adminSettings?.ads?.mainPageAd1?.enabled && (() => {
-        try {
-          const continueWatchingItems = getContinueWatching(10);
-          const hasContinueWatching = continueWatchingItems.length > 0;
-          
-          // Show ad after continue watching if it exists, otherwise after trending movies
-          if (hasContinueWatching) {
-            return (
-              <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-                <div className="max-w-4xl mx-auto">
-                  <AdBanner 
-                    adKey="mainPageAd1"
-                    imageUrl={adminSettings.ads.mainPageAd1.imageUrl}
-                    clickUrl={adminSettings.ads.mainPageAd1.clickUrl}
-                    enabled={adminSettings.ads.mainPageAd1.enabled}
-                  />
-                </div>
-              </div>
-            );
-          } else if (trendingMovies.length > 0) {
-            return (
-              <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-                <div className="max-w-4xl mx-auto">
-                  <AdBanner 
-                    adKey="mainPageAd1"
-                    imageUrl={adminSettings.ads.mainPageAd1.imageUrl}
-                    clickUrl={adminSettings.ads.mainPageAd1.clickUrl}
-                    enabled={adminSettings.ads.mainPageAd1.enabled}
-                  />
-                </div>
-              </div>
-            );
-          }
-          return null;
-        } catch (error) {
-          console.error('Error rendering mainPageAd1:', error);
-          return null;
-        }
-      })()}
+
 
       {/* Trending Movies Section */}
       {!loading && trendingMovies.length > 0 && (
@@ -276,7 +237,17 @@ const Home = () => {
       <div className="w-full px-4 sm:px-6 lg:px-8 space-y-12 py-8">
         {!loading && (
           <>
-
+            {/* Ad after Hero Section */}
+            {adminSettings?.ads?.mainPageAd1?.enabled && (
+              <div className="max-w-4xl mx-auto">
+                <AdBanner 
+                  adKey="mainPageAd1"
+                  imageUrl={adminSettings.ads.mainPageAd1.imageUrl}
+                  clickUrl={adminSettings.ads.mainPageAd1.clickUrl}
+                  enabled={adminSettings.ads.mainPageAd1.enabled}
+                />
+              </div>
+            )}
 
             <section>
               <MovieCarousel
