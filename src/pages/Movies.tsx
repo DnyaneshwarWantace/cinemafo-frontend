@@ -7,10 +7,14 @@ import AdBanner from '@/components/AdBanner';
 import LoadingBar from '@/components/LoadingBar';
 import api, { Movie } from '@/services/api';
 import useAdminSettings from '@/hooks/useAdminSettings';
-import { useGlobalContent } from '@/hooks/useGlobalContent';
 
 const Movies = () => {
   const navigate = useNavigate();
+  const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
+  const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
+  const [topRatedMovies, setTopRatedMovies] = useState<Movie[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Movie[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -19,16 +23,6 @@ const Movies = () => {
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const [watchlistUpdate, setWatchlistUpdate] = useState(0);
-  
-  // Use global content for trending and popular movies, only fetch top rated
-  const { 
-    trendingMovies, 
-    popularMovies, 
-    topRatedMovies, 
-    isLoading: loading, 
-    error, 
-    fetchContent 
-  } = useGlobalContent();
 
   const handleMouseEnter = (e: React.MouseEvent, item: Movie) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -90,9 +84,48 @@ const Movies = () => {
     setTooltipItem(null);
   };
 
+  const fetchMovies = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [trending, popular, topRated] = await Promise.all([
+        api.getTrendingMovies(),
+        api.getPopularMovies(),
+        api.getTopRatedMovies()
+      ]);
+
+      const trendingMovies = trending.data?.results || [];
+      const popularMovies = popular.data?.results || [];
+      const topRatedMovies = topRated.data?.results || [];
+
+      setTrendingMovies(trendingMovies);
+      setPopularMovies(popularMovies);
+      setTopRatedMovies(topRatedMovies);
+
+      // Prefetch details for first few movies for instant modal loading
+      setTimeout(() => {
+        const moviesToPrefetch = [
+          ...trendingMovies.slice(0, 8),
+          ...popularMovies.slice(0, 8),
+          ...topRatedMovies.slice(0, 8)
+        ];
+        
+        console.log(`🚀 Prefetching ${moviesToPrefetch.length} movie details...`);
+        moviesToPrefetch.forEach(movie => {
+          api.getMovieDetails(movie.id).catch(() => {});
+        });
+      }, 100);
+
+    } catch (error) {
+      console.error('Error fetching movies:', error);
+      setError('Failed to load movies. Please try again later.');
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    fetchContent();
-  }, [fetchContent]);
+    fetchMovies();
+  }, []);
 
   // Listen for watchlist changes
   useEffect(() => {

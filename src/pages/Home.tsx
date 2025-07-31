@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api, { Movie, TVShow } from '@/services/api';
 import MovieCarousel from '@/components/MovieCarousel';
 import VideoPlayer from '@/components/VideoPlayer';
 import HeroSlider from '@/components/HeroSlider';
@@ -8,28 +9,93 @@ import AdBanner from '@/components/AdBanner';
 import LoadingBar from '@/components/LoadingBar';
 import useAdminSettings from '@/hooks/useAdminSettings';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
-import { useGlobalContent } from '@/hooks/useGlobalContent';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import type { Movie, TVShow } from '@/services/api';
 
 const Home = () => {
   const navigate = useNavigate();
+  const [trendingMovies, setTrendingMovies] = useState<Movie[]>([]);
+  const [popularMovies, setPopularMovies] = useState<Movie[]>([]);
+  const [trendingShows, setTrendingShows] = useState<TVShow[]>([]);
+  const [popularShows, setPopularShows] = useState<TVShow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [continueWatchingKey, setContinueWatchingKey] = useState(0);
   const { settings: adminSettings } = useAdminSettings();
   const { getContinueWatching, updateProgress, removeFromHistory, getThumbnailUrl, watchHistory } = useWatchHistory();
-  const { 
-    trendingMovies, 
-    popularMovies, 
-    trendingShows, 
-    popularShows, 
-    isLoading: loading, 
-    error, 
-    fetchContent 
-  } = useGlobalContent();
 
   useEffect(() => {
+    const fetchContent = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [
+          trendingMoviesRes,
+          popularMoviesRes,
+          trendingShowsRes,
+          popularShowsRes
+        ] = await Promise.all([
+          api.getTrendingMovies(),
+          api.getPopularMovies(),
+          api.getTrendingShows(),
+          api.getPopularShows()
+        ]);
+
+        const trendingMovies = trendingMoviesRes.data?.results || [];
+        const popularMovies = popularMoviesRes.data?.results || [];
+        const trendingShows = trendingShowsRes.data?.results || [];
+        const popularShows = popularShowsRes.data?.results || [];
+
+        setTrendingMovies(trendingMovies);
+        setPopularMovies(popularMovies);
+        setTrendingShows(trendingShows);
+        setPopularShows(popularShows);
+
+        // Prefetch details for the first few items to make modal opening instant
+        const prefetchDetails = async () => {
+          try {
+            console.log('🚀 Prefetching movie/show details for instant modal loading...');
+            
+            // Prefetch first 10 movies from each category
+            const moviesToPrefetch = [
+              ...trendingMovies.slice(0, 10),
+              ...popularMovies.slice(0, 10)
+            ];
+            
+            const showsToPrefetch = [
+              ...trendingShows.slice(0, 10),
+              ...popularShows.slice(0, 10)
+            ];
+
+            // Prefetch movie details in background
+            moviesToPrefetch.forEach(movie => {
+              api.getMovieDetails(movie.id).catch(() => {}); // Silent fail for prefetch
+            });
+
+            // Prefetch show details in background
+            showsToPrefetch.forEach(show => {
+              api.getShowDetails(show.id).catch(() => {}); // Silent fail for prefetch
+            });
+            
+            console.log(`🚀 Prefetching ${moviesToPrefetch.length} movies and ${showsToPrefetch.length} shows`);
+          } catch (err) {
+            // Silent fail for prefetch
+            console.log('Prefetch completed with some errors (normal)');
+          }
+        };
+
+        // Start prefetching in background (don't wait for it)
+        setTimeout(prefetchDetails, 100);
+        
+      } catch (err) {
+        console.error('Error fetching content:', err);
+        setError('Failed to load content. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchContent();
-  }, [fetchContent]);
+  }, []);
 
   // Watch for changes in watch history to update continue watching section
   useEffect(() => {
