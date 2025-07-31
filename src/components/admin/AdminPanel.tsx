@@ -56,7 +56,7 @@ interface AdminSettings {
 // API functions
 const adminApi = {
   login: async (username: string, password: string) => {
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/login`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -73,7 +73,7 @@ const adminApi = {
 
   getSettings: async () => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -86,7 +86,7 @@ const adminApi = {
 
   updateAnnouncement: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings/announcement`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/announcement`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ const adminApi = {
 
   updateSocialButtons: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings/social-buttons`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/social-buttons`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ const adminApi = {
 
   updateContent: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings/content`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/content`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -140,7 +140,7 @@ const adminApi = {
 
   updateAds: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings/ads`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/ads`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ const adminApi = {
 
   updateCSS: async (css: string) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/settings/css`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/css`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',

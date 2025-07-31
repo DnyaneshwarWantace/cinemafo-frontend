@@ -7,14 +7,10 @@ import AdBanner from '@/components/AdBanner';
 import api, { TVShow } from '@/services/api';
 import LoadingBar from '@/components/LoadingBar';
 import useAdminSettings from '@/hooks/useAdminSettings';
+import { useGlobalContent } from '@/hooks/useGlobalContent';
 
 const Shows = () => {
   const navigate = useNavigate();
-  const [trendingShows, setTrendingShows] = useState<TVShow[]>([]);
-  const [popularShows, setPopularShows] = useState<TVShow[]>([]);
-  const [topRatedShows, setTopRatedShows] = useState<TVShow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<TVShow[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -23,6 +19,16 @@ const Shows = () => {
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const [watchlistUpdate, setWatchlistUpdate] = useState(0);
+  
+  // Use global content for trending and popular shows, only fetch top rated
+  const { 
+    trendingShows, 
+    popularShows, 
+    topRatedShows, 
+    isLoading: loading, 
+    error, 
+    fetchContent 
+  } = useGlobalContent();
 
   const handleMouseEnter = (e: React.MouseEvent, item: TVShow) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -84,48 +90,9 @@ const Shows = () => {
     setTooltipItem(null);
   };
 
-  const fetchShows = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [trending, popular, topRated] = await Promise.all([
-        api.getTrendingShows(),
-        api.getPopularShows(),
-        api.getTopRatedShows()
-      ]);
-
-      const trendingShows = trending.data?.results || [];
-      const popularShows = popular.data?.results || [];
-      const topRatedShows = topRated.data?.results || [];
-
-      setTrendingShows(trendingShows);
-      setPopularShows(popularShows);
-      setTopRatedShows(topRatedShows);
-
-      // Prefetch details for first few shows for instant modal loading
-      setTimeout(() => {
-        const showsToPrefetch = [
-          ...trendingShows.slice(0, 8),
-          ...popularShows.slice(0, 8),
-          ...topRatedShows.slice(0, 8)
-        ];
-        
-        console.log(`🚀 Prefetching ${showsToPrefetch.length} show details...`);
-        showsToPrefetch.forEach(show => {
-          api.getShowDetails(show.id).catch(() => {});
-        });
-      }, 100);
-
-    } catch (error) {
-      console.error('Error fetching shows:', error);
-      setError('Failed to load shows. Please try again later.');
-    }
-    setLoading(false);
-  };
-
   useEffect(() => {
-    fetchShows();
-  }, []);
+    fetchContent();
+  }, [fetchContent]);
 
   // Listen for watchlist changes
   useEffect(() => {
