@@ -4,6 +4,8 @@ import useAdminSettings from '@/hooks/useAdminSettings';
 
 const AnnouncementBar = () => {
   const [isUserDismissed, setIsUserDismissed] = React.useState(false);
+  const [isHidden, setIsHidden] = React.useState(false);
+  const [lastScrollY, setLastScrollY] = React.useState(0);
   const { settings: adminSettings } = useAdminSettings();
 
   // Get values from admin settings
@@ -31,6 +33,30 @@ const AnnouncementBar = () => {
     }
   }, [isEnabled, text]);
 
+  // Handle scroll behavior for announcement bar hiding/showing
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Show announcement bar when scrolling up or at the top
+      if (currentScrollY < lastScrollY || currentScrollY < 50) {
+        setIsHidden(false);
+      } 
+      // Hide announcement bar when scrolling down and not at the top
+      else if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        setIsHidden(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
+
   const handleClose = () => {
     setIsUserDismissed(true);
     localStorage.setItem('announcementUserDismissed', 'true');
@@ -45,7 +71,9 @@ const AnnouncementBar = () => {
 
   return (
     <div 
-      className={`fixed top-0 left-0 right-0 z-40 text-center shadow-lg flex items-center`}
+      className={`fixed top-0 left-0 right-0 z-40 text-center shadow-lg flex items-center transition-transform duration-300 ${
+        isHidden ? '-translate-y-full' : 'translate-y-0'
+      }`}
       style={{ 
         background: backgroundColor,
         height: `${height}px`

@@ -6,7 +6,6 @@ import api, { Movie, TVShow } from '@/services/api';
 import useAdminSettings from '@/hooks/useAdminSettings';
 import { useAnnouncementVisibility } from '@/hooks/useAnnouncementVisibility';
 
-
 interface NavigationProps {
   inModalView?: boolean;
 }
@@ -22,12 +21,31 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchPopup, setShowSearchPopup] = useState(false);
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(-1);
+  const [isNavbarHidden, setIsNavbarHidden] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   // Get admin settings to check announcement bar status
   const { settings: adminSettings } = useAdminSettings();
   
   // Use shared announcement visibility hook
   const isAnnouncementVisible = useAnnouncementVisibility();
+
+  // Calculate navbar top position based on announcement bar visibility and scroll state
+  const getNavbarTopPosition = () => {
+    if (!isAnnouncementVisible || inModalView) {
+      return '0px';
+    }
+    
+    // Check if we should show announcement bar position or move navbar to top
+    // We'll use a simple scroll threshold to determine this
+    const shouldShowAnnouncementPosition = lastScrollY < 50;
+    
+    if (shouldShowAnnouncementPosition) {
+      return `${adminSettings?.appearance?.announcementBar?.height || 48}px`;
+    } else {
+      return '0px';
+    }
+  };
 
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
@@ -181,7 +199,6 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   };
 
 
-
   // Debug popup state
   useEffect(() => {
     console.log('🎯 Popup state changed:', { showSearchPopup, searchQuery, searchResultsLength: searchResults.length, isSearching });
@@ -195,6 +212,23 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
       }
     };
   }, [searchTimeout]);
+
+  // Handle scroll behavior for navbar positioning (navbar stays visible, only announcement bar hides)
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Always keep navbar visible, just adjust position based on announcement bar visibility
+      // The announcement bar component handles its own hiding/showing
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
 
   // Close search popup when clicking outside
   useEffect(() => {
@@ -223,9 +257,9 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   return (
     <>
       <nav 
-        className="fixed left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-gray-800/30 h-[80px]"
+        className="fixed left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-gray-800/30 h-[80px] transition-all duration-300"
         style={{
-          top: isAnnouncementVisible && !inModalView ? `${adminSettings?.appearance?.announcementBar?.height || 48}px` : '0px'
+          top: getNavbarTopPosition()
         }}
       >
         <div className="w-full h-full px-3 sm:px-4 md:px-6 lg:px-8">
@@ -904,7 +938,6 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
             </div>
           </div>
         )}
-
 
     </>
   );
