@@ -2,24 +2,13 @@ import React, { useState, useEffect } from 'react';
 import useAdminSettings from '@/hooks/useAdminSettings';
 
 interface FloatingSocialButtonsProps {
-  discordLink?: string;
-  telegramLink?: string;
-  enabled?: boolean;
+  // No props needed - all settings come from admin panel
 }
 
-const FloatingSocialButtons: React.FC<FloatingSocialButtonsProps> = ({
-  discordLink = 'https://discord.gg/cinema-fo',
-  telegramLink = 'https://t.me/cinema-fo',
-  enabled = true
-}) => {
+const FloatingSocialButtons: React.FC<FloatingSocialButtonsProps> = () => {
   const { settings: adminSettings } = useAdminSettings();
-  
-  // Use admin settings if available, otherwise use props
-  const currentDiscordLink = adminSettings?.appearance?.floatingSocialButtons?.discordUrl || discordLink;
-  const currentTelegramLink = adminSettings?.appearance?.floatingSocialButtons?.telegramUrl || telegramLink;
-  const isEnabled = adminSettings?.appearance?.floatingSocialButtons?.enabled ?? enabled;
   const [isVisible, setIsVisible] = useState(false);
-
+  
   useEffect(() => {
     // Only show on desktop (min-width: 1024px)
     const checkScreenSize = () => {
@@ -31,6 +20,23 @@ const FloatingSocialButtons: React.FC<FloatingSocialButtonsProps> = ({
 
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
+  
+  // Get floating button settings and social links
+  const floatingButtons = adminSettings?.appearance?.floatingSocialButtons;
+  const socialLinks = adminSettings?.content?.socialLinks;
+  
+  // If no admin settings exist or floating buttons not configured, don't show anything
+  if (!floatingButtons || !floatingButtons.enabled) {
+    return null;
+  }
+  
+  const isEnabled = floatingButtons.enabled;
+  const isDiscordEnabled = floatingButtons.discordEnabled;
+  const isTelegramEnabled = floatingButtons.telegramEnabled;
+  
+  // Use social links from content section (same as footer/navbar)
+  const currentDiscordLink = socialLinks?.discord;
+  const currentTelegramLink = socialLinks?.telegram;
 
   if (!isEnabled || !isVisible) {
     return null;
@@ -39,7 +45,7 @@ const FloatingSocialButtons: React.FC<FloatingSocialButtonsProps> = ({
   return (
     <div className="fixed right-6 bottom-6 z-40 hidden lg:flex flex-col gap-3">
       {/* Discord Button */}
-      {currentDiscordLink && (
+      {currentDiscordLink && isDiscordEnabled && (
         <a
           href={currentDiscordLink}
           target="_blank"
@@ -60,7 +66,7 @@ const FloatingSocialButtons: React.FC<FloatingSocialButtonsProps> = ({
       )}
 
       {/* Telegram Button */}
-      {currentTelegramLink && (
+      {currentTelegramLink && isTelegramEnabled && (
         <a
           href={currentTelegramLink}
           target="_blank"

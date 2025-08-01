@@ -14,6 +14,8 @@ interface AdminSettings {
     };
     floatingSocialButtons: {
       enabled: boolean;
+      discordEnabled: boolean;
+      telegramEnabled: boolean;
       discordUrl: string;
       telegramUrl: string;
     };

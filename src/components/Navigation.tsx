@@ -42,7 +42,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
     
     if (shouldShowAnnouncementPosition) {
       return `${adminSettings?.appearance?.announcementBar?.height || 48}px`;
-    } else {
+      } else {
       return '0px';
     }
   };
@@ -116,8 +116,8 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
     setIsMobileMenuOpen(false);
   };
 
-  // Get Discord link from admin settings
-  const discordLink = adminSettings?.appearance?.floatingSocialButtons?.discordUrl || 'https://discord.gg/cinema-fo';
+  // Get Discord link from admin settings (use content.socialLinks)
+  const discordLink = adminSettings?.content?.socialLinks?.discord || 'https://discord.gg/cinema-fo';
 
   // Search functionality with debounce
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);

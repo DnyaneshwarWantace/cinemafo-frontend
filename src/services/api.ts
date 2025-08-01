@@ -1,7 +1,23 @@
 import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
-const TMDB_API_KEY = '8265bd1679663a7ea12ac168da84d2e8'; // Fallback API key
+
+// Rotating API keys for fallback
+const TMDB_API_KEYS = import.meta.env.VITE_TMDB_API_KEYS 
+  ? import.meta.env.VITE_TMDB_API_KEYS.split(',').map(key => key.trim())
+  : [];
+
+let currentApiKeyIndex = 0;
+
+const getNextApiKey = () => {
+  if (TMDB_API_KEYS.length === 0) {
+    throw new Error('No TMDB API keys configured for frontend fallback. Please set VITE_TMDB_API_KEYS in your .env file');
+  }
+  const key = TMDB_API_KEYS[currentApiKeyIndex];
+  currentApiKeyIndex = (currentApiKeyIndex + 1) % TMDB_API_KEYS.length;
+  return key;
+};
+
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 // Client-side cache for movie details
@@ -90,13 +106,33 @@ export const cacheUtils = {
   }
 };
 
+// Simple in-memory cache for sharing data between pages
+const pageCache = new Map<string, { data: any; timestamp: number }>();
+const PAGE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+export const getCachedData = (key: string) => {
+  const cached = pageCache.get(key);
+  if (cached && Date.now() - cached.timestamp < PAGE_CACHE_DURATION) {
+    return cached.data;
+  }
+  return null;
+};
+
+export const setCachedData = (key: string, data: any) => {
+  pageCache.set(key, { data, timestamp: Date.now() });
+};
+
+export const clearCache = () => {
+  pageCache.clear();
+};
+
 // Fallback TMDB API functions
 const fetchFromTMDB = async (endpoint: string, params: any = {}) => {
   try {
     console.log(`🔄 Fallback: Fetching from TMDB API: ${endpoint}`);
     const response = await axios.get(`${TMDB_BASE_URL}${endpoint}`, {
       params: {
-        api_key: TMDB_API_KEY,
+        api_key: getNextApiKey(),
         language: 'en-US',
         ...params
       },

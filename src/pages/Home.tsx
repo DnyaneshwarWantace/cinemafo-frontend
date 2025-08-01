@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { Movie, TVShow } from '@/services/api';
+import api, { Movie, TVShow, getCachedData, setCachedData } from '@/services/api';
 import MovieCarousel from '@/components/MovieCarousel';
 import VideoPlayer from '@/components/VideoPlayer';
 import HeroSlider from '@/components/HeroSlider';
@@ -50,6 +50,12 @@ const Home = () => {
         setTrendingShows(trendingShows);
         setPopularShows(popularShows);
 
+        // Cache the data for reuse on other pages
+        setCachedData('trending_movies', trendingMovies);
+        setCachedData('popular_movies', popularMovies);
+        setCachedData('trending_shows', trendingShows);
+        setCachedData('popular_shows', popularShows);
+
         // Prefetch details for the first few items to make modal opening instant
         const prefetchDetails = async () => {
           try {
@@ -66,17 +72,8 @@ const Home = () => {
               ...popularShows.slice(0, 10)
             ];
 
-            // Prefetch movie details in background
-            moviesToPrefetch.forEach(movie => {
-              api.getMovieDetails(movie.id).catch(() => {}); // Silent fail for prefetch
-            });
-
-            // Prefetch show details in background
-            showsToPrefetch.forEach(show => {
-              api.getShowDetails(show.id).catch(() => {}); // Silent fail for prefetch
-            });
-            
-            console.log(`🚀 Prefetching ${moviesToPrefetch.length} movies and ${showsToPrefetch.length} shows`);
+            // No need to prefetch since backend now returns complete details
+            console.log(`✅ Loaded ${moviesToPrefetch.length} movies and ${showsToPrefetch.length} shows with complete details`);
           } catch (err) {
             // Silent fail for prefetch
             console.log('Prefetch completed with some errors (normal)');

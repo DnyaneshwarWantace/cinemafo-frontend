@@ -196,10 +196,10 @@ const Watchlist = () => {
       setTooltipTimeout(null);
     }
     
-    // Set timeout for 1.5 seconds
+    // Set timeout for 200ms (much faster)
     const timeout = setTimeout(() => {
       setTooltipItem(item);
-    }, 1500);
+    }, 200);
     
     setTooltipTimeout(timeout);
   };
@@ -222,9 +222,9 @@ const Watchlist = () => {
   };
 
   if (loading) {
-      return (
-    <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 watchlist-container">
+    return (
+      <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 watchlist-container">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
@@ -389,11 +389,20 @@ const Watchlist = () => {
                     {tooltipItem.overview}
                   </p>
                 )}
+                
+                {tooltipItem.cast && tooltipItem.cast.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-gray-400 text-xs">
+                      <span className="text-gray-500">Cast:</span> {tooltipItem.cast.slice(0, 3).map(actor => actor.name).join(', ')}
+                      {tooltipItem.cast.length > 3 && '...'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
           </div>
-        )}
+      )}
     </div>
   );
 };

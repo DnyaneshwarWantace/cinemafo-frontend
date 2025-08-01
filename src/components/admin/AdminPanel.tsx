@@ -25,6 +25,8 @@ interface AdminSettings {
     };
     floatingSocialButtons: {
       enabled: boolean;
+      discordEnabled: boolean;
+      telegramEnabled: boolean;
       discordUrl: string;
       telegramUrl: string;
     };
@@ -115,6 +117,24 @@ const adminApi = {
     
     if (!response.ok) {
       throw new Error('Failed to update social buttons settings');
+    }
+    
+    return response.json();
+  },
+
+  updateSocialLinks: async (socialLinks: any) => {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/social-links`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(socialLinks)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update social links');
     }
     
     return response.json();
@@ -245,6 +265,21 @@ const AdminPanel: React.FC = () => {
     onError: (error) => {
       setError('Failed to save social buttons settings. Please try again.');
       console.error('Error saving social buttons settings:', error);
+    }
+  });
+
+  const updateSocialLinksMutation = useMutation({
+    mutationFn: adminApi.updateSocialLinks,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminSettings'] });
+      toast({
+        title: "Success",
+        description: "Social links saved successfully!",
+      });
+    },
+    onError: (error) => {
+      setError('Failed to save social links. Please try again.');
+      console.error('Error saving social links:', error);
     }
   });
 
@@ -1173,84 +1208,160 @@ const AdminPanel: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="social" className="space-y-6">
+            {/* Social Media Links - Always Configurable */}
             <Card className="bg-gray-800/50 border-gray-700">
               <CardHeader>
                 <CardTitle className="text-white">Social Media Links</CardTitle>
                 <CardDescription className="text-gray-300">
-                  Update your social media and community links
+                  Configure social media links used in footer, header, and other components
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="text-white">Enable Floating Social Buttons</Label>
-                  <Switch
-                    checked={settings.appearance.floatingSocialButtons.enabled}
-                    onCheckedChange={(checked) => {
-                      setSettings(prev => prev ? {
-                        ...prev,
-                        appearance: {
-                          ...prev.appearance,
-                          floatingSocialButtons: {
-                            ...prev.appearance.floatingSocialButtons,
-                            enabled: checked
-                          }
+                <div>
+                  <Label htmlFor="socialDiscordUrl" className="text-white">Discord URL</Label>
+                  <Input
+                    id="socialDiscordUrl"
+                    value={settings.content.socialLinks?.discord || ''}
+                    onChange={(e) => setSettings(prev => prev ? {
+                      ...prev,
+                      content: {
+                        ...prev.content,
+                        socialLinks: {
+                          ...prev.content.socialLinks,
+                          discord: e.target.value
                         }
-                      } : null);
-                      updateSocialButtonsMutation.mutate({
-                        ...settings.appearance.floatingSocialButtons,
-                        enabled: checked
-                      });
-                    }}
+                      }
+                    } : null)}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="https://discord.gg/your-server"
                   />
                 </div>
+                <div>
+                  <Label htmlFor="socialTelegramUrl" className="text-white">Telegram URL</Label>
+                  <Input
+                    id="socialTelegramUrl"
+                    value={settings.content.socialLinks?.telegram || ''}
+                    onChange={(e) => setSettings(prev => prev ? {
+                      ...prev,
+                      content: {
+                        ...prev.content,
+                        socialLinks: {
+                          ...prev.content.socialLinks,
+                          telegram: e.target.value
+                        }
+                      }
+                    } : null)}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="https://t.me/your-channel"
+                  />
+                </div>
+                <Button 
+                  onClick={() => updateSocialLinksMutation.mutate(settings.content.socialLinks)}
+                  disabled={updateSocialLinksMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {updateSocialLinksMutation.isPending ? 'Saving...' : 'Save Social Links'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Floating Social Buttons - Separate Toggle */}
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Floating Social Buttons</CardTitle>
+                <CardDescription className="text-gray-300">
+                  Control the floating social media buttons that appear on the website
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-white">Enable Floating Social Buttons</Label>
+                    <Switch
+                      checked={settings.appearance.floatingSocialButtons.enabled}
+                      onCheckedChange={(checked) => {
+                        setSettings(prev => prev ? {
+                          ...prev,
+                          appearance: {
+                            ...prev.appearance,
+                            floatingSocialButtons: {
+                              ...prev.appearance.floatingSocialButtons,
+                              enabled: checked
+                            }
+                          }
+                        } : null);
+                        updateSocialButtonsMutation.mutate({
+                          ...settings.appearance.floatingSocialButtons,
+                          enabled: checked
+                        });
+                      }}
+                    />
+                  </div>
+                  
+                  {settings.appearance.floatingSocialButtons.enabled && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-white">Enable Discord Button</Label>
+                        <Switch
+                          checked={settings.appearance.floatingSocialButtons.discordEnabled}
+                          onCheckedChange={(checked) => {
+                            setSettings(prev => prev ? {
+                              ...prev,
+                              appearance: {
+                                ...prev.appearance,
+                                floatingSocialButtons: {
+                                  ...prev.appearance.floatingSocialButtons,
+                                  discordEnabled: checked
+                                }
+                              }
+                            } : null);
+                            updateSocialButtonsMutation.mutate({
+                              ...settings.appearance.floatingSocialButtons,
+                              discordEnabled: checked
+                            });
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label className="text-white">Enable Telegram Button</Label>
+                        <Switch
+                          checked={settings.appearance.floatingSocialButtons.telegramEnabled}
+                          onCheckedChange={(checked) => {
+                            setSettings(prev => prev ? {
+                              ...prev,
+                              appearance: {
+                                ...prev.appearance,
+                                floatingSocialButtons: {
+                                  ...prev.appearance.floatingSocialButtons,
+                                  telegramEnabled: checked
+                                }
+                              }
+                            } : null);
+                            updateSocialButtonsMutation.mutate({
+                              ...settings.appearance.floatingSocialButtons,
+                              telegramEnabled: checked
+                            });
+                          }}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+                
                 {settings.appearance.floatingSocialButtons.enabled && (
-                  <>
-                    <div>
-                      <Label htmlFor="discordUrl" className="text-white">Discord URL</Label>
-                      <Input
-                        id="discordUrl"
-                        value={settings.appearance.floatingSocialButtons.discordUrl}
-                        onChange={(e) => setSettings(prev => prev ? {
-                          ...prev,
-                          appearance: {
-                            ...prev.appearance,
-                            floatingSocialButtons: {
-                              ...prev.appearance.floatingSocialButtons,
-                              discordUrl: e.target.value
-                            }
-                          }
-                        } : null)}
-                        className="bg-gray-700 border-gray-600 text-white"
-                        placeholder="https://discord.gg/your-server"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="telegramUrl" className="text-white">Telegram URL</Label>
-                      <Input
-                        id="telegramUrl"
-                        value={settings.appearance.floatingSocialButtons.telegramUrl}
-                        onChange={(e) => setSettings(prev => prev ? {
-                          ...prev,
-                          appearance: {
-                            ...prev.appearance,
-                            floatingSocialButtons: {
-                              ...prev.appearance.floatingSocialButtons,
-                              telegramUrl: e.target.value
-                            }
-                          }
-                        } : null)}
-                        className="bg-gray-700 border-gray-600 text-white"
-                        placeholder="https://t.me/your-channel"
-                      />
-                    </div>
+                  <div className="pt-4 border-t border-gray-600">
+                    <p className="text-sm text-gray-400 mb-4">
+                      Floating buttons will use the social media links configured above
+                    </p>
                     <Button 
                       onClick={() => updateSocialButtonsMutation.mutate(settings.appearance.floatingSocialButtons)}
                       disabled={updateSocialButtonsMutation.isPending}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="bg-green-600 hover:bg-green-700"
                     >
-                      {updateSocialButtonsMutation.isPending ? 'Saving...' : 'Save Social Links'}
+                      {updateSocialButtonsMutation.isPending ? 'Saving...' : 'Save Floating Buttons'}
                     </Button>
-                  </>
+                  </div>
                 )}
               </CardContent>
             </Card>

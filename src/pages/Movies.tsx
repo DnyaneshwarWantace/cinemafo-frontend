@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import MovieCarousel from '@/components/MovieCarousel';
 import AdBanner from '@/components/AdBanner';
 import LoadingBar from '@/components/LoadingBar';
-import api, { Movie } from '@/services/api';
+import api, { Movie, getCachedData, setCachedData } from '@/services/api';
 import useAdminSettings from '@/hooks/useAdminSettings';
 
 const Movies = () => {
@@ -65,7 +65,7 @@ const Movies = () => {
     }
     const timeout = setTimeout(() => {
       setTooltipItem(item);
-    }, 800);
+    }, 200);
     setTooltipTimeout(timeout);
   };
   const handleTooltipMouseLeave = () => {
@@ -88,33 +88,44 @@ const Movies = () => {
     setLoading(true);
     setError(null);
     try {
-      const [trending, popular, topRated] = await Promise.all([
-        api.getTrendingMovies(),
-        api.getPopularMovies(),
-        api.getTopRatedMovies()
-      ]);
+      // Check for cached data first
+      const cachedTrending = getCachedData('trending_movies');
+      const cachedPopular = getCachedData('popular_movies');
+      
+      let trendingMovies, popularMovies, topRatedMovies;
+      
+      if (cachedTrending && cachedPopular) {
+        // Use cached data for trending and popular, only fetch top-rated
+        console.log('🚀 Using cached data for trending and popular movies');
+        trendingMovies = cachedTrending;
+        popularMovies = cachedPopular;
+        
+        const topRated = await api.getTopRatedMovies();
+        topRatedMovies = topRated.data?.results || [];
+      } else {
+        // Fetch all data if cache is not available
+        console.log('🔄 Fetching all movie data (no cache available)');
+        const [trending, popular, topRated] = await Promise.all([
+          api.getTrendingMovies(),
+          api.getPopularMovies(),
+          api.getTopRatedMovies()
+        ]);
 
-      const trendingMovies = trending.data?.results || [];
-      const popularMovies = popular.data?.results || [];
-      const topRatedMovies = topRated.data?.results || [];
+        trendingMovies = trending.data?.results || [];
+        popularMovies = popular.data?.results || [];
+        topRatedMovies = topRated.data?.results || [];
+        
+        // Cache the data for future use
+        setCachedData('trending_movies', trendingMovies);
+        setCachedData('popular_movies', popularMovies);
+      }
 
       setTrendingMovies(trendingMovies);
       setPopularMovies(popularMovies);
       setTopRatedMovies(topRatedMovies);
 
-      // Prefetch details for first few movies for instant modal loading
-      setTimeout(() => {
-        const moviesToPrefetch = [
-          ...trendingMovies.slice(0, 8),
-          ...popularMovies.slice(0, 8),
-          ...topRatedMovies.slice(0, 8)
-        ];
-        
-        console.log(`🚀 Prefetching ${moviesToPrefetch.length} movie details...`);
-        moviesToPrefetch.forEach(movie => {
-          api.getMovieDetails(movie.id).catch(() => {});
-        });
-      }, 100);
+      // No need to prefetch since backend now returns complete details
+      console.log(`✅ Loaded ${trendingMovies.length + popularMovies.length + topRatedMovies.length} movies with complete details`);
 
     } catch (error) {
       console.error('Error fetching movies:', error);
@@ -686,6 +697,15 @@ const Movies = () => {
                   <p className="text-gray-400 line-clamp-2 mt-2">
                     {tooltipItem.overview}
                   </p>
+                )}
+                
+                {tooltipItem.cast && tooltipItem.cast.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-gray-400 text-xs">
+                      <span className="text-gray-500">Cast:</span> {tooltipItem.cast.slice(0, 3).map(actor => actor.name).join(', ')}
+                      {tooltipItem.cast.length > 3 && '...'}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
