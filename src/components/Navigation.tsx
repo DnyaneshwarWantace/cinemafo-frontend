@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api, { Movie, TVShow } from '@/services/api';
 import useAdminSettings from '@/hooks/useAdminSettings';
 import { useAnnouncementVisibility } from '@/hooks/useAnnouncementVisibility';
+import MovieModal from './MovieModal';
+import TVShowPlayer from './TVShowPlayer';
 
 interface NavigationProps {
   inModalView?: boolean;
@@ -23,6 +25,8 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(-1);
   const [isNavbarHidden, setIsNavbarHidden] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
 
   // Get admin settings to check announcement bar status
   const { settings: adminSettings } = useAdminSettings();
@@ -178,16 +182,13 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
     setSelectedSearchIndex(-1);
     setIsMobileMenuOpen(false); // Close mobile menu when item is clicked
     
-    // Get current page to pass as 'from' parameter
-    const currentPage = location.pathname + location.search;
-    
-    // Navigate to the appropriate modal page
+    // Set the selected item to open as popup modal
     if ('title' in item) {
-      console.log('🎬 Navigating to movie modal for:', item.title);
-      navigate(`/movie-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
+      console.log('🎬 Opening movie modal for:', item.title);
+      setSelectedMovie(item);
     } else {
-      console.log('📺 Navigating to TV show modal for:', item.name);
-      navigate(`/tv-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
+      console.log('📺 Opening TV show modal for:', item.name);
+      setSelectedShow(item);
     }
   };
 
@@ -938,6 +939,22 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
             </div>
           </div>
         )}
+
+      {/* Movie Modal */}
+      {selectedMovie && (
+        <MovieModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+        />
+      )}
+
+      {/* TV Show Modal */}
+      {selectedShow && (
+        <TVShowPlayer
+          show={selectedShow}
+          onClose={() => setSelectedShow(null)}
+        />
+      )}
 
     </>
   );

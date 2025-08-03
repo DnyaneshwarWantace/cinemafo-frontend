@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
 
 // Rotating API keys for fallback
 const TMDB_API_KEYS = import.meta.env.VITE_TMDB_API_KEYS 
@@ -67,14 +67,68 @@ export const cacheUtils = {
 
   // Check if movie details are cached
   getMovieFromCache: (movieId: number) => {
+    // First check the specific movie details cache
     const cacheKey = getCacheKey('movie_details', movieId);
-    return getFromCache(cacheKey);
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      console.log(`🎬 Found movie ${movieId} in movie_details cache`);
+      return cached;
+    }
+    
+    // If not found, check if it's in any of the list caches (trending, popular, etc.)
+    const listCacheKeys = [
+      'trending_movies',
+      'popular_movies', 
+      'top_rated_movies',
+      'upcoming_movies',
+      'now_playing_movies'
+    ];
+    
+    for (const listKey of listCacheKeys) {
+      const listCache = getFromCache(listKey);
+      if (listCache && listCache.results) {
+        const movie = listCache.results.find((m: any) => m.id === movieId);
+        if (movie) {
+          console.log(`🎬 Found movie ${movieId} in ${listKey} cache`);
+          return movie;
+        }
+      }
+    }
+    
+    console.log(`🎬 Movie ${movieId} not found in any cache`);
+    return null;
   },
 
   // Check if show details are cached
   getShowFromCache: (showId: number) => {
+    // First check the specific show details cache
     const cacheKey = getCacheKey('show_details', showId);
-    return getFromCache(cacheKey);
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      console.log(`📺 Found show ${showId} in show_details cache`);
+      return cached;
+    }
+    
+    // If not found, check if it's in any of the list caches (trending, popular, etc.)
+    const listCacheKeys = [
+      'trending_shows',
+      'popular_shows',
+      'top_rated_shows'
+    ];
+    
+    for (const listKey of listCacheKeys) {
+      const listCache = getFromCache(listKey);
+      if (listCache && listCache.results) {
+        const show = listCache.results.find((s: any) => s.id === showId);
+        if (show) {
+          console.log(`📺 Found show ${showId} in ${listKey} cache`);
+          return show;
+        }
+      }
+    }
+    
+    console.log(`📺 Show ${showId} not found in any cache`);
+    return null;
   },
   
   getStats: () => ({

@@ -12,6 +12,7 @@ const Watchlist = () => {
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
 
+
   useEffect(() => {
     loadWatchlist();
   }, []);
@@ -119,8 +120,12 @@ const Watchlist = () => {
     const currentPage = location.pathname + location.search;
     
     if ('title' in item) {
+      // Get current page to pass as 'from' parameter  
+      const currentPage = location.pathname + location.search;
       navigate(`/movie-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
     } else {
+      // Get current page to pass as 'from' parameter  
+      const currentPage = location.pathname + location.search;
       navigate(`/tv-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
     }
   };
@@ -190,26 +195,23 @@ const Watchlist = () => {
     
     setTooltipPosition({ x, y });
     
-    // Clear any existing timeout
+    // Clear any existing timeout immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
     
-    // Set timeout for 200ms (much faster)
-    const timeout = setTimeout(() => {
-      setTooltipItem(item);
-    }, 200);
-    
-    setTooltipTimeout(timeout);
+    // Show tooltip immediately for better responsiveness
+    setTooltipItem(item);
   };
 
   const handleTooltipMouseLeave = () => {
-    // Clear timeout and hide tooltip immediately
+    // Clear any existing timeout immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
+    // Hide tooltip immediately for better responsiveness
     setTooltipItem(null);
   };
 

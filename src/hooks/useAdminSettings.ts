@@ -31,6 +31,7 @@ interface AdminSettings {
     };
   };
   ads: {
+    heroOverlayAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
     mainPageAd1: { enabled: boolean; imageUrl: string; clickUrl: string; };
     mainPageAd2: { enabled: boolean; imageUrl: string; clickUrl: string; };
     mainPageAd3: { enabled: boolean; imageUrl: string; clickUrl: string; };
@@ -56,7 +57,7 @@ const useAdminSettings = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/public/settings`);
+        const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/public/settings`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch settings');
@@ -120,7 +121,7 @@ const useAdminSettings = () => {
       setError(null);
       // Trigger refetch by updating timestamp
       const timestamp = Date.now();
-      fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/public/settings?t=${timestamp}`)
+      fetch(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:5000/api/admin'}/public/settings?t=${timestamp}`)
         .then(response => response.json())
         .then(data => {
           setSettings(data);

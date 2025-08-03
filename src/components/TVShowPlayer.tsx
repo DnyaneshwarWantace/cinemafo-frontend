@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import VideoPlayer from './VideoPlayer';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,6 +13,7 @@ import AdBanner from "./AdBanner";
 import MovieCarousel from "./MovieCarousel";
 import api, { Movie, TVShow, Episode } from "@/services/api";
 import useAdminSettings from '@/hooks/useAdminSettings';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 
 interface TVShowPlayerProps {
   show: TVShow;
@@ -28,7 +30,10 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [showExpandedDetails, setShowExpandedDetails] = useState(false);
+  const [castPage, setCastPage] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const { settings: adminSettings } = useAdminSettings();
+  const { updateProgress } = useWatchHistory();
 
   // Debug: Log the show data being passed
   console.log('TVShowPlayer received show data:', show);
@@ -99,14 +104,39 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   }, [show.id, selectedSeason]);
 
   const handlePlayEpisode = (episodeNumber: number) => {
-    // Navigate to TV show player page with current modal page as 'from' parameter
-    const title = encodeURIComponent(show.name || 'TV Show');
-    const currentModalPath = `/tv-modal/${show.id}`;
-    const playerUrl = `/tv/${show.id}?title=${title}&season=${selectedSeason}&episode=${episodeNumber}&from=${encodeURIComponent(currentModalPath)}`;
-    console.log('📺 TVShowPlayer: Navigating to player:', playerUrl);
-    console.log('📺 TVShowPlayer: Show ID:', show.id, 'Title:', show.name, 'Season:', selectedSeason, 'Episode:', episodeNumber);
-    navigate(playerUrl);
-    // Don't call onClose() here - let the navigation happen naturally
+    setSelectedEpisode(episodeNumber);
+    setIsPlaying(true);
+  };
+
+  // Auto-play next episode function
+  const handleNextEpisode = () => {
+    const currentEpisodes = seasonDetails?.episodes || [];
+    const currentEpisodeIndex = currentEpisodes.findIndex(ep => ep.episode_number === selectedEpisode);
+    
+    if (currentEpisodeIndex >= 0 && currentEpisodeIndex < currentEpisodes.length - 1) {
+      // Next episode in same season
+      const nextEpisode = currentEpisodes[currentEpisodeIndex + 1];
+      console.log(`🎬 Auto-playing next episode: S${selectedSeason}E${nextEpisode.episode_number}`);
+      setSelectedEpisode(nextEpisode.episode_number);
+      // Keep playing state true to continue
+    } else {
+      // Check if there's a next season
+      const seasons = getSeasonOptions();
+      const currentSeasonIndex = seasons.findIndex(s => s.season_number === selectedSeason);
+      
+      if (currentSeasonIndex >= 0 && currentSeasonIndex < seasons.length - 1) {
+        // Next season, first episode
+        const nextSeason = seasons[currentSeasonIndex + 1];
+        console.log(`🎬 Auto-playing next season: S${nextSeason.season_number}E1`);
+        setSelectedSeason(nextSeason.season_number);
+        setSelectedEpisode(1);
+        // Keep playing state true to continue
+      } else {
+        // No more episodes/seasons, stop auto-play
+        console.log('🎬 No more episodes to auto-play');
+        setIsPlaying(false);
+      }
+    }
   };
 
 
@@ -158,6 +188,23 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   // Get all cast members
   const mainCast = showDetails?.cast || [];
   
+  // Cast carousel logic
+  const CAST_PER_PAGE = 12;
+  const totalCastPages = Math.ceil(mainCast.length / CAST_PER_PAGE);
+  const currentCastPage = mainCast.slice(castPage * CAST_PER_PAGE, (castPage + 1) * CAST_PER_PAGE);
+
+  const nextCastPage = () => {
+    if (castPage < totalCastPages - 1) {
+      setCastPage(castPage + 1);
+    }
+  };
+
+  const prevCastPage = () => {
+    if (castPage > 0) {
+      setCastPage(castPage - 1);
+    }
+  };
+  
   // Get director from crew
   const director = showDetails?.crew?.find(member => 
     member.job === 'Director' || member.department === 'Directing'
@@ -202,6 +249,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
         }`}
         onClick={(e) => e.stopPropagation()}
       >
+
         {/* Header with Back Button */}
         <div className="absolute top-0 left-0 right-0 z-20 h-16 bg-gradient-to-b from-black/50 to-transparent">
           <button
@@ -301,6 +349,8 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                       </>
                     )}
                   </Button>
+
+
                 </div>
 
               {/* Ad Banner - Moved below Play S1E1 button */}
@@ -516,6 +566,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
                             <div className="flex items-center gap-2 mb-1">
                           <span className="text-gray-400 text-xs sm:text-sm">E{episode.episode_number}</span>
                           <h4 className="font-medium truncate text-white text-sm sm:text-base">{episode.name}</h4>
+
                             </div>
                         <p className="text-gray-300 text-xs sm:text-sm line-clamp-2 mb-2">
                               {episode.overview || 'No description available.'}
@@ -550,6 +601,34 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
           </div>
         </div>
       </div>
+
+      {/* Video Player */}
+      {isPlaying && (
+        <VideoPlayer
+          tmdbId={show.id}
+          type="tv"
+          title={show.name || 'TV Show'}
+          season={selectedSeason}
+          episode={selectedEpisode}
+          onClose={() => setIsPlaying(false)}
+          onNextEpisode={handleNextEpisode}
+          onProgressUpdate={(currentTime, duration, videoElement) => {
+            console.log('📺 TV Show progress update:', { 
+              currentTime, 
+              duration, 
+              show: show.name, 
+              season: selectedSeason, 
+              episode: selectedEpisode 
+            });
+            
+            // Get episode title if available
+            const currentEpisode = seasonDetails?.episodes?.find(ep => ep.episode_number === selectedEpisode);
+            const episodeTitle = currentEpisode?.name;
+            
+            updateProgress(show, currentTime, duration, 'tv', selectedSeason, selectedEpisode, episodeTitle, videoElement);
+          }}
+        />
+      )}
 
       {/* Hide scrollbar styles */}
       <style dangerouslySetInnerHTML={{

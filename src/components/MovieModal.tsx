@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import VideoPlayer from './VideoPlayer';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,6 +14,7 @@ import AdBanner from "./AdBanner";
 import MovieCarousel from "./MovieCarousel";
 import api, { Movie, TVShow, cacheUtils } from "@/services/api";
 import useAdminSettings from '@/hooks/useAdminSettings';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 
 interface MovieModalProps {
   movie: Movie;
@@ -26,7 +28,9 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
   const [showTVShowPlayer, setShowTVShowPlayer] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [castPage, setCastPage] = useState(0);
   const { settings: adminSettings } = useAdminSettings();
+  const { updateProgress } = useWatchHistory();
 
   // No need to check for detailed data anymore - backend provides complete data
   console.log(`✅ Movie ${initialMovie.id} loaded with complete data from backend`);
@@ -59,6 +63,8 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
 
 
 
+  const [showFullMovie, setShowFullMovie] = useState(false);
+
   const handleWatchNow = () => {
     const releaseDate = movie.release_date || movie.first_air_date;
     
@@ -81,14 +87,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
       onClose();
       setShowTVShowPlayer(true);
     } else {
-      // Navigate to movie player page with current modal page as 'from' parameter
-      const title = encodeURIComponent(movie.title || movie.name || 'Movie');
-      const currentModalPath = `/movie-modal/${movie.id}`;
-      const playerUrl = `/movie/${movie.id}?title=${title}&from=${encodeURIComponent(currentModalPath)}`;
-      console.log('🎬 MovieModal: Navigating to player:', playerUrl);
-      console.log('🎬 MovieModal: Movie ID:', movie.id, 'Title:', movie.title);
-      navigate(playerUrl);
-      // Don't call onClose() here - let the navigation happen naturally
+      setShowFullMovie(true);
     }
   };
 
@@ -146,6 +145,22 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
     if (!movie.cast) return [];
     return movie.cast; // Show all cast members
   }, [movie.cast]);
+
+  const CAST_PER_PAGE = 12;
+  const totalCastPages = Math.ceil(mainCast.length / CAST_PER_PAGE);
+  const currentCastPage = mainCast.slice(castPage * CAST_PER_PAGE, (castPage + 1) * CAST_PER_PAGE);
+
+  const nextCastPage = () => {
+    if (castPage < totalCastPages - 1) {
+      setCastPage(castPage + 1);
+    }
+  };
+
+  const prevCastPage = () => {
+    if (castPage > 0) {
+      setCastPage(castPage - 1);
+    }
+  };
 
   const isUpcoming = useMemo(() => {
     const releaseDate = new Date(movie.release_date || movie.first_air_date);
@@ -385,10 +400,13 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                       <div>
                       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
                           <Users className="w-5 h-5" />
-                          Cast
+                          Cast ({mainCast.length})
                         </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                          {mainCast.map(actor => (
+                      
+                      {/* Cast Carousel */}
+                      <div className="relative">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                          {currentCastPage.map(actor => (
                             <div key={actor.id} className="flex items-center gap-3">
                               {actor.profile_path ? (
                                 <img
@@ -408,6 +426,40 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
                             </div>
                           ))}
                         </div>
+                        
+                        {/* Cast Navigation Arrows */}
+                        {totalCastPages > 1 && (
+                          <div className="flex justify-center items-center gap-4 mt-4">
+                            <button
+                              onClick={prevCastPage}
+                              disabled={castPage === 0}
+                              className={`p-2 rounded-full transition-all duration-200 ${
+                                castPage === 0 
+                                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
+                            >
+                              <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            
+                            <span className="text-sm text-gray-300">
+                              {castPage + 1} / {totalCastPages}
+                            </span>
+                            
+                            <button
+                              onClick={nextCastPage}
+                              disabled={castPage === totalCastPages - 1}
+                              className={`p-2 rounded-full transition-all duration-200 ${
+                                castPage === totalCastPages - 1 
+                                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       </div>
                     </>
                   )}
@@ -421,6 +473,19 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
         </div>
       </div>
           </div>
+
+      {/* Video Player */}
+      {showFullMovie && (
+        <VideoPlayer
+          tmdbId={movie.id}
+          title={movie.title || movie.name || 'Movie'}
+          onClose={() => setShowFullMovie(false)}
+          onProgressUpdate={(currentTime, duration, videoElement) => {
+            console.log('🎬 Movie progress update:', { currentTime, duration, movie: movie.title });
+            updateProgress(movie, currentTime, duration, 'movie', undefined, undefined, undefined, videoElement);
+          }}
+        />
+      )}
 
       {/* TV Show Player */}
       {showTVShowPlayer && movie.media_type === 'tv' && (

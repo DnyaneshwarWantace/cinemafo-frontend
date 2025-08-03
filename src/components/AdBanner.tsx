@@ -62,7 +62,7 @@ const AdBanner: React.FC<AdBannerProps> = ({
   }
 
   return (
-    <div className={`relative max-w-sm md:max-w-md lg:max-w-lg mx-auto ${className}`}>
+    <div className={`relative max-w-md mx-auto ${className}`}>
       {/* Sponsored label */}
       <div className="absolute top-1 left-1 z-10">
         <span className="bg-black/70 text-white text-xs px-1.5 py-0.5 rounded text-[10px]">
@@ -70,18 +70,16 @@ const AdBanner: React.FC<AdBannerProps> = ({
         </span>
       </div>
 
-
-
       {/* Ad image */}
       <div 
-        className="cursor-pointer relative overflow-hidden rounded-lg w-full h-32"
+        className="cursor-pointer relative overflow-hidden rounded-lg w-full"
         onClick={handleAdClick}
         title="Click to visit advertiser"
       >
         <img
           src={imageUrl}
           alt="Advertisement"
-          className="w-full h-full object-cover rounded-lg shadow-md transition-all duration-300 hover:shadow-lg"
+          className="w-full h-auto max-h-48 object-contain rounded-lg shadow-md transition-all duration-300 hover:shadow-lg"
           onError={() => setError('Failed to load ad image')}
           loading="lazy"
         />

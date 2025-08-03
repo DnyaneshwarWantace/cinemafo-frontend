@@ -72,44 +72,7 @@ export const useWatchHistory = () => {
     }
   }, [watchHistory, isInitialized]);
 
-  // Refresh watch history when page becomes visible (user returns from player)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && isInitialized) {
-        try {
-          const stored = localStorage.getItem('watchHistory');
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            setWatchHistory(parsed);
-          }
-        } catch (error) {
-          console.error('Error refreshing watch history:', error);
-        }
-      }
-    };
 
-    const handleFocus = () => {
-      if (isInitialized) {
-        try {
-          const stored = localStorage.getItem('watchHistory');
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            setWatchHistory(parsed);
-          }
-        } catch (error) {
-          console.error('Error refreshing watch history:', error);
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [isInitialized]);
 
   // Generate thumbnail from video element
   const generateThumbnail = async (videoElement: HTMLVideoElement, time: number): Promise<string> => {

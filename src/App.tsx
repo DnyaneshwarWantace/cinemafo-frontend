@@ -14,8 +14,7 @@ import Shows from './pages/Shows';
 import Search from './pages/Search';
 import NotFound from './pages/NotFound';
 import Watchlist from './pages/Watchlist';
-import MoviePlayer from './pages/MoviePlayer';
-import TVShowPlayerPage from './pages/TVShowPlayerPage';
+
 import MovieModalPage from './pages/MovieModalPage';
 import TVShowModalPage from './pages/TVShowModalPage';
 import AdminPanel from './components/admin/AdminPanel';
@@ -79,8 +78,7 @@ function App() {
             <Route path="/search" element={<Search />} />
             <Route path="/watchlist" element={<Watchlist />} />
             <Route path="/watch" element={<VideoPlayer />} />
-            <Route path="/movie/:id" element={<MoviePlayer />} />
-            <Route path="/tv/:id" element={<TVShowPlayerPage />} />
+            
             <Route path="/movie-modal/:id" element={<MovieModalPage />} />
             <Route path="/tv-modal/:id" element={<TVShowModalPage />} />
             <Route path="/admin" element={

@@ -9,6 +9,8 @@ import api, { Movie, TVShow } from '@/services/api';
 import LoadingBar from '@/components/LoadingBar';
 import useAdminSettings from '@/hooks/useAdminSettings';
 import { useSearchParams } from 'react-router-dom';
+import MovieModal from '@/components/MovieModal';
+import TVShowPlayer from '@/components/TVShowPlayer';
 
 const Search = () => {
   const [searchParams] = useSearchParams();
@@ -27,6 +29,8 @@ const Search = () => {
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const [watchlistUpdate, setWatchlistUpdate] = useState(0);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
 
   const hideTooltip = () => {
     if (tooltipTimeout) {
@@ -195,13 +199,10 @@ const Search = () => {
   };
 
   const handleItemClick = (item: Movie | TVShow) => {
-    // Get current page to pass as 'from' parameter  
-    const currentPage = location.pathname + location.search;
-    
     if ('title' in item) {
-      navigate(`/movie-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
+      setSelectedMovie(item);
     } else {
-      navigate(`/tv-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
+      setSelectedShow(item);
     }
   };
 
@@ -602,6 +603,22 @@ const Search = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Movie Modal */}
+      {selectedMovie && (
+        <MovieModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+        />
+      )}
+
+      {/* TV Show Modal */}
+      {selectedShow && (
+        <TVShowPlayer
+          show={selectedShow}
+          onClose={() => setSelectedShow(null)}
+        />
       )}
     </div>
   );

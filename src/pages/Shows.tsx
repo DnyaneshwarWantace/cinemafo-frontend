@@ -7,6 +7,7 @@ import AdBanner from '@/components/AdBanner';
 import api, { TVShow, getCachedData, setCachedData } from '@/services/api';
 import LoadingBar from '@/components/LoadingBar';
 import useAdminSettings from '@/hooks/useAdminSettings';
+import TVShowPlayer from '@/components/TVShowPlayer';
 
 const Shows = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const Shows = () => {
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const [watchlistUpdate, setWatchlistUpdate] = useState(0);
+  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
 
   const handleMouseEnter = (e: React.MouseEvent, item: TVShow) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -59,20 +61,22 @@ const Shows = () => {
     
     setTooltipPosition({ x, y });
     
+    // Clear any existing timeout immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
-    const timeout = setTimeout(() => {
-      setTooltipItem(item);
-    }, 200);
-    setTooltipTimeout(timeout);
+    
+    // Show tooltip immediately for better responsiveness
+    setTooltipItem(item);
   };
   const handleTooltipMouseLeave = () => {
+    // Clear any existing timeout immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
+    // Hide tooltip immediately for better responsiveness
     setTooltipItem(null);
   };
 
@@ -105,11 +109,11 @@ const Shows = () => {
       } else {
         // Fetch all data if cache is not available
         console.log('🔄 Fetching all show data (no cache available)');
-        const [trending, popular, topRated] = await Promise.all([
-          api.getTrendingShows(),
-          api.getPopularShows(),
-          api.getTopRatedShows()
-        ]);
+      const [trending, popular, topRated] = await Promise.all([
+        api.getTrendingShows(),
+        api.getPopularShows(),
+        api.getTopRatedShows()
+      ]);
 
         trendingShows = trending.data?.results || [];
         popularShows = popular.data?.results || [];
@@ -214,9 +218,7 @@ const Shows = () => {
   }, [tooltipTimeout, searchResults]);
 
   const handleShowClick = (show: TVShow) => {
-    // Get current page to pass as 'from' parameter  
-    const currentPage = location.pathname + location.search;
-    navigate(`/tv-modal/${show.id}?from=${encodeURIComponent(currentPage)}`);
+    setSelectedShow(show);
   };
 
   // Search functionality
@@ -479,29 +481,29 @@ const Shows = () => {
         {/* Shows Content */}
         {!loading && (
           <div className="space-y-8">
-            <section>
+                <section>
               <MovieCarousel
-                title="Trending TV Shows"
-                items={trendingShows}
+                    title="Trending TV Shows"
+                    items={trendingShows}
                 onItemClick={handleShowClick}
               />
-            </section>
+                </section>
 
-            <section>
+                <section>
               <MovieCarousel
-                title="Popular TV Shows"
-                items={popularShows}
+                    title="Popular TV Shows"
+                    items={popularShows}
                 onItemClick={handleShowClick}
               />
-            </section>
+                </section>
 
-            <section>
+                <section>
               <MovieCarousel
-                title="Top Rated TV Shows"
-                items={topRatedShows}
+                    title="Top Rated TV Shows"
+                    items={topRatedShows}
                 onItemClick={handleShowClick}
               />
-            </section>
+                </section>
 
             {/* Bottom Ad */}
             {adminSettings?.ads?.showsPageBottomAd?.enabled && (
@@ -589,17 +591,17 @@ const Shows = () => {
                             <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                               <Star className="w-3 h-3" />
                               {show.vote_average.toFixed(1)}
-                            </div>
+                        </div>
                           )}
                           
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
                             <div>
                               <h3 className="text-white font-semibold text-sm line-clamp-2">
                                 {getItemTitle(show)}
-                              </h3>
+                          </h3>
                               <p className="text-gray-300 text-xs mt-1">
                                 {formatReleaseDate(getItemReleaseDate(show))}
-                              </p>
+                          </p>
                             </div>
                           </div>
                         </div>
@@ -617,38 +619,38 @@ const Shows = () => {
                   {!loading && (
             <div className="space-y-8">
               <section>
-                <MovieCarousel
-                  title="Trending TV Shows"
-                  items={trendingShows}
-                  onItemClick={handleShowClick}
-                />
-              </section>
+                    <MovieCarousel
+                      title="Trending TV Shows"
+                      items={trendingShows}
+                      onItemClick={handleShowClick}
+                    />
+                  </section>
 
               <section>
-                <MovieCarousel
-                  title="Popular TV Shows"
-                  items={popularShows}
-                  onItemClick={handleShowClick}
-                />
-              </section>
+                    <MovieCarousel
+                      title="Popular TV Shows"
+                      items={popularShows}
+                      onItemClick={handleShowClick}
+                    />
+                  </section>
 
               <section>
-                <MovieCarousel
-                  title="Top Rated TV Shows"
-                  items={topRatedShows}
-                  onItemClick={handleShowClick}
-                />
-              </section>
+                    <MovieCarousel
+                      title="Top Rated TV Shows"
+                      items={topRatedShows}
+                      onItemClick={handleShowClick}
+              />
+                </section>
 
-              {/* Bottom Ad */}
-              {adminSettings?.ads?.showsPageBottomAd?.enabled && (
+        {/* Bottom Ad */}
+          {adminSettings?.ads?.showsPageBottomAd?.enabled && (
                 <div className="mb-8">
-                  <AdBanner 
-                    adKey="showsPageBottomAd" 
-                    imageUrl={adminSettings.ads.showsPageBottomAd.imageUrl}
-                    clickUrl={adminSettings.ads.showsPageBottomAd.clickUrl}
-                    enabled={adminSettings.ads.showsPageBottomAd.enabled}
-                  />
+          <AdBanner 
+            adKey="showsPageBottomAd" 
+                imageUrl={adminSettings.ads.showsPageBottomAd.imageUrl}
+                clickUrl={adminSettings.ads.showsPageBottomAd.clickUrl}
+                enabled={adminSettings.ads.showsPageBottomAd.enabled}
+          />
                 </div>
               )}
             </div>
@@ -720,6 +722,14 @@ const Shows = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* TV Show Modal */}
+      {selectedShow && (
+        <TVShowPlayer
+          show={selectedShow}
+          onClose={() => setSelectedShow(null)}
+        />
       )}
     </div>
   );

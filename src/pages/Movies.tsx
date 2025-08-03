@@ -7,6 +7,7 @@ import AdBanner from '@/components/AdBanner';
 import LoadingBar from '@/components/LoadingBar';
 import api, { Movie, getCachedData, setCachedData } from '@/services/api';
 import useAdminSettings from '@/hooks/useAdminSettings';
+import MovieModal from '@/components/MovieModal';
 
 const Movies = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const Movies = () => {
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const [watchlistUpdate, setWatchlistUpdate] = useState(0);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
   const handleMouseEnter = (e: React.MouseEvent, item: Movie) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -59,20 +61,22 @@ const Movies = () => {
     
     setTooltipPosition({ x, y });
     
+    // Clear any existing timeout immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
-    const timeout = setTimeout(() => {
-      setTooltipItem(item);
-    }, 200);
-    setTooltipTimeout(timeout);
+    
+    // Show tooltip immediately for better responsiveness
+    setTooltipItem(item);
   };
   const handleTooltipMouseLeave = () => {
+    // Clear any existing timeout immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
+    // Hide tooltip immediately for better responsiveness
     setTooltipItem(null);
   };
 
@@ -105,11 +109,11 @@ const Movies = () => {
       } else {
         // Fetch all data if cache is not available
         console.log('🔄 Fetching all movie data (no cache available)');
-        const [trending, popular, topRated] = await Promise.all([
-          api.getTrendingMovies(),
-          api.getPopularMovies(),
-          api.getTopRatedMovies()
-        ]);
+      const [trending, popular, topRated] = await Promise.all([
+        api.getTrendingMovies(),
+        api.getPopularMovies(),
+        api.getTopRatedMovies()
+      ]);
 
         trendingMovies = trending.data?.results || [];
         popularMovies = popular.data?.results || [];
@@ -206,9 +210,7 @@ const Movies = () => {
   }, [tooltipTimeout, searchResults]);
 
   const handleMovieClick = (movie: Movie) => {
-    // Get current page to pass as 'from' parameter  
-    const currentPage = location.pathname + location.search;
-    navigate(`/movie-modal/${movie.id}?from=${encodeURIComponent(currentPage)}`);
+    setSelectedMovie(movie);
   };
 
   // Search functionality
@@ -581,17 +583,17 @@ const Movies = () => {
                             <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                               <Star className="w-3 h-3" />
                               {movie.vote_average.toFixed(1)}
-                            </div>
+                        </div>
                           )}
                           
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
                             <div>
                               <h3 className="text-white font-semibold text-sm line-clamp-2">
                                 {getItemTitle(movie)}
-                              </h3>
+                          </h3>
                               <p className="text-gray-300 text-xs mt-1">
                                 {formatReleaseDate(getItemReleaseDate(movie))}
-                              </p>
+                          </p>
                             </div>
                           </div>
                         </div>
@@ -711,6 +713,14 @@ const Movies = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Movie Modal */}
+      {selectedMovie && (
+        <MovieModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+        />
       )}
     </div>
   );

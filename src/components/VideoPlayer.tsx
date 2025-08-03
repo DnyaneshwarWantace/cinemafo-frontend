@@ -228,7 +228,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
       
       // Test backend connectivity first (optional)
       try {
@@ -993,6 +993,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       });
       video.addEventListener('pause', () => setIsPlaying(false));
       
+      // Auto-play next episode when video ends (for TV shows only)
+      video.addEventListener('ended', () => {
+        console.log('🎬 Video ended - checking if auto-play next episode');
+        if (type === 'tv' && onNextEpisode) {
+          console.log('🎬 Auto-playing next episode');
+          onNextEpisode();
+        }
+      });
+      
       video.addEventListener('error', (videoError) => {
         console.error('Video element error:', videoError);
         const iframeSource = streamingSources.find(s => s.type === 'iframe');
@@ -1020,6 +1029,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           video.removeEventListener('timeupdate', () => setCurrentTime(video.currentTime));
           video.removeEventListener('play', () => setIsPlaying(true));
           video.removeEventListener('pause', () => setIsPlaying(false));
+          video.removeEventListener('ended', () => {
+            console.log('🎬 Video ended - checking if auto-play next episode');
+            if (type === 'tv' && onNextEpisode) {
+              console.log('🎬 Auto-playing next episode');
+              onNextEpisode();
+            }
+          });
           video.removeEventListener('error', (videoError) => {
             console.error('Video element error:', videoError);
             const iframeSource = streamingSources.find(s => s.type === 'iframe');
@@ -1486,7 +1502,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
             {/* Movie Title - Top Center */}
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 text-center pointer-events-auto">
-                <h1 className="text-white text-xl font-bold">{title}</h1>
+                <h1 className="text-white text-xl font-bold">
+                  {title}
+                  {type === 'tv' && season && episode && (
+                    <span className="text-gray-300 text-lg ml-2">S{season}E{episode}</span>
+                  )}
+                </h1>
               </div>
               
             {/* Top Right Controls */}
@@ -1595,7 +1616,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                     </Button>
                     <div 
-                      className="relative w-20 h-2"
+                      className="relative w-20 h-2 hidden sm:block"
                       onClick={(e) => e.stopPropagation()}
                       onMouseDown={(e) => e.stopPropagation()}
                       onMouseUp={(e) => e.stopPropagation()}
@@ -1628,12 +1649,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
                   </div>
-                </div>
-
-                  {/* Time Display */}
-                  <div className="text-white text-sm">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </div>
+                                  </div>
                 </div>
                 
                 <div className="flex items-center gap-4">

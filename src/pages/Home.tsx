@@ -10,6 +10,8 @@ import LoadingBar from '@/components/LoadingBar';
 import useAdminSettings from '@/hooks/useAdminSettings';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import MovieModal from '@/components/MovieModal';
+import TVShowPlayer from '@/components/TVShowPlayer';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -20,6 +22,8 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [continueWatchingKey, setContinueWatchingKey] = useState(0);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
   const { settings: adminSettings } = useAdminSettings();
   const { getContinueWatching, updateProgress, removeFromHistory, getThumbnailUrl, watchHistory } = useWatchHistory();
 
@@ -123,30 +127,27 @@ const Home = () => {
   }, []);
 
   const handleContentClick = (content: Movie | TVShow) => {
-    // Get current page to pass as 'from' parameter  
-    const currentPage = location.pathname + location.search;
-    
     // If it has a title, it's a movie; if it has a name, it's a show
     if ('title' in content) {
-      navigate(`/movie-modal/${content.id}?from=${encodeURIComponent(currentPage)}`);
+      setSelectedMovie(content);
     } else {
-      navigate(`/tv-modal/${content.id}?from=${encodeURIComponent(currentPage)}`);
+      setSelectedShow(content);
     }
   };
 
+  const [playingContent, setPlayingContent] = useState<any>(null);
+
   const handleContinueWatchingClick = async (historyItem: any) => {
     try {
-      // Navigate to the appropriate route instead of opening modal
-      const currentPage = window.location.pathname;
-      if (historyItem.type === 'movie') {
-        const title = encodeURIComponent(historyItem.title || 'Movie');
-        navigate(`/movie/${historyItem.id}?title=${title}&time=${historyItem.currentTime}&from=${encodeURIComponent(currentPage)}`);
-      } else {
-        const title = encodeURIComponent(historyItem.title || 'TV Show');
-        navigate(`/tv/${historyItem.id}?title=${title}&season=${historyItem.season}&episode=${historyItem.episode}&time=${historyItem.currentTime}&from=${encodeURIComponent(currentPage)}`);
-      }
+      setPlayingContent(historyItem);
     } catch (error) {
       console.error('Error handling continue watching click:', error);
+    }
+  };
+
+  const handleProgressUpdate = (progress: number) => {
+    if (playingContent) {
+      updateProgress(playingContent.id, progress, playingContent.type, playingContent.season, playingContent.episode);
     }
   };
 
@@ -192,13 +193,32 @@ const Home = () => {
         />
       </section>
 
-      {/* Continue Watching Section - Overlaps with Hero */}
+      {/* Hero Overlay Ad - Above Continue Watching */}
+      {!loading && adminSettings?.ads?.heroOverlayAd?.enabled && (
+        <section className="relative -mt-32 lg:-mt-32 z-10">
+          <div className="bg-gradient-to-t from-black via-black/90 to-transparent pt-2 pb-4">
+            <div className="w-full px-4 sm:px-6 lg:px-8">
+              <div className="max-w-4xl mx-auto">
+                <AdBanner 
+                  adKey="heroOverlayAd"
+                  imageUrl={adminSettings.ads.heroOverlayAd.imageUrl}
+                  clickUrl={adminSettings.ads.heroOverlayAd.clickUrl}
+                  enabled={adminSettings.ads.heroOverlayAd.enabled}
+                  className="rounded-lg shadow-2xl"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Continue Watching Section - Moved down to avoid overlap with hero ad */}
       {!loading && (() => {
         try {
           const continueWatchingItems = getContinueWatching(10);
           return continueWatchingItems.length > 0 ? (
         <section className="relative -mt-32 lg:-mt-32 z-10">
-          <div className="bg-gradient-to-t from-black via-black/90 to-transparent pt-8 pb-8">
+          <div className="bg-gradient-to-t from-black via-black/90 to-transparent pt-40 pb-8">
             <div className="w-full px-4 sm:px-6 lg:px-8">
                   <ContinueWatching
                     key={continueWatchingKey}
@@ -309,8 +329,34 @@ const Home = () => {
         )}
       </div>
 
+      {/* Video Player Modal */}
+      {playingContent && (
+        <VideoPlayer
+          tmdbId={playingContent.id}
+          title={playingContent.title || 'Content'}
+          season={playingContent.season}
+          episode={playingContent.episode}
+          initialTime={playingContent.currentTime}
+          onClose={() => setPlayingContent(null)}
+          onProgressUpdate={handleProgressUpdate}
+        />
+      )}
 
+      {/* Movie Modal */}
+      {selectedMovie && (
+        <MovieModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
+        />
+      )}
 
+      {/* TV Show Modal */}
+      {selectedShow && (
+        <TVShowPlayer
+          show={selectedShow}
+          onClose={() => setSelectedShow(null)}
+        />
+      )}
 
     </div>
     </ErrorBoundary>

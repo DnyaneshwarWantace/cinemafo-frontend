@@ -57,6 +57,8 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ items, onItemClick }) => {
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
       </div>
 
+
+
       {/* Content */}
       <div className="absolute inset-0 p-4 sm:p-8 md:p-16 z-10 flex flex-col justify-center h-full max-w-screen-xl mx-auto pt-20 sm:pt-24 md:pt-28 lg:pt-0">
 
