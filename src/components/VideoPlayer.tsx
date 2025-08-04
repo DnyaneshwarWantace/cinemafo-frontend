@@ -717,7 +717,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }
               }
             });
-          } else {
+    } else {
             // Fallback for devices without screen orientation API
             console.log('Screen orientation API not supported');
           }
@@ -1788,7 +1788,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
                   </div>
-                                  </div>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-4">

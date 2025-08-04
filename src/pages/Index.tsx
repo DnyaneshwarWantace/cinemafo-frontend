@@ -13,6 +13,7 @@ import MovieModal from "@/components/MovieModal";
 import LoadingBar from "@/components/LoadingBar";
 import AdBanner from "@/components/AdBanner";
 import api from "@/services/api";
+import useAdminSettings from "@/hooks/useAdminSettings";
 
 const genres = [
   { id: 28, name: 'Action' },
@@ -62,6 +63,7 @@ const Index = () => {
   const [sortBy, setSortBy] = useState('popularity.desc');
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { settings: adminSettings } = useAdminSettings();
 
   const fetchMovies = async (endpoint: string) => {
     // Use backend API instead of direct TMDB calls
@@ -239,14 +241,17 @@ const Index = () => {
       <div className="lg:hidden">
         <div className="container mx-auto px-4 py-8 pt-0 bg-black">
         {/* Home Page Ad */}
-        <div className="mb-8">
-          <AdBanner 
-            adKey="homePageAd" 
-            imageUrl="https://picsum.photos/400/200?random=home-page"
-            clickUrl="https://example.com"
-            enabled={true}
-          />
-        </div>
+        {adminSettings?.ads?.mainPageAd1?.enabled && (
+          <div className="mb-8">
+            <AdBanner 
+              adKey="mainPageAd1" 
+              imageUrl={adminSettings.ads.mainPageAd1.imageUrl}
+                              cloudinaryUrl={adminSettings.ads.mainPageAd1.cloudinaryUrl}
+              clickUrl={adminSettings.ads.mainPageAd1.clickUrl}
+              enabled={adminSettings.ads.mainPageAd1.enabled}
+            />
+          </div>
+        )}
 
         {/* Simple Netflix-style Discover Filters */}
           <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/40 rounded-lg border border-gray-800">
@@ -329,14 +334,17 @@ const Index = () => {
         )}
 
         {/* Bottom Ad */}
-        <div className="mt-12">
-          <AdBanner 
-            adKey="homePageBottomAd" 
-            imageUrl="https://picsum.photos/400/200?random=home-bottom"
-            clickUrl="https://example.com"
-            enabled={true}
-          />
+        {adminSettings?.ads?.mainPageAd4?.enabled && (
+          <div className="mt-12">
+            <AdBanner 
+              adKey="mainPageAd4" 
+              imageUrl={adminSettings.ads.mainPageAd4.imageUrl}
+                              cloudinaryUrl={adminSettings.ads.mainPageAd4.cloudinaryUrl}
+              clickUrl={adminSettings.ads.mainPageAd4.clickUrl}
+              enabled={adminSettings.ads.mainPageAd4.enabled}
+            />
           </div>
+        )}
         </div>
       </div>
 

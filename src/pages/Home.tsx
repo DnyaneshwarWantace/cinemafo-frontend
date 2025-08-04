@@ -248,6 +248,7 @@ const Home = () => {
                 <AdBanner 
                   adKey="heroOverlayAd"
                   imageUrl={adminSettings.ads.heroOverlayAd.imageUrl}
+                  cloudinaryUrl={adminSettings.ads.heroOverlayAd.cloudinaryUrl}
                   clickUrl={adminSettings.ads.heroOverlayAd.clickUrl}
                   enabled={adminSettings.ads.heroOverlayAd.enabled}
                   className="rounded-lg shadow-2xl"
@@ -297,6 +298,7 @@ const Home = () => {
                 <AdBanner 
                   adKey="mainPageAd1"
                   imageUrl={adminSettings.ads.mainPageAd1.imageUrl}
+                  cloudinaryUrl={adminSettings.ads.mainPageAd1.cloudinaryUrl}
                   clickUrl={adminSettings.ads.mainPageAd1.clickUrl}
                   enabled={adminSettings.ads.mainPageAd1.enabled}
                 />
@@ -317,6 +319,7 @@ const Home = () => {
                 <AdBanner 
                   adKey="mainPageAd2"
                   imageUrl={adminSettings.ads.mainPageAd2.imageUrl}
+                  cloudinaryUrl={adminSettings.ads.mainPageAd2.cloudinaryUrl}
                   clickUrl={adminSettings.ads.mainPageAd2.clickUrl}
                   enabled={adminSettings.ads.mainPageAd2.enabled}
                 />
@@ -337,6 +340,7 @@ const Home = () => {
                 <AdBanner 
                   adKey="mainPageAd3"
                   imageUrl={adminSettings.ads.mainPageAd3.imageUrl}
+                  cloudinaryUrl={adminSettings.ads.mainPageAd3.cloudinaryUrl}
                   clickUrl={adminSettings.ads.mainPageAd3.clickUrl}
                   enabled={adminSettings.ads.mainPageAd3.enabled}
                 />
@@ -357,6 +361,7 @@ const Home = () => {
                 <AdBanner 
                   adKey="mainPageAd4"
                   imageUrl={adminSettings.ads.mainPageAd4.imageUrl}
+                  cloudinaryUrl={adminSettings.ads.mainPageAd4.cloudinaryUrl}
                   clickUrl={adminSettings.ads.mainPageAd4.clickUrl}
                   enabled={adminSettings.ads.mainPageAd4.enabled}
                 />

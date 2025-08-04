@@ -41,18 +41,18 @@ interface AdminSettings {
     };
   };
   ads: {
-    heroOverlayAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    mainPageAd1: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    mainPageAd2: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    mainPageAd3: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    mainPageAd4: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    searchTopAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    searchBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    moviesPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    moviesPageBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    showsPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    showsPageBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    playerPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    heroOverlayAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    mainPageAd1: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    mainPageAd2: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    mainPageAd3: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    mainPageAd4: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    searchTopAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    searchBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    moviesPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    moviesPageBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    showsPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    showsPageBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    playerPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
   };
 }
 
@@ -172,6 +172,24 @@ const adminApi = {
     
     if (!response.ok) {
       throw new Error('Failed to update ads settings');
+    }
+    
+    return response.json();
+  },
+
+  uploadAdImage: async (adKey: string, imageUrl: string) => {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/upload-ad-image`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ adKey, imageUrl })
+    });
+    
+    if (!response.ok) {
+              throw new Error('Failed to upload ad image to ImgBB');
     }
     
     return response.json();
@@ -314,6 +332,106 @@ const AdminPanel: React.FC = () => {
     }
   });
 
+  const uploadAdImageMutation = useMutation({
+    mutationFn: ({ adKey, imageUrl }: { adKey: string; imageUrl: string }) => 
+      adminApi.uploadAdImage(adKey, imageUrl),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['adminSettings'] });
+      toast({
+        title: "Success",
+        description: data.message || "Image uploaded to ImgBB successfully!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Function to upload all ads automatically
+  const uploadAllAds = async () => {
+    if (!settings) return;
+    
+    const adsToUpload = Object.entries(settings.ads).filter(([adKey, adConfig]) => 
+      adConfig.imageUrl && !adConfig.cloudinaryUrl
+    );
+    
+    if (adsToUpload.length === 0) {
+      toast({
+        title: "No ads to upload",
+        description: "All ads are already uploaded or don't have image URLs.",
+      });
+      return;
+    }
+    
+    toast({
+      title: "Starting upload",
+      description: `Uploading ${adsToUpload.length} ads to ImgBB...`,
+    });
+    
+    // Upload ads one by one
+    for (let i = 0; i < adsToUpload.length; i++) {
+      const [adKey, adConfig] = adsToUpload[i];
+      
+      try {
+        toast({
+          title: `Uploading ${adKey}`,
+          description: `Progress: ${i + 1}/${adsToUpload.length}`,
+        });
+        
+        const result = await adminApi.uploadAdImage(adKey, adConfig.imageUrl);
+        
+        // Update settings after each successful upload
+        if (settings) {
+          const newSettings = {
+            ...settings,
+            ads: {
+              ...settings.ads,
+              [adKey]: {
+                ...settings.ads[adKey as keyof typeof settings.ads],
+                cloudinaryUrl: result.cloudinaryUrl
+              }
+            }
+          };
+          setSettings(newSettings);
+        }
+        
+        // Small delay between uploads
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+      } catch (error) {
+        console.error(`Failed to upload ${adKey}:`, error);
+        toast({
+          title: `Failed to upload ${adKey}`,
+          description: error.message || "Upload failed",
+          variant: "destructive",
+        });
+      }
+    }
+    
+    toast({
+      title: "Upload complete",
+      description: `Finished uploading ${adsToUpload.length} ads.`,
+    });
+    
+    // Refresh settings
+    queryClient.invalidateQueries({ queryKey: ['adminSettings'] });
+  };
+
+  // Auto-refresh settings every 5 seconds to check for background downloads
+  useEffect(() => {
+    if (isAuthenticated) {
+      const interval = setInterval(() => {
+        queryClient.invalidateQueries({ queryKey: ['adminSettings'] });
+      }, 5000); // Check every 5 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, queryClient]);
+
   // Function to generate CSS for announcement bar
   const generateAnnouncementCSS = () => {
     if (!settings?.appearance?.announcementBar) return '';
@@ -401,14 +519,32 @@ const AdminPanel: React.FC = () => {
     
     const currentAd = settings.ads?.[adKey as keyof typeof settings.ads] || { enabled: false, imageUrl: '', clickUrl: '' };
     
+    // If imageUrl is being changed, clear the cloudinaryUrl
+    let newAdConfig = {
+      ...currentAd,
+      [field]: value
+    };
+    
+    if (field === 'imageUrl') {
+      newAdConfig.cloudinaryUrl = ''; // Clear the old uploaded URL
+      // Force save immediately to clear the cloudinaryUrl from database
+      const forceUpdateSettings = {
+        ...settings,
+        ads: {
+          ...settings.ads,
+          [adKey]: newAdConfig
+        }
+      };
+      setSettings(forceUpdateSettings);
+      updateAdsMutation.mutate(forceUpdateSettings.ads);
+      return; // Exit early to prevent double update
+    }
+    
     const newSettings = {
       ...settings,
       ads: {
         ...settings.ads,
-        [adKey]: {
-          ...currentAd,
-          [field]: value
-        }
+        [adKey]: newAdConfig
       }
     };
     
@@ -1110,38 +1246,99 @@ const AdminPanel: React.FC = () => {
                       />
                     </div>
                     {adConfig.enabled && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor={`${adKey}Image`} className="text-white">Image URL</Label>
-                          <Input
-                            id={`${adKey}Image`}
-                            value={adConfig.imageUrl}
-                            onChange={(e) => updateAdSettings(adKey, 'imageUrl', e.target.value)}
-                            className="bg-gray-700 border-gray-600 text-white"
-                            placeholder="https://example.com/ad-image.gif"
-                          />
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor={`${adKey}Image`} className="text-white">Image URL</Label>
+                            <div className="flex gap-2">
+                              <Input
+                                id={`${adKey}Image`}
+                                value={adConfig.imageUrl}
+                                onChange={(e) => updateAdSettings(adKey, 'imageUrl', e.target.value)}
+                                className="bg-gray-700 border-gray-600 text-white flex-1"
+                                placeholder="https://example.com/ad-image.gif"
+                              />
+
+                            </div>
+                            {adConfig.imageUrl && !adConfig.cloudinaryUrl && (
+                              <p className="text-xs text-yellow-400 mt-1">
+                                ⚠️ Image URL set but not uploaded. Use "Upload All Ads" button below.
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <Label htmlFor={`${adKey}Click`} className="text-white">Click URL</Label>
+                            <Input
+                              id={`${adKey}Click`}
+                              value={adConfig.clickUrl}
+                              onChange={(e) => updateAdSettings(adKey, 'clickUrl', e.target.value)}
+                              className="bg-gray-700 border-gray-600 text-white"
+                              placeholder="https://example.com"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <Label htmlFor={`${adKey}Click`} className="text-white">Click URL</Label>
-                          <Input
-                            id={`${adKey}Click`}
-                            value={adConfig.clickUrl}
-                            onChange={(e) => updateAdSettings(adKey, 'clickUrl', e.target.value)}
-                            className="bg-gray-700 border-gray-600 text-white"
-                            placeholder="https://example.com"
-                          />
-                        </div>
+                        {adConfig.cloudinaryUrl && (
+                          <div>
+                            <Label className="text-white">✅ ImgBB Image URL (Ready to use)</Label>
+                            <Input
+                              value={adConfig.cloudinaryUrl}
+                              readOnly
+                              className="bg-blue-900/20 border-blue-600 text-blue-300"
+                            />
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-xs text-blue-400">
+                                ✅ Image uploaded to ImgBB successfully! This image is stored in the cloud and optimized for fast loading.
+                              </p>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => {
+                                  const newSettings = {
+                                    ...settings,
+                                    ads: {
+                                      ...settings.ads,
+                                      [adKey]: {
+                                        ...adConfig,
+                                        cloudinaryUrl: ''
+                                      }
+                                    }
+                                  };
+                                  setSettings(newSettings);
+                                  updateAdsMutation.mutate(newSettings.ads);
+                                  toast({
+                                    title: "Cleared",
+                                    description: "Uploaded image removed. Upload a new image to continue.",
+                                  });
+                                }}
+                                className="text-xs px-2 py-1 h-6"
+                              >
+                                Clear
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 ))}
-                <Button 
-                  onClick={() => updateAdsMutation.mutate(settings.ads)}
-                  disabled={updateAdsMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {updateAdsMutation.isPending ? 'Saving...' : 'Save All Ads'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => updateAdsMutation.mutate(settings.ads)}
+                    disabled={updateAdsMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {updateAdsMutation.isPending ? 'Saving...' : 'Save All Ads'}
+                  </Button>
+                  
+                  <Button 
+                    onClick={uploadAllAds}
+                    disabled={uploadAdImageMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {uploadAdImageMutation.isPending ? 'Uploading...' : '☁️ Upload All Ads'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 

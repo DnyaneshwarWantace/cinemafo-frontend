@@ -216,10 +216,39 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
 
   const handleMouseEnter = (e: React.MouseEvent, item: Movie | TVShow) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    setTooltipPosition({
-      x: rect.left + rect.width / 2,
-      y: rect.bottom + 10
-    });
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate initial position
+    let x = rect.left + rect.width / 2;
+    let y = rect.bottom + 10;
+    
+    // Tooltip dimensions (approximate)
+    const tooltipWidth = 320; // max-w-xs = 320px
+    const tooltipHeight = 120; // approximate height
+    
+    // Adjust X position to keep tooltip within viewport
+    // Since we use translateX(-50%), we need to account for that in our calculations
+    if (x - tooltipWidth / 2 < 10) {
+      // Too close to left edge
+      x = tooltipWidth / 2 + 10;
+    } else if (x + tooltipWidth / 2 > viewportWidth - 10) {
+      // Too close to right edge
+      x = viewportWidth - tooltipWidth / 2 - 10;
+    }
+    
+    // Adjust Y position to keep tooltip within viewport
+    if (y + tooltipHeight > viewportHeight - 10) {
+      // Too close to bottom edge, show above the card
+      y = rect.top - tooltipHeight - 10;
+      
+      // If showing above would also be outside viewport, show at top with margin
+      if (y < 10) {
+        y = 10;
+      }
+    }
+    
+    setTooltipPosition({ x, y });
     
     // Clear any existing timeout
     if (tooltipTimeout) {
@@ -264,7 +293,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
   }
 
   return (
-    <div className="mb-12 group relative z-10">
+    <div className="mb-12 group relative">
       <h2 className="text-xl md:text-2xl font-bold text-white mb-4 px-4 lg:px-0">{title}</h2>
       
       <div className="relative">
@@ -381,7 +410,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       {/* Tooltip */}
       {tooltipItem && (
         <div
-          className="fixed z-50 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
         style={{ 
             left: tooltipPosition.x,
             top: tooltipPosition.y,

@@ -378,7 +378,7 @@ const Watchlist = () => {
       {/* Tooltip */}
       {tooltipItem && (
         <div
-          className="fixed z-50 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
         style={{ 
             left: tooltipPosition.x,
             top: tooltipPosition.y,

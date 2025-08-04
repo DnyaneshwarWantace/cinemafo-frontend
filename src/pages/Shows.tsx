@@ -513,6 +513,7 @@ const Shows = () => {
             <AdBanner 
               adKey="showsPageAd" 
               imageUrl={adminSettings.ads.showsPageAd.imageUrl}
+                                cloudinaryUrl={adminSettings.ads.showsPageAd.cloudinaryUrl}
               clickUrl={adminSettings.ads.showsPageAd.clickUrl}
               enabled={adminSettings.ads.showsPageAd.enabled}
             />
@@ -552,6 +553,7 @@ const Shows = () => {
                 <AdBanner 
                   adKey="showsPageBottomAd" 
                   imageUrl={adminSettings.ads.showsPageBottomAd.imageUrl}
+                  cloudinaryUrl={adminSettings.ads.showsPageBottomAd.cloudinaryUrl}
                   clickUrl={adminSettings.ads.showsPageBottomAd.clickUrl}
                   enabled={adminSettings.ads.showsPageBottomAd.enabled}
                 />
@@ -570,6 +572,7 @@ const Shows = () => {
               <AdBanner 
                 adKey="showsPageAd" 
                 imageUrl={adminSettings.ads.showsPageAd.imageUrl}
+                cloudinaryUrl={adminSettings.ads.showsPageAd.cloudinaryUrl}
                 clickUrl={adminSettings.ads.showsPageAd.clickUrl}
                 enabled={adminSettings.ads.showsPageAd.enabled}
               />
@@ -704,7 +707,7 @@ const Shows = () => {
       {/* Tooltip */}
       {tooltipItem && (
         <div
-          className="fixed z-50 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
         style={{ 
             left: tooltipPosition.x,
             top: tooltipPosition.y,

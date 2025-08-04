@@ -63,8 +63,17 @@ const Search = () => {
       
       // Debounce the mouse move check
       mouseMoveTimeout = setTimeout(() => {
-        const searchElement = document.querySelector('.search-container');
-        if (searchElement && !searchElement.contains(e.target as Node)) {
+        // Only hide tooltip if mouse is not over any movie card
+        const movieCards = document.querySelectorAll('[data-movie-card]');
+        let isOverCard = false;
+        
+        movieCards.forEach(card => {
+          if (card.contains(e.target as Node)) {
+            isOverCard = true;
+          }
+        });
+        
+        if (!isOverCard) {
           hideTooltip();
         }
       }, 50); // 50ms debounce
@@ -242,23 +251,26 @@ const Search = () => {
     
     setTooltipPosition({ x, y });
     
-    // Clear any existing timeout immediately
+    // Clear any existing timeout
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
     
-    // Show tooltip immediately for better responsiveness
-    setTooltipItem(item);
+    // Set timeout for 200ms (fast and responsive)
+    const timeout = setTimeout(() => {
+      setTooltipItem(item);
+    }, 200);
+    
+    setTooltipTimeout(timeout);
   };
 
   const handleTooltipMouseLeave = () => {
-    // Clear any existing timeout immediately
+    // Clear timeout and hide tooltip immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
-    // Hide tooltip immediately for better responsiveness
     setTooltipItem(null);
   };
 
@@ -366,6 +378,7 @@ const Search = () => {
           <AdBanner 
               adKey="searchTopAd"
               imageUrl={adminSettings.ads.searchTopAd.imageUrl}
+                              cloudinaryUrl={adminSettings.ads.searchTopAd.cloudinaryUrl}
               clickUrl={adminSettings.ads.searchTopAd.clickUrl}
               enabled={adminSettings.ads.searchTopAd.enabled}
           />
@@ -535,6 +548,7 @@ const Search = () => {
                   .map((item) => (
                   <div
                     key={item.id}
+                    data-movie-card
                     className="cursor-pointer group/item"
                     onClick={() => handleItemClick(item)}
                     onMouseEnter={(e) => handleMouseEnter(e, item)}
@@ -556,11 +570,11 @@ const Search = () => {
                       {/* Watchlist Button */}
                       <button
                         onClick={(e) => toggleWatchlist(e, item)}
-                        className="absolute top-2 left-2 bg-black/40 hover:bg-yellow-600 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover/item:opacity-100 z-20"
+                        className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover/item:opacity-100 z-20"
                         title={isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist"}
                       >
                         <Bookmark 
-                          className={`w-4 h-4 ${isInWatchlist(item) ? 'fill-yellow-400 text-yellow-400' : 'text-white'}`} 
+                          className={`w-4 h-4 ${isInWatchlist(item) ? 'fill-blue-500 text-blue-500' : 'text-white'}`} 
                         />
                       </button>
 
@@ -603,6 +617,7 @@ const Search = () => {
           <AdBanner 
               adKey="searchBottomAd"
               imageUrl={adminSettings.ads.searchBottomAd.imageUrl}
+                              cloudinaryUrl={adminSettings.ads.searchBottomAd.cloudinaryUrl}
               clickUrl={adminSettings.ads.searchBottomAd.clickUrl}
               enabled={adminSettings.ads.searchBottomAd.enabled}
             />
@@ -613,7 +628,7 @@ const Search = () => {
       {/* Tooltip */}
       {tooltipItem && (
         <div
-          className="fixed z-50 bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
           style={{ 
             left: tooltipPosition.x,
             top: tooltipPosition.y,

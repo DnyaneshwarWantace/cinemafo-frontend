@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 interface AdBannerProps {
   adKey: string;
   imageUrl: string;
+  cloudinaryUrl?: string;
   clickUrl: string;
   enabled: boolean;
   className?: string;
@@ -12,6 +13,7 @@ interface AdBannerProps {
 const AdBanner: React.FC<AdBannerProps> = ({ 
   adKey, 
   imageUrl, 
+  cloudinaryUrl,
   clickUrl, 
   enabled, 
   className = '' 
@@ -70,6 +72,8 @@ const AdBanner: React.FC<AdBannerProps> = ({
         </span>
       </div>
 
+
+
       {/* Ad image */}
       <div 
         className="cursor-pointer relative overflow-hidden rounded-lg w-full"
@@ -77,7 +81,7 @@ const AdBanner: React.FC<AdBannerProps> = ({
         title="Click to visit advertiser"
       >
         <img
-          src={imageUrl}
+          src={cloudinaryUrl || imageUrl}
           alt="Advertisement"
           className="w-full h-auto max-h-48 object-contain rounded-lg shadow-md transition-all duration-300 hover:shadow-lg"
           onError={() => setError('Failed to load ad image')}

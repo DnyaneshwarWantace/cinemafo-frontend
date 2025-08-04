@@ -31,18 +31,18 @@ interface AdminSettings {
     };
   };
   ads: {
-    heroOverlayAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    mainPageAd1: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    mainPageAd2: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    mainPageAd3: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    mainPageAd4: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    searchTopAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    searchBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    moviesPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    moviesPageBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    showsPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    showsPageBottomAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
-    playerPageAd: { enabled: boolean; imageUrl: string; clickUrl: string; };
+    heroOverlayAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    mainPageAd1: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    mainPageAd2: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    mainPageAd3: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    mainPageAd4: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    searchTopAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    searchBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    moviesPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    moviesPageBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    showsPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    showsPageBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    playerPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
   };
 }
 

@@ -321,6 +321,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
                   <AdBanner
                     adKey="playerPageAd"
                     imageUrl={adminSettings.ads.playerPageAd.imageUrl}
+                    cloudinaryUrl={adminSettings.ads.playerPageAd.cloudinaryUrl}
                     clickUrl={adminSettings.ads.playerPageAd.clickUrl}
                     enabled={adminSettings.ads.playerPageAd.enabled}
                     className="mx-auto lg:!mx-0"
