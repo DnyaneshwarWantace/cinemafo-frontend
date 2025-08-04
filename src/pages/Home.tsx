@@ -21,11 +21,49 @@ const Home = () => {
   const [popularShows, setPopularShows] = useState<TVShow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [continueWatchingKey, setContinueWatchingKey] = useState(0);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
+  const [playingContent, setPlayingContent] = useState<{
+    item: Movie | TVShow;
+    type: 'movie' | 'tv';
+    season?: number;
+    episode?: number;
+    initialTime?: number;
+  } | null>(null);
   const { settings: adminSettings } = useAdminSettings();
   const { getContinueWatching, updateProgress, removeFromHistory, getThumbnailUrl, watchHistory } = useWatchHistory();
+  
+  // Get continue watching items reactively
+  const continueWatchingItems = getContinueWatching(10);
+  
+
+
+  // Listen for TV show progress updates
+  useEffect(() => {
+    const handleTVShowProgressUpdate = (event: CustomEvent) => {
+      const { show, currentTime, duration, season, episode, videoElement } = event.detail;
+      try {
+        updateProgress(
+          show,
+          currentTime,
+          duration,
+          'tv',
+          season,
+          episode,
+          undefined, // episodeTitle
+          videoElement
+        );
+      } catch (error) {
+        console.error('Error updating TV show progress:', error);
+      }
+    };
+
+    document.addEventListener('tvShowProgressUpdate', handleTVShowProgressUpdate as EventListener);
+    
+    return () => {
+      document.removeEventListener('tvShowProgressUpdate', handleTVShowProgressUpdate as EventListener);
+    };
+  }, [updateProgress]);
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -98,33 +136,7 @@ const Home = () => {
     fetchContent();
   }, []);
 
-  // Watch for changes in watch history to update continue watching section
-  useEffect(() => {
-    setContinueWatchingKey(prev => prev + 1);
-  }, [watchHistory]);
 
-  // Refresh continue watching data when page becomes visible (user returns from player)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Force refresh of continue watching section when page becomes visible
-        setContinueWatchingKey(prev => prev + 1);
-      }
-    };
-
-    const handleFocus = () => {
-      // Force refresh of continue watching section when window gains focus
-      setContinueWatchingKey(prev => prev + 1);
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, []);
 
   const handleContentClick = (content: Movie | TVShow) => {
     // If it has a title, it's a movie; if it has a name, it's a show
@@ -135,27 +147,96 @@ const Home = () => {
     }
   };
 
-  const [playingContent, setPlayingContent] = useState<any>(null);
+  const handleModalClose = () => {
+    // Modal closed - continue watching will update automatically
+  };
+
+
 
   const handleContinueWatchingClick = async (historyItem: any) => {
     try {
-      setPlayingContent(historyItem);
+      // Find the actual content from our data
+      let content: Movie | TVShow | null = null;
+
+      if (historyItem.type === 'movie') {
+        content = [...trendingMovies, ...popularMovies].find(m => m.id === historyItem.id) || null;
+        if (!content) {
+          // Fetch full movie details if not found
+          try {
+            const response = await api.getMovieDetails(historyItem.id);
+            content = response.data;
+          } catch (err) {
+            console.error('Failed to fetch movie details:', err);
+            return;
+          }
+        }
+      } else {
+        content = [...trendingShows, ...popularShows].find(s => s.id === historyItem.id) || null;
+        if (!content) {
+          // Fetch full show details if not found
+          try {
+            const response = await api.getShowDetails(historyItem.id);
+            content = response.data;
+          } catch (err) {
+            console.error('Failed to fetch show details:', err);
+            return;
+          }
+        }
+      }
+
+      if (content) {
+        setPlayingContent({
+          item: content,
+          type: historyItem.type,
+          season: historyItem.season,
+          episode: historyItem.episode,
+          initialTime: historyItem.currentTime
+        });
+      }
     } catch (error) {
       console.error('Error handling continue watching click:', error);
     }
   };
 
-  const handleProgressUpdate = (progress: number) => {
-    if (playingContent) {
-      updateProgress(playingContent.id, progress, playingContent.type, playingContent.season, playingContent.episode);
+  const handleProgressUpdate = (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => {
+    try {
+      if (playingContent) {
+        // Handle progress updates from continue watching player
+        updateProgress(
+          playingContent.item,
+          currentTime,
+          duration,
+          playingContent.type,
+          playingContent.season,
+          playingContent.episode,
+          undefined, // episodeTitle
+          videoElement
+        );
+      } else if (selectedMovie) {
+        // Handle progress updates from movie modal
+        updateProgress(
+          selectedMovie,
+          currentTime,
+          duration,
+          'movie',
+          undefined,
+          undefined,
+          undefined, // episodeTitle
+          videoElement
+        );
+      } else if (selectedShow) {
+        // Handle progress updates from TV show modal
+        // Note: TV show progress updates will be handled by the TVShowPlayer component
+        // which will pass the correct season/episode information
+      }
+    } catch (error) {
+      console.error('Error updating progress:', error);
     }
   };
 
   const handleRemoveFromHistory = (historyItem: any) => {
     try {
     removeFromHistory(historyItem.id, historyItem.type, historyItem.season, historyItem.episode);
-      // Force re-render of continue watching section
-      setContinueWatchingKey(prev => prev + 1);
     } catch (error) {
       console.error('Error removing from history:', error);
     }
@@ -213,29 +294,20 @@ const Home = () => {
       )}
 
       {/* Continue Watching Section - Moved down to avoid overlap with hero ad */}
-      {!loading && (() => {
-        try {
-          const continueWatchingItems = getContinueWatching(10);
-          return continueWatchingItems.length > 0 ? (
+      {!loading && continueWatchingItems.length > 0 && (
         <section className="relative -mt-32 lg:-mt-32 z-10">
           <div className="bg-gradient-to-t from-black via-black/90 to-transparent pt-40 pb-8">
             <div className="w-full px-4 sm:px-6 lg:px-8">
-                  <ContinueWatching
-                    key={continueWatchingKey}
-                    items={continueWatchingItems}
-                    onItemClick={handleContinueWatchingClick}
-                    onRemoveItem={handleRemoveFromHistory}
-                    getThumbnailUrl={getThumbnailUrl}
-                  />
-                </div>
-              </div>
-            </section>
-          ) : null;
-        } catch (error) {
-          console.error('Error rendering continue watching section:', error);
-          return null;
-        }
-      })()}
+              <ContinueWatching
+                items={continueWatchingItems}
+                onItemClick={handleContinueWatchingClick}
+                onRemoveItem={handleRemoveFromHistory}
+                getThumbnailUrl={getThumbnailUrl}
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
 
 
@@ -329,16 +401,19 @@ const Home = () => {
         )}
       </div>
 
-      {/* Video Player Modal */}
+      {/* Video Player for Continue Watching */}
       {playingContent && (
         <VideoPlayer
-          tmdbId={playingContent.id}
-          title={playingContent.title || 'Content'}
+          tmdbId={playingContent.item.id}
+          type={playingContent.type}
           season={playingContent.season}
           episode={playingContent.episode}
-          initialTime={playingContent.currentTime}
-          onClose={() => setPlayingContent(null)}
+          title={'title' in playingContent.item ? playingContent.item.title : playingContent.item.name}
+          onClose={() => {
+            setPlayingContent(null);
+          }}
           onProgressUpdate={handleProgressUpdate}
+          initialTime={playingContent.initialTime}
         />
       )}
 
@@ -346,7 +421,11 @@ const Home = () => {
       {selectedMovie && (
         <MovieModal
           movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
+          onClose={() => {
+            setSelectedMovie(null);
+            handleModalClose();
+          }}
+          onProgressUpdate={handleProgressUpdate}
         />
       )}
 
@@ -354,7 +433,11 @@ const Home = () => {
       {selectedShow && (
         <TVShowPlayer
           show={selectedShow}
-          onClose={() => setSelectedShow(null)}
+          onClose={() => {
+            setSelectedShow(null);
+            handleModalClose();
+          }}
+          onProgressUpdate={handleProgressUpdate}
         />
       )}
 

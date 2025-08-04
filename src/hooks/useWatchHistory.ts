@@ -19,60 +19,50 @@ export interface WatchHistoryItem {
 }
 
 export const useWatchHistory = () => {
-  const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Load watch history from localStorage on mount - only once
-  useEffect(() => {
-    if (!isInitialized) {
+  // Load watch history from localStorage immediately on mount
+  const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>(() => {
     try {
       const stored = localStorage.getItem('watchHistory');
       if (stored) {
         const parsed = JSON.parse(stored);
-        setWatchHistory(parsed);
+        return parsed;
       }
-        setIsInitialized(true);
     } catch (error) {
       console.error('Error loading watch history:', error);
-        setIsInitialized(true);
-      }
     }
-  }, [isInitialized]);
+    return [];
+  });
 
   // Save watch history to localStorage whenever it changes - debounced
   useEffect(() => {
-    if (isInitialized) {
-      const timeoutId = setTimeout(() => {
-    try {
-      // Create a clean version without circular references
-      const cleanHistory = watchHistory.map(item => ({
-        id: item.id,
-        type: item.type,
-        title: item.title,
-        poster_path: item.poster_path,
-        backdrop_path: item.backdrop_path,
-        currentTime: item.currentTime,
-        duration: item.duration,
-        progress: item.progress,
-        lastWatched: item.lastWatched,
-        season: item.season,
-        episode: item.episode,
-        episodeTitle: item.episodeTitle,
-        thumbnailTime: item.thumbnailTime,
-        thumbnailDataUrl: item.thumbnailDataUrl
-      }));
-      
-      localStorage.setItem('watchHistory', JSON.stringify(cleanHistory));
-    } catch (error) {
-      console.error('Error saving watch history:', error);
-    }
-      }, 100); // Debounce saves to prevent excessive localStorage writes
+    const timeoutId = setTimeout(() => {
+      try {
+        // Create a clean version without circular references
+        const cleanHistory = watchHistory.map(item => ({
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          poster_path: item.poster_path,
+          backdrop_path: item.backdrop_path,
+          currentTime: item.currentTime,
+          duration: item.duration,
+          progress: item.progress,
+          lastWatched: item.lastWatched,
+          season: item.season,
+          episode: item.episode,
+          episodeTitle: item.episodeTitle,
+          thumbnailTime: item.thumbnailTime,
+          thumbnailDataUrl: item.thumbnailDataUrl
+        }));
+        
+        localStorage.setItem('watchHistory', JSON.stringify(cleanHistory));
+      } catch (error) {
+        console.error('Error saving watch history:', error);
+      }
+    }, 100); // Debounce saves to prevent excessive localStorage writes
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [watchHistory, isInitialized]);
-
-
+    return () => clearTimeout(timeoutId);
+  }, [watchHistory]);
 
   // Generate thumbnail from video element
   const generateThumbnail = async (videoElement: HTMLVideoElement, time: number): Promise<string> => {
@@ -246,10 +236,6 @@ export const useWatchHistory = () => {
     episodeTitle?: string,
     videoElement?: HTMLVideoElement
   ) => {
-    if (!isInitialized) {
-      console.log('🎬 Watch history not initialized yet, skipping update');
-      return;
-    }
 
     const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
     
@@ -259,11 +245,15 @@ export const useWatchHistory = () => {
 
       // Always generate thumbnail if video element is provided (final screenshot on close)
       if (videoElement) {
+        console.log('🎬 Video element provided, generating thumbnail...');
         try {
           thumbnailDataUrl = await generateThumbnail(videoElement, currentTime);
+          console.log('🎬 Thumbnail generated:', !!thumbnailDataUrl);
         } catch (error) {
           console.warn('Failed to generate thumbnail:', error);
         }
+      } else {
+        console.log('🎬 No video element provided, skipping thumbnail');
       }
 
       const historyItem: WatchHistoryItem = {
@@ -283,8 +273,6 @@ export const useWatchHistory = () => {
         thumbnailDataUrl
       };
 
-
-
       setWatchHistory(prev => {
         // Ensure prev is an array to prevent state corruption
         if (!Array.isArray(prev)) {
@@ -297,37 +285,13 @@ export const useWatchHistory = () => {
         );
 
         if (existingIndex >= 0) {
-          // Update existing item, but preserve existing thumbnail if no new one is provided
+          // Update existing item
           const updated = [...prev];
-          const existingItem = updated[existingIndex];
-          
-          // Preserve existing thumbnail if no new thumbnail is being generated
-          if (!thumbnailDataUrl && existingItem.thumbnailDataUrl) {
-            historyItem.thumbnailDataUrl = existingItem.thumbnailDataUrl;
-            historyItem.thumbnailTime = existingItem.thumbnailTime;
-          }
-          
           updated[existingIndex] = historyItem;
-          
-          // Force immediate save to localStorage
-          try {
-            localStorage.setItem('watchHistory', JSON.stringify(updated));
-          } catch (error) {
-            console.warn('Failed to save watch history to localStorage:', error);
-          }
-          
           return updated;
         } else {
           // Add new item
           const newHistory = [historyItem, ...prev];
-          
-          // Force immediate save to localStorage
-          try {
-            localStorage.setItem('watchHistory', JSON.stringify(newHistory));
-          } catch (error) {
-            console.warn('Failed to save watch history to localStorage:', error);
-          }
-          
           return newHistory;
         }
       });
@@ -338,11 +302,6 @@ export const useWatchHistory = () => {
   };
 
   const removeFromHistory = (id: number, type: 'movie' | 'tv', season?: number, episode?: number) => {
-    if (!isInitialized) {
-      console.log('🎬 Watch history not initialized yet, skipping remove');
-      return;
-    }
-
     setWatchHistory(prev => {
       // Ensure prev is an array to prevent state corruption
       if (!Array.isArray(prev)) {
@@ -355,7 +314,7 @@ export const useWatchHistory = () => {
   };
 
   const getHistoryItem = (id: number, type: 'movie' | 'tv', season?: number, episode?: number): WatchHistoryItem | null => {
-    if (!isInitialized || !Array.isArray(watchHistory)) {
+    if (!Array.isArray(watchHistory)) {
       return null;
     }
 
@@ -365,7 +324,7 @@ export const useWatchHistory = () => {
   };
 
   const getContinueWatching = (limit: number = 10): WatchHistoryItem[] => {
-    if (!isInitialized || !Array.isArray(watchHistory)) {
+    if (!Array.isArray(watchHistory)) {
       return [];
     }
 
@@ -375,10 +334,6 @@ export const useWatchHistory = () => {
   };
 
   const clearHistory = () => {
-    if (!isInitialized) {
-      console.log('🎬 Watch history not initialized yet, skipping clear');
-      return;
-    }
     setWatchHistory([]);
   };
 
@@ -400,7 +355,7 @@ export const useWatchHistory = () => {
 
   // Get the most recent watch history for a specific item
   const getMostRecentHistory = (id: number, type: 'movie' | 'tv'): WatchHistoryItem | null => {
-    if (!isInitialized || !Array.isArray(watchHistory)) {
+    if (!Array.isArray(watchHistory)) {
       return null;
     }
 

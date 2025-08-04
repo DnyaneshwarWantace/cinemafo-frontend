@@ -14,14 +14,9 @@ import Shows from './pages/Shows';
 import Search from './pages/Search';
 import NotFound from './pages/NotFound';
 import Watchlist from './pages/Watchlist';
-
-import MovieModalPage from './pages/MovieModalPage';
-import TVShowModalPage from './pages/TVShowModalPage';
 import AdminPanel from './components/admin/AdminPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import VideoPlayer from './components/VideoPlayer';
-import { useAnnouncementVisibility } from './hooks/useAnnouncementVisibility';
-import useAdminSettings from './hooks/useAdminSettings';
 
 const queryClient = new QueryClient();
 
@@ -29,9 +24,6 @@ const queryClient = new QueryClient();
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
-  const isModalPage = location.pathname.startsWith('/movie-modal/') || location.pathname.startsWith('/tv-modal/');
-  const isAnnouncementVisible = useAnnouncementVisibility();
-  const { settings: adminSettings } = useAdminSettings();
 
   // Trigger admin settings event on app load to ensure ads show
   useEffect(() => {
@@ -42,22 +34,15 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Get announcement bar height from admin settings
-  const announcementHeight = adminSettings?.appearance?.announcementBar?.height || 48;
-  const navbarHeight = 80;
-  
-  // Calculate dynamic padding based on announcement bar visibility (only for non-admin and non-modal pages)
-  const mainPaddingTop = (isAdminPage || isModalPage) ? 0 : (isAnnouncementVisible ? announcementHeight + navbarHeight : navbarHeight);
-
   return (
     <div className="min-h-screen bg-black">
-      {!isAdminPage && !isModalPage && <AnnouncementBar />}
-      {!isAdminPage && !isModalPage && <Navigation inModalView={false} />}
-      <main className="w-full" style={{ paddingTop: `${mainPaddingTop}px` }}>
+      {!isAdminPage && <AnnouncementBar />}
+      {!isAdminPage && <Navigation inModalView={false} />}
+      <main className="w-full">
         {children}
       </main>
-      {!isAdminPage && !isModalPage && <FloatingSocialButtons />}
-      {!isAdminPage && !isModalPage && <Footer />}
+      {!isAdminPage && <FloatingSocialButtons />}
+      {!isAdminPage && <Footer />}
     </div>
   );
 };
@@ -76,16 +61,13 @@ function App() {
             <Route path="/movies" element={<Movies />} />
             <Route path="/shows" element={<Shows />} />
             <Route path="/search" element={<Search />} />
-            <Route path="/watchlist" element={<Watchlist />} />
-            <Route path="/watch" element={<VideoPlayer />} />
-            
-            <Route path="/movie-modal/:id" element={<MovieModalPage />} />
-            <Route path="/tv-modal/:id" element={<TVShowModalPage />} />
-            <Route path="/admin" element={
-              <ErrorBoundary>
-                <AdminPanel />
-              </ErrorBoundary>
-            } />
+                <Route path="/watchlist" element={<Watchlist />} />
+                <Route path="/watch" element={<VideoPlayer />} />
+                <Route path="/admin" element={
+                  <ErrorBoundary>
+                    <AdminPanel />
+                  </ErrorBoundary>
+                } />
             <Route path="*" element={<NotFound />} />
           </Routes>
             </main>

@@ -147,12 +147,11 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
 
   // Generate a thumbnail URL based on progress (simulating Netflix-style thumbnails)
   const getThumbnailUrl = (item: WatchHistoryItem): string => {
-    // Always use the custom getThumbnailUrl function if provided (from useWatchHistory)
     if (customGetThumbnailUrl) {
       return customGetThumbnailUrl(item);
     }
     
-    // Fallback thumbnail logic (should not be used when customGetThumbnailUrl is provided)
+    // Default thumbnail logic
     if (item.backdrop_path) {
       return `https://image.tmdb.org/t/p/w500${item.backdrop_path}`;
     }

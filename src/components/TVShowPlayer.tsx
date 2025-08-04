@@ -18,9 +18,10 @@ import { useWatchHistory } from '@/hooks/useWatchHistory';
 interface TVShowPlayerProps {
   show: TVShow;
   onClose: () => void;
+  onProgressUpdate?: (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => void;
 }
 
-const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
+const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUpdate }) => {
   const navigate = useNavigate();
   const [showDetails, setShowDetails] = useState<TVShow | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number>(1);
@@ -33,7 +34,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
   const [castPage, setCastPage] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const { settings: adminSettings } = useAdminSettings();
-  const { updateProgress } = useWatchHistory();
+  const { getHistoryItem } = useWatchHistory();
 
   // Debug: Log the show data being passed
   console.log('TVShowPlayer received show data:', show);
@@ -610,23 +611,33 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose }) => {
           title={show.name || 'TV Show'}
           season={selectedSeason}
           episode={selectedEpisode}
-          onClose={() => setIsPlaying(false)}
+          onClose={() => {
+            setIsPlaying(false);
+          }}
           onNextEpisode={handleNextEpisode}
           onProgressUpdate={(currentTime, duration, videoElement) => {
-            console.log('📺 TV Show progress update:', { 
-              currentTime, 
-              duration, 
-              show: show.name, 
-              season: selectedSeason, 
-              episode: selectedEpisode 
-            });
-            
-            // Get episode title if available
-            const currentEpisode = seasonDetails?.episodes?.find(ep => ep.episode_number === selectedEpisode);
-            const episodeTitle = currentEpisode?.name;
-            
-            updateProgress(show, currentTime, duration, 'tv', selectedSeason, selectedEpisode, episodeTitle, videoElement);
+            // Create a wrapper that includes the show, season, and episode information
+            if (onProgressUpdate) {
+              // We need to pass the show data along with the progress
+              // Since onProgressUpdate doesn't include show data, we'll need to handle this differently
+              // For now, we'll use a custom event to update the progress with show data
+              const progressEvent = new CustomEvent('tvShowProgressUpdate', {
+                detail: {
+                  show,
+                  currentTime,
+                  duration,
+                  season: selectedSeason,
+                  episode: selectedEpisode,
+                  videoElement
+                }
+              });
+              document.dispatchEvent(progressEvent);
+              
+              // Also call the parent's onProgressUpdate for compatibility
+              onProgressUpdate(currentTime, duration, videoElement);
+            }
           }}
+          initialTime={getHistoryItem(show.id, 'tv', selectedSeason, selectedEpisode)?.currentTime || 0}
         />
       )}
 

@@ -19,9 +19,10 @@ import { useWatchHistory } from '@/hooks/useWatchHistory';
 interface MovieModalProps {
   movie: Movie;
   onClose: () => void;
+  onProgressUpdate?: (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => void;
 }
 
-const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose }) => {
+const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, onProgressUpdate }) => {
   const navigate = useNavigate();
   const [movie, setMovie] = useState<Movie>(initialMovie);
   const [loading, setLoading] = useState(false);
@@ -30,7 +31,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
   const [showDetails, setShowDetails] = useState(false);
   const [castPage, setCastPage] = useState(0);
   const { settings: adminSettings } = useAdminSettings();
-  const { updateProgress } = useWatchHistory();
+  const { getHistoryItem } = useWatchHistory();
 
   // No need to check for detailed data anymore - backend provides complete data
   console.log(`✅ Movie ${initialMovie.id} loaded with complete data from backend`);
@@ -478,12 +479,18 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose })
       {showFullMovie && (
         <VideoPlayer
           tmdbId={movie.id}
+          type="movie"
           title={movie.title || movie.name || 'Movie'}
-          onClose={() => setShowFullMovie(false)}
-          onProgressUpdate={(currentTime, duration, videoElement) => {
-            console.log('🎬 Movie progress update:', { currentTime, duration, movie: movie.title });
-            updateProgress(movie, currentTime, duration, 'movie', undefined, undefined, undefined, videoElement);
+          onClose={() => {
+            setShowFullMovie(false);
           }}
+          onProgressUpdate={(currentTime, duration, videoElement) => {
+            // Use the parent's progress update function if provided, otherwise use local update
+            if (onProgressUpdate) {
+              onProgressUpdate(currentTime, duration, videoElement);
+            }
+          }}
+          initialTime={getHistoryItem(movie.id, 'movie')?.currentTime || 0}
         />
       )}
 

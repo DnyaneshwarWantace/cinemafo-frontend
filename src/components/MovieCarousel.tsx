@@ -63,17 +63,11 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       hideTooltip();
     };
 
-    const handleHideTooltips = () => {
-      // Hide tooltip when modal opens
-      hideTooltip();
-    };
-
     document.addEventListener('mousemove', handleGlobalMouseMove);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('click', handleGlobalClick);
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('scroll', handleScroll);
-    document.addEventListener('hideTooltips', handleHideTooltips);
 
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
@@ -81,7 +75,6 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       document.removeEventListener('click', handleGlobalClick);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('scroll', handleScroll);
-      document.removeEventListener('hideTooltips', handleHideTooltips);
       
       hideTooltip();
     };
@@ -203,38 +196,10 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
 
   const handleMouseEnter = (e: React.MouseEvent, item: Movie | TVShow) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    // Calculate initial position
-    let x = rect.left + rect.width / 2;
-    let y = rect.bottom + 10;
-    
-    // Tooltip dimensions (approximate)
-    const tooltipWidth = 320; // max-w-xs = 320px
-    const tooltipHeight = 120; // approximate height
-    
-    // Adjust X position to keep tooltip within viewport
-    if (x - tooltipWidth / 2 < 10) {
-      // Too close to left edge
-      x = tooltipWidth / 2 + 10;
-    } else if (x + tooltipWidth / 2 > viewportWidth - 10) {
-      // Too close to right edge
-      x = viewportWidth - tooltipWidth / 2 - 10;
-    }
-    
-    // Adjust Y position to keep tooltip within viewport
-    if (y + tooltipHeight > viewportHeight - 10) {
-      // Too close to bottom edge, show above the card
-      y = rect.top - tooltipHeight - 10;
-      
-      // If showing above would also be outside viewport, show at top with margin
-      if (y < 10) {
-        y = 10;
-      }
-    }
-    
-    setTooltipPosition({ x, y });
+    setTooltipPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.bottom + 10
+    });
     
     // Clear any existing timeout
     if (tooltipTimeout) {
