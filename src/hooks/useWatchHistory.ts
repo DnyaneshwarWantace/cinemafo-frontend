@@ -273,6 +273,18 @@ export const useWatchHistory = () => {
         thumbnailDataUrl
       };
 
+      // Debug logging for TV shows
+      if (type === 'tv') {
+        console.log('🎬 Saving TV show progress:', {
+          id: item.id,
+          title: historyItem.title,
+          season,
+          episode,
+          currentTime,
+          duration
+        });
+      }
+
       setWatchHistory(prev => {
         // Ensure prev is an array to prevent state corruption
         if (!Array.isArray(prev)) {

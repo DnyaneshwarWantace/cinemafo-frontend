@@ -185,6 +185,14 @@ const Home = () => {
       }
 
       if (content) {
+        console.log('🎬 Continue watching click - TV show:', {
+          id: historyItem.id,
+          type: historyItem.type,
+          season: historyItem.season,
+          episode: historyItem.episode,
+          currentTime: historyItem.currentTime
+        });
+        
         setPlayingContent({
           item: content,
           type: historyItem.type,

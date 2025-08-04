@@ -115,6 +115,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onProgressUpdate: propOnProgressUpdate,
   initialTime: propInitialTime = 0
 }) => {
+  // Debug logging for TV shows
+  if (propType === 'tv') {
+    console.log('🎬 VideoPlayer props for TV show:', {
+      tmdbId: propTmdbId,
+      type: propType,
+      season: propSeason,
+      episode: propEpisode,
+      title: propTitle,
+      initialTime: propInitialTime
+    });
+  }
   // Suppress LT.JS TCF errors from iframe content
   useEffect(() => {
     const originalError = console.error;
@@ -192,6 +203,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
   const [selectedAudioTrack, setSelectedAudioTrack] = useState<number>(-1);
@@ -619,11 +631,37 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       if (playerContainerRef.current) {
-        playerContainerRef.current.requestFullscreen().catch(console.error);
+        // Request fullscreen first
+        playerContainerRef.current.requestFullscreen().then(() => {
+          // After fullscreen is activated, try to lock to landscape
+          if (screen.orientation && 'lock' in screen.orientation) {
+            (screen.orientation as any).lock('landscape').catch((error: any) => {
+              console.log('Could not lock to landscape orientation:', error);
+              // Fallback: try to rotate the screen if lock fails
+              if (screen.orientation && screen.orientation.angle !== 90) {
+                try {
+                  // Some devices support this method
+                  (screen.orientation as any).rotate(90);
+                } catch (rotateError) {
+                  console.log('Could not rotate screen:', rotateError);
+                }
+              }
+            });
+          } else {
+            // Fallback for devices without screen orientation API
+            console.log('Screen orientation API not supported');
+          }
+        }).catch(console.error);
       }
     } else {
+      // Exit fullscreen and unlock orientation
       if (document.fullscreenElement) {
-        document.exitFullscreen().catch(console.error);
+        document.exitFullscreen().then(() => {
+          // Unlock orientation when exiting fullscreen
+          if (screen.orientation && 'unlock' in screen.orientation) {
+            (screen.orientation as any).unlock();
+          }
+        }).catch(console.error);
       }
     }
   }, [isFullscreen]);
@@ -696,14 +734,39 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     };
   }, []);
 
-  // Fullscreen detection
+  // Fullscreen detection and orientation handling
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isFullscreenNow = !!document.fullscreenElement;
+      setIsFullscreen(isFullscreenNow);
+      
+      // If exiting fullscreen, unlock orientation
+      if (!isFullscreenNow && screen.orientation && 'unlock' in screen.orientation) {
+        (screen.orientation as any).unlock();
+        setIsLandscape(false);
+      }
+    };
+
+    const handleOrientationChange = () => {
+      if (screen.orientation) {
+        const isLandscapeNow = screen.orientation.angle === 90 || screen.orientation.angle === 270;
+        setIsLandscape(isLandscapeNow);
+      }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    window.addEventListener('orientationchange', handleOrientationChange);
+    
+    // Initial orientation check
+    if (screen.orientation) {
+      const isLandscapeNow = screen.orientation.angle === 90 || screen.orientation.angle === 270;
+      setIsLandscape(isLandscapeNow);
+    }
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
   }, []);
 
   // Show center play button when paused
@@ -1515,7 +1578,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               className="absolute top-4 right-4 flex items-center gap-2 pointer-events-auto"
                   onClick={(e) => e.stopPropagation()}
             >
-              {/* Empty for now - removed duplicate controls */}
+              {/* Landscape Mode Indicator */}
+              {isFullscreen && isLandscape && (
+                <div className="bg-black/70 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                  <span>🌐</span>
+                  <span>Landscape</span>
+                </div>
+              )}
                 </div>
             
             {/* Bottom Controls */}
@@ -1679,6 +1748,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     toggleFullscreen();
                   }}
                   className="text-white hover:bg-white/20"
+                  title={isFullscreen ? (isLandscape ? 'Exit Fullscreen (Landscape)' : 'Exit Fullscreen') : 'Enter Fullscreen (Auto Landscape)'}
                 >
                   {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
                 </Button>

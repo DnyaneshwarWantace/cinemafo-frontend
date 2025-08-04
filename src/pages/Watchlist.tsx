@@ -3,6 +3,9 @@ import { Bookmark, Trash2, Play, Info, Heart, Star, Calendar, X } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Movie, TVShow } from '@/services/api';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
+import MovieModal from '@/components/MovieModal';
+import TVShowPlayer from '@/components/TVShowPlayer';
 
 const Watchlist = () => {
   const navigate = useNavigate();
@@ -11,6 +14,8 @@ const Watchlist = () => {
   const [tooltipItem, setTooltipItem] = useState<Movie | TVShow | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [selectedItem, setSelectedItem] = useState<Movie | TVShow | null>(null);
+  const { updateProgress } = useWatchHistory();
 
 
   useEffect(() => {
@@ -29,48 +34,60 @@ const Watchlist = () => {
 
   // Cleanup tooltip on component unmount or when items change
   useEffect(() => {
+    // Debounced mouse move handler to reduce performance impact
+    let mouseMoveTimeout: NodeJS.Timeout;
+    
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      // If mouse moves outside the watchlist area, hide tooltip
-      const watchlistElement = document.querySelector('.watchlist-container');
-      if (watchlistElement && !watchlistElement.contains(e.target as Node)) {
-        hideTooltip();
+      // Clear existing timeout
+      if (mouseMoveTimeout) {
+        clearTimeout(mouseMoveTimeout);
       }
+      
+      // Debounce the mouse move check
+      mouseMoveTimeout = setTimeout(() => {
+        const watchlistElement = document.querySelector('.watchlist-container');
+        if (watchlistElement && !watchlistElement.contains(e.target as Node)) {
+          hideTooltip();
+        }
+      }, 50); // 50ms debounce
     };
 
     const handleVisibilityChange = () => {
-      // Hide tooltip when page becomes hidden (user switches tabs)
       if (document.hidden) {
         hideTooltip();
       }
     };
 
     const handleGlobalClick = () => {
-      // Hide tooltip when clicking anywhere
       hideTooltip();
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Hide tooltip on Escape key
       if (e.key === 'Escape') {
         hideTooltip();
       }
     };
 
+    // Debounced scroll handler
+    let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
-      // Hide tooltip when scrolling
-      hideTooltip();
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      scrollTimeout = setTimeout(() => {
+        hideTooltip();
+      }, 100); // 100ms debounce
     };
 
     const handleHideTooltips = () => {
-      // Hide tooltip when modal opens
       hideTooltip();
     };
 
-    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mousemove', handleGlobalMouseMove, { passive: true });
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('click', handleGlobalClick);
     document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('scroll', handleScroll);
+    document.addEventListener('scroll', handleScroll, { passive: true });
     document.addEventListener('hideTooltips', handleHideTooltips);
 
     return () => {
@@ -80,6 +97,13 @@ const Watchlist = () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('scroll', handleScroll);
       document.removeEventListener('hideTooltips', handleHideTooltips);
+      
+      if (mouseMoveTimeout) {
+        clearTimeout(mouseMoveTimeout);
+      }
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
       
       hideTooltip();
     };
@@ -116,18 +140,7 @@ const Watchlist = () => {
   };
 
   const handleItemClick = (item: Movie | TVShow) => {
-    // Get current page to pass as 'from' parameter  
-    const currentPage = location.pathname + location.search;
-    
-    if ('title' in item) {
-      // Get current page to pass as 'from' parameter  
-      const currentPage = location.pathname + location.search;
-      navigate(`/movie-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
-    } else {
-      // Get current page to pass as 'from' parameter  
-      const currentPage = location.pathname + location.search;
-      navigate(`/tv-modal/${item.id}?from=${encodeURIComponent(currentPage)}`);
-    }
+    setSelectedItem(item);
   };
 
   const clearWatchlist = () => {
@@ -157,6 +170,26 @@ const Watchlist = () => {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  // Progress update handler
+  const handleProgressUpdate = (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => {
+    if (selectedItem) {
+      try {
+        updateProgress(
+          selectedItem,
+          currentTime,
+          duration,
+          'title' in selectedItem ? 'movie' : 'tv',
+          undefined,
+          undefined,
+          undefined,
+          videoElement
+        );
+      } catch (error) {
+        console.error('Error updating progress:', error);
+      }
+    }
   };
 
   // Tooltip functionality
@@ -225,7 +258,7 @@ const Watchlist = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20">
+      <div className="min-h-screen bg-black pt-32 sm:pt-32 md:pt-32">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8 watchlist-container">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -236,7 +269,7 @@ const Watchlist = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20 relative">
+    <div className="min-h-screen bg-black pt-32 sm:pt-32 md:pt-32 relative">
       <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 py-8 relative">
         {/* Header with Clear All Button */}
         <div className="mb-8 flex justify-between items-start">
@@ -392,18 +425,29 @@ const Watchlist = () => {
                   </p>
                 )}
                 
-                {tooltipItem.cast && tooltipItem.cast.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-gray-400 text-xs">
-                      <span className="text-gray-500">Cast:</span> {tooltipItem.cast.slice(0, 3).map(actor => actor.name).join(', ')}
-                      {tooltipItem.cast.length > 3 && '...'}
-                    </p>
-                  </div>
-                )}
+
               </div>
             </div>
           </div>
           </div>
+      )}
+
+      {/* Movie Modal */}
+      {selectedItem && 'title' in selectedItem && (
+        <MovieModal
+          movie={selectedItem as Movie}
+          onClose={() => setSelectedItem(null)}
+          onProgressUpdate={handleProgressUpdate}
+        />
+      )}
+
+      {/* TV Show Player */}
+      {selectedItem && 'name' in selectedItem && (
+        <TVShowPlayer
+          show={selectedItem as TVShow}
+          onClose={() => setSelectedItem(null)}
+          onProgressUpdate={handleProgressUpdate}
+        />
       )}
     </div>
   );

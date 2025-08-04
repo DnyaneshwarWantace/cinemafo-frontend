@@ -233,7 +233,6 @@ const Index = () => {
       <HeroSlider 
         items={trendingMovies?.data?.results?.slice(0, 5) || []} 
         onItemClick={handleMovieClick}
-        trendingMovies={trendingMovies?.data?.results || []}
       />
 
       {/* Mobile Content */}

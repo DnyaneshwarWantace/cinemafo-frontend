@@ -161,7 +161,7 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
 
 
   return (
-    <div className="mb-12">
+    <div className="mb-12 relative z-20">
       <h2 className="text-xl md:text-2xl font-bold text-white mb-4">Continue Watching</h2>
       
       <div className="relative">

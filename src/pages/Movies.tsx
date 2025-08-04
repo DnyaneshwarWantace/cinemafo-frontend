@@ -8,6 +8,7 @@ import LoadingBar from '@/components/LoadingBar';
 import api, { Movie, getCachedData, setCachedData } from '@/services/api';
 import useAdminSettings from '@/hooks/useAdminSettings';
 import MovieModal from '@/components/MovieModal';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
 
 const Movies = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const Movies = () => {
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const [watchlistUpdate, setWatchlistUpdate] = useState(0);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const { updateProgress } = useWatchHistory();
 
   const handleMouseEnter = (e: React.MouseEvent, item: Movie) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -153,48 +155,60 @@ const Movies = () => {
 
   // Cleanup tooltip on component unmount or when items change
   useEffect(() => {
+    // Debounced mouse move handler to reduce performance impact
+    let mouseMoveTimeout: NodeJS.Timeout;
+    
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      // If mouse moves outside the movies area, hide tooltip
-      const moviesElement = document.querySelector('.movies-container');
-      if (moviesElement && !moviesElement.contains(e.target as Node)) {
-        hideTooltip();
+      // Clear existing timeout
+      if (mouseMoveTimeout) {
+        clearTimeout(mouseMoveTimeout);
       }
+      
+      // Debounce the mouse move check
+      mouseMoveTimeout = setTimeout(() => {
+        const moviesElement = document.querySelector('.movies-container');
+        if (moviesElement && !moviesElement.contains(e.target as Node)) {
+          hideTooltip();
+        }
+      }, 50); // 50ms debounce
     };
 
     const handleVisibilityChange = () => {
-      // Hide tooltip when page becomes hidden (user switches tabs)
       if (document.hidden) {
         hideTooltip();
       }
     };
 
     const handleGlobalClick = () => {
-      // Hide tooltip when clicking anywhere
       hideTooltip();
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Hide tooltip on Escape key
       if (e.key === 'Escape') {
         hideTooltip();
       }
     };
 
+    // Debounced scroll handler
+    let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
-      // Hide tooltip when scrolling
-      hideTooltip();
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      scrollTimeout = setTimeout(() => {
+        hideTooltip();
+      }, 100); // 100ms debounce
     };
 
     const handleHideTooltips = () => {
-      // Hide tooltip when modal opens
       hideTooltip();
     };
 
-    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mousemove', handleGlobalMouseMove, { passive: true });
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('click', handleGlobalClick);
     document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('scroll', handleScroll);
+    document.addEventListener('scroll', handleScroll, { passive: true });
     document.addEventListener('hideTooltips', handleHideTooltips);
 
     return () => {
@@ -204,6 +218,13 @@ const Movies = () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('scroll', handleScroll);
       document.removeEventListener('hideTooltips', handleHideTooltips);
+      
+      if (mouseMoveTimeout) {
+        clearTimeout(mouseMoveTimeout);
+      }
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
       
       hideTooltip();
     };
@@ -295,6 +316,26 @@ const Movies = () => {
     return isNaN(date.getTime()) ? 'Unknown' : date.getFullYear().toString();
   };
 
+  // Progress update handler
+  const handleProgressUpdate = (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => {
+    if (selectedMovie) {
+      try {
+        updateProgress(
+          selectedMovie,
+          currentTime,
+          duration,
+          'movie',
+          undefined,
+          undefined,
+          undefined,
+          videoElement
+        );
+      } catch (error) {
+        console.error('Error updating progress:', error);
+      }
+    }
+  };
+
   if (error) {
     return (
       <div className="min-h-screen bg-black pt-20">
@@ -314,7 +355,7 @@ const Movies = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black pt-20 sm:pt-20 md:pt-20 movies-container" style={{ position: 'relative' }}>
+    <div className="min-h-screen bg-black pt-32 sm:pt-32 md:pt-32 movies-container" style={{ position: 'relative' }}>
       {/* Loading Bar */}
       <LoadingBar isLoading={loading} />
       {/* Mobile Header - Netflix Style */}
@@ -701,14 +742,7 @@ const Movies = () => {
                   </p>
                 )}
                 
-                {tooltipItem.cast && tooltipItem.cast.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-gray-400 text-xs">
-                      <span className="text-gray-500">Cast:</span> {tooltipItem.cast.slice(0, 3).map(actor => actor.name).join(', ')}
-                      {tooltipItem.cast.length > 3 && '...'}
-                    </p>
-                  </div>
-                )}
+
               </div>
             </div>
           </div>
@@ -720,6 +754,7 @@ const Movies = () => {
         <MovieModal
           movie={selectedMovie}
           onClose={() => setSelectedMovie(null)}
+          onProgressUpdate={handleProgressUpdate}
         />
       )}
     </div>

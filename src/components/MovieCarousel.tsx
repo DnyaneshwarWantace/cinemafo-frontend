@@ -31,43 +31,56 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
 
   // Cleanup tooltip on component unmount or when items change
   useEffect(() => {
+    // Debounced mouse move handler to reduce performance impact
+    let mouseMoveTimeout: NodeJS.Timeout;
+    
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      // If mouse moves outside the carousel area, hide tooltip
-      const carouselElement = scrollRef.current;
-      if (carouselElement && !carouselElement.contains(e.target as Node)) {
-        hideTooltip();
+      // Clear existing timeout
+      if (mouseMoveTimeout) {
+        clearTimeout(mouseMoveTimeout);
       }
+      
+      // Debounce the mouse move check
+      mouseMoveTimeout = setTimeout(() => {
+        const carouselElement = scrollRef.current;
+        if (carouselElement && !carouselElement.contains(e.target as Node)) {
+          hideTooltip();
+        }
+      }, 50); // 50ms debounce
     };
 
     const handleVisibilityChange = () => {
-      // Hide tooltip when page becomes hidden (user switches tabs)
       if (document.hidden) {
         hideTooltip();
       }
     };
 
     const handleGlobalClick = () => {
-      // Hide tooltip when clicking anywhere
       hideTooltip();
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Hide tooltip on Escape key
       if (e.key === 'Escape') {
         hideTooltip();
       }
     };
 
+    // Debounced scroll handler
+    let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
-      // Hide tooltip when scrolling
-      hideTooltip();
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      scrollTimeout = setTimeout(() => {
+        hideTooltip();
+      }, 100); // 100ms debounce
     };
 
-    document.addEventListener('mousemove', handleGlobalMouseMove);
+    document.addEventListener('mousemove', handleGlobalMouseMove, { passive: true });
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('click', handleGlobalClick);
     document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('scroll', handleScroll);
+    document.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
@@ -75,6 +88,13 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       document.removeEventListener('click', handleGlobalClick);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('scroll', handleScroll);
+      
+      if (mouseMoveTimeout) {
+        clearTimeout(mouseMoveTimeout);
+      }
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
       
       hideTooltip();
     };
@@ -207,10 +227,10 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       setTooltipTimeout(null);
     }
     
-    // Set timeout for 1.5 seconds
+    // Set timeout for 200ms (fast and responsive)
     const timeout = setTimeout(() => {
       setTooltipItem(item);
-    }, 1500);
+    }, 200);
     
     setTooltipTimeout(timeout);
   };
@@ -244,15 +264,15 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
   }
 
   return (
-    <div className="mb-12 group">
-      <h2 className="text-xl md:text-2xl font-bold text-white mb-4">{title}</h2>
+    <div className="mb-12 group relative z-10">
+      <h2 className="text-xl md:text-2xl font-bold text-white mb-4 px-4 lg:px-0">{title}</h2>
       
       <div className="relative">
         {/* Left Arrow */}
         {showLeftArrow && (
           <button
             onClick={() => scroll('left')}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/80 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+            className="absolute left-4 lg:left-0 top-1/2 -translate-y-1/2 z-10 bg-black/80 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
           >
             <ChevronLeft size={24} />
           </button>
@@ -262,7 +282,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
         {showRightArrow && (
           <button
             onClick={() => scroll('right')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/80 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+            className="absolute right-4 lg:right-0 top-1/2 -translate-y-1/2 z-10 bg-black/80 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
           >
             <ChevronRight size={24} />
           </button>
@@ -275,7 +295,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          className={`flex gap-4 overflow-x-auto scrollbar-hide pb-4 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`flex gap-4 overflow-x-auto scrollbar-hide pb-4 px-4 lg:px-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ 
             scrollbarWidth: 'none', 
             msOverflowStyle: 'none',
@@ -407,6 +427,8 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                     {tooltipItem.overview}
                   </p>
                 )}
+                
+
               </div>
             </div>
           </div>
