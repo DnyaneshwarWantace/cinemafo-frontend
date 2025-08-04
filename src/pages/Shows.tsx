@@ -688,10 +688,11 @@ const Shows = () => {
 
         {/* Bottom Ad */}
           {adminSettings?.ads?.showsPageBottomAd?.enabled && (
-                <div className="mb-8">
+                <div className="px-4 mb-8">
           <AdBanner 
             adKey="showsPageBottomAd" 
                 imageUrl={adminSettings.ads.showsPageBottomAd.imageUrl}
+                cloudinaryUrl={adminSettings.ads.showsPageBottomAd.cloudinaryUrl}
                 clickUrl={adminSettings.ads.showsPageBottomAd.clickUrl}
                 enabled={adminSettings.ads.showsPageBottomAd.enabled}
           />

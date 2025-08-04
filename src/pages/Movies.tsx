@@ -680,10 +680,11 @@ const Movies = () => {
 
         {/* Bottom Ad */}
           {adminSettings?.ads?.moviesPageBottomAd?.enabled && (
-                <div className="mb-8">
+                <div className="px-4 mb-8">
           <AdBanner 
             adKey="moviesPageBottomAd" 
                 imageUrl={adminSettings.ads.moviesPageBottomAd.imageUrl}
+                cloudinaryUrl={adminSettings.ads.moviesPageBottomAd.cloudinaryUrl}
                 clickUrl={adminSettings.ads.moviesPageBottomAd.clickUrl}
                 enabled={adminSettings.ads.moviesPageBottomAd.enabled}
               />
