@@ -23,13 +23,6 @@ const Home = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
-  const [playingContent, setPlayingContent] = useState<{
-    item: Movie | TVShow;
-    type: 'movie' | 'tv';
-    season?: number;
-    episode?: number;
-    initialTime?: number;
-  } | null>(null);
   const { settings: adminSettings } = useAdminSettings();
   const { getContinueWatching, updateProgress, removeFromHistory, getThumbnailUrl, watchHistory } = useWatchHistory();
   
@@ -155,52 +148,28 @@ const Home = () => {
 
   const handleContinueWatchingClick = async (historyItem: any) => {
     try {
-      // Find the actual content from our data
-      let content: Movie | TVShow | null = null;
+      // Navigate to video player page with the history item data
+      const params = new URLSearchParams({
+        id: historyItem.id.toString(),
+        type: historyItem.type,
+        title: historyItem.title,
+        time: historyItem.currentTime.toString()
+      });
 
-      if (historyItem.type === 'movie') {
-        content = [...trendingMovies, ...popularMovies].find(m => m.id === historyItem.id) || null;
-        if (!content) {
-          // Fetch full movie details if not found
-          try {
-            const response = await api.getMovieDetails(historyItem.id);
-            content = response.data;
-          } catch (err) {
-            console.error('Failed to fetch movie details:', err);
-            return;
-          }
-        }
-      } else {
-        content = [...trendingShows, ...popularShows].find(s => s.id === historyItem.id) || null;
-        if (!content) {
-          // Fetch full show details if not found
-          try {
-            const response = await api.getShowDetails(historyItem.id);
-            content = response.data;
-          } catch (err) {
-            console.error('Failed to fetch show details:', err);
-            return;
-          }
-        }
+      if (historyItem.type === 'tv' && historyItem.season && historyItem.episode) {
+        params.append('season', historyItem.season.toString());
+        params.append('episode', historyItem.episode.toString());
       }
 
-      if (content) {
-        console.log('🎬 Continue watching click - TV show:', {
-          id: historyItem.id,
-          type: historyItem.type,
-          season: historyItem.season,
-          episode: historyItem.episode,
-          currentTime: historyItem.currentTime
-        });
-        
-        setPlayingContent({
-          item: content,
-          type: historyItem.type,
-          season: historyItem.season,
-          episode: historyItem.episode,
-          initialTime: historyItem.currentTime
-        });
-      }
+      console.log('🎬 Continue watching click - navigating to video player:', {
+        id: historyItem.id,
+        type: historyItem.type,
+        season: historyItem.season,
+        episode: historyItem.episode,
+        currentTime: historyItem.currentTime
+      });
+      
+      navigate(`/watch?${params.toString()}`);
     } catch (error) {
       console.error('Error handling continue watching click:', error);
     }
@@ -208,19 +177,7 @@ const Home = () => {
 
   const handleProgressUpdate = (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => {
     try {
-      if (playingContent) {
-        // Handle progress updates from continue watching player
-        updateProgress(
-          playingContent.item,
-          currentTime,
-          duration,
-          playingContent.type,
-          playingContent.season,
-          playingContent.episode,
-          undefined, // episodeTitle
-          videoElement
-        );
-      } else if (selectedMovie) {
+      if (selectedMovie) {
         // Handle progress updates from movie modal
         updateProgress(
           selectedMovie,
@@ -409,21 +366,7 @@ const Home = () => {
         )}
       </div>
 
-      {/* Video Player for Continue Watching */}
-      {playingContent && (
-        <VideoPlayer
-          tmdbId={playingContent.item.id}
-          type={playingContent.type}
-          season={playingContent.season}
-          episode={playingContent.episode}
-          title={'title' in playingContent.item ? playingContent.item.title : playingContent.item.name}
-          onClose={() => {
-            setPlayingContent(null);
-          }}
-          onProgressUpdate={handleProgressUpdate}
-          initialTime={playingContent.initialTime}
-        />
-      )}
+
 
       {/* Movie Modal */}
       {selectedMovie && (

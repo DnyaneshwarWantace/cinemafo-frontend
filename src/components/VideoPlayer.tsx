@@ -5,6 +5,8 @@ import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
 import { X, Play, Pause, Volume2, VolumeX, Settings, Maximize, Minimize, Languages, SkipForward, SkipBack, ArrowLeft, Zap, RefreshCw, SkipForward as NextEpisode, Zap as SkipIntro } from 'lucide-react';
+import { useWatchHistory } from '@/hooks/useWatchHistory';
+import api, { Movie, TVShow } from '@/services/api';
 
 // Background HLS Prefetching Utility
 class HLSPrefetcher {
@@ -143,6 +145,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, []);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { updateProgress } = useWatchHistory();
   
   // Get parameters from URL if not provided as props (for route usage)
   const tmdbId = propTmdbId || parseInt(searchParams.get('id') || '0');
@@ -174,15 +177,82 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       </div>
     );
   }
-  const onNextEpisode = propOnNextEpisode || (() => {
-    // For route usage, navigate to next episode
-    const nextEpisode = episode + 1;
-    const nextSeason = season;
-    navigate(`/watch?id=${tmdbId}&type=${type}&season=${nextSeason}&episode=${nextEpisode}&title=${encodeURIComponent(title)}`);
+  const onNextEpisode = propOnNextEpisode || (async () => {
+    // For route usage, fetch next episode info and navigate
+    try {
+      if (type === 'tv' && tmdbId && season && episode) {
+        // Fetch season details to find next episode
+        const response = await api.getShowSeason(tmdbId, season);
+        const episodes = response.data.episodes || [];
+        const currentEpisodeIndex = episodes.findIndex(ep => ep.episode_number === episode);
+        
+        if (currentEpisodeIndex >= 0 && currentEpisodeIndex < episodes.length - 1) {
+          // Next episode in same season
+          const nextEpisode = episodes[currentEpisodeIndex + 1];
+          navigate(`/watch?id=${tmdbId}&type=${type}&season=${season}&episode=${nextEpisode.episode_number}&title=${encodeURIComponent(title)}`);
+        } else {
+          // Check if there's a next season
+          const showResponse = await api.getShowDetails(tmdbId);
+          const seasons = showResponse.data.seasons?.filter(s => s.season_number > 0) || [];
+          const currentSeasonIndex = seasons.findIndex(s => s.season_number === season);
+          
+          if (currentSeasonIndex >= 0 && currentSeasonIndex < seasons.length - 1) {
+            // Next season, first episode
+            const nextSeason = seasons[currentSeasonIndex + 1];
+            navigate(`/watch?id=${tmdbId}&type=${type}&season=${nextSeason.season_number}&episode=1&title=${encodeURIComponent(title)}`);
+          } else {
+            // No more episodes, go back to home
+            navigate('/');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error navigating to next episode:', error);
+      // Fallback: just increment episode number
+      navigate(`/watch?id=${tmdbId}&type=${type}&season=${season}&episode=${episode + 1}&title=${encodeURIComponent(title)}`);
+    }
   });
-  const onProgressUpdate = propOnProgressUpdate || (() => {
-    // For route usage, we might want to save progress to localStorage or call an API
-    console.log('Progress update for route video player');
+  const onProgressUpdate = propOnProgressUpdate || (async (currentTime: number, duration: number, videoElement?: HTMLVideoElement) => {
+    // For route usage, save progress to watch history
+    try {
+      if (tmdbId && type) {
+        // Fetch content details if needed for progress update
+        let content: Movie | TVShow | null = null;
+        
+        if (type === 'movie') {
+          try {
+            const response = await api.getMovieDetails(tmdbId);
+            content = response.data;
+          } catch (err) {
+            console.error('Failed to fetch movie details for progress update:', err);
+            return;
+          }
+        } else if (type === 'tv') {
+          try {
+            const response = await api.getShowDetails(tmdbId);
+            content = response.data;
+          } catch (err) {
+            console.error('Failed to fetch show details for progress update:', err);
+            return;
+          }
+        }
+        
+        if (content) {
+          updateProgress(
+            content,
+            currentTime,
+            duration,
+            type,
+            type === 'tv' ? season : undefined,
+            type === 'tv' ? episode : undefined,
+            undefined, // episodeTitle
+            videoElement
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error updating progress in route video player:', error);
+    }
   });
 
   const videoRef = useRef<HTMLVideoElement>(null);

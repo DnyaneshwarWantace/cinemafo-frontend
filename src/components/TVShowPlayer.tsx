@@ -32,7 +32,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
   const [isOpen, setIsOpen] = useState(false);
   const [showExpandedDetails, setShowExpandedDetails] = useState(false);
   const [castPage, setCastPage] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+
   const { settings: adminSettings } = useAdminSettings();
   const { getHistoryItem } = useWatchHistory();
 
@@ -105,40 +105,18 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
   }, [show.id, selectedSeason]);
 
   const handlePlayEpisode = (episodeNumber: number) => {
-    setSelectedEpisode(episodeNumber);
-    setIsPlaying(true);
+    // Navigate to video player page for TV shows
+    const params = new URLSearchParams({
+      id: show.id.toString(),
+      type: 'tv',
+      season: selectedSeason.toString(),
+      episode: episodeNumber.toString(),
+      title: show.name || 'TV Show'
+    });
+    navigate(`/watch?${params.toString()}`);
   };
 
-  // Auto-play next episode function
-  const handleNextEpisode = () => {
-    const currentEpisodes = seasonDetails?.episodes || [];
-    const currentEpisodeIndex = currentEpisodes.findIndex(ep => ep.episode_number === selectedEpisode);
-    
-    if (currentEpisodeIndex >= 0 && currentEpisodeIndex < currentEpisodes.length - 1) {
-      // Next episode in same season
-      const nextEpisode = currentEpisodes[currentEpisodeIndex + 1];
-      console.log(`🎬 Auto-playing next episode: S${selectedSeason}E${nextEpisode.episode_number}`);
-      setSelectedEpisode(nextEpisode.episode_number);
-      // Keep playing state true to continue
-    } else {
-      // Check if there's a next season
-      const seasons = getSeasonOptions();
-      const currentSeasonIndex = seasons.findIndex(s => s.season_number === selectedSeason);
-      
-      if (currentSeasonIndex >= 0 && currentSeasonIndex < seasons.length - 1) {
-        // Next season, first episode
-        const nextSeason = seasons[currentSeasonIndex + 1];
-        console.log(`🎬 Auto-playing next season: S${nextSeason.season_number}E1`);
-        setSelectedSeason(nextSeason.season_number);
-        setSelectedEpisode(1);
-        // Keep playing state true to continue
-      } else {
-        // No more episodes/seasons, stop auto-play
-        console.log('🎬 No more episodes to auto-play');
-        setIsPlaying(false);
-      }
-    }
-  };
+
 
 
 
@@ -603,43 +581,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
         </div>
       </div>
 
-      {/* Video Player */}
-      {isPlaying && (
-        <VideoPlayer
-          tmdbId={show.id}
-          type="tv"
-          title={show.name || 'TV Show'}
-          season={selectedSeason}
-          episode={selectedEpisode}
-          onClose={() => {
-            setIsPlaying(false);
-          }}
-          onNextEpisode={handleNextEpisode}
-          onProgressUpdate={(currentTime, duration, videoElement) => {
-            // Create a wrapper that includes the show, season, and episode information
-            if (onProgressUpdate) {
-              // We need to pass the show data along with the progress
-              // Since onProgressUpdate doesn't include show data, we'll need to handle this differently
-              // For now, we'll use a custom event to update the progress with show data
-              const progressEvent = new CustomEvent('tvShowProgressUpdate', {
-                detail: {
-                  show,
-                  currentTime,
-                  duration,
-                  season: selectedSeason,
-                  episode: selectedEpisode,
-                  videoElement
-                }
-              });
-              document.dispatchEvent(progressEvent);
-              
-              // Also call the parent's onProgressUpdate for compatibility
-              onProgressUpdate(currentTime, duration, videoElement);
-            }
-          }}
-          initialTime={getHistoryItem(show.id, 'tv', selectedSeason, selectedEpisode)?.currentTime || 0}
-        />
-      )}
+
 
       {/* Hide scrollbar styles */}
       <style dangerouslySetInnerHTML={{

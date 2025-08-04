@@ -64,7 +64,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
 
 
 
-  const [showFullMovie, setShowFullMovie] = useState(false);
+
 
   const handleWatchNow = () => {
     const releaseDate = movie.release_date || movie.first_air_date;
@@ -88,7 +88,13 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
       onClose();
       setShowTVShowPlayer(true);
     } else {
-      setShowFullMovie(true);
+      // Navigate to video player page for movies
+      const params = new URLSearchParams({
+        id: movie.id.toString(),
+        type: 'movie',
+        title: movie.title || movie.name || 'Movie'
+      });
+      navigate(`/watch?${params.toString()}`);
     }
   };
 
@@ -475,24 +481,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
       </div>
           </div>
 
-      {/* Video Player */}
-      {showFullMovie && (
-        <VideoPlayer
-          tmdbId={movie.id}
-          type="movie"
-          title={movie.title || movie.name || 'Movie'}
-          onClose={() => {
-            setShowFullMovie(false);
-          }}
-          onProgressUpdate={(currentTime, duration, videoElement) => {
-            // Use the parent's progress update function if provided, otherwise use local update
-            if (onProgressUpdate) {
-              onProgressUpdate(currentTime, duration, videoElement);
-            }
-          }}
-          initialTime={getHistoryItem(movie.id, 'movie')?.currentTime || 0}
-        />
-      )}
+
 
       {/* TV Show Player */}
       {showTVShowPlayer && movie.media_type === 'tv' && (
