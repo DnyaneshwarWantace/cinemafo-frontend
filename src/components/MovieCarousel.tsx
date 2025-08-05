@@ -324,7 +324,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          className={`flex gap-4 overflow-x-auto scrollbar-hide pb-4 px-4 lg:px-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`flex gap-4 overflow-x-auto scrollbar-hide pb-4 pr-4 lg:px-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{ 
             scrollbarWidth: 'none', 
             msOverflowStyle: 'none',
@@ -334,7 +334,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
           {items.map((item) => (
             <div
               key={item.id}
-              className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] cursor-pointer group/item"
+              className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] cursor-pointer group/item first:ml-4 lg:first:ml-0"
               onClick={() => onItemClick(item)}
               onMouseEnter={(e) => handleMouseEnter(e, item)}
               onMouseLeave={handleTooltipMouseLeave}
