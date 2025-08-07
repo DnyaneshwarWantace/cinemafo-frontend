@@ -63,7 +63,7 @@ VITE_DISCORD_URL=your_discord_invite_url
 ## Features
 
 ### Pages
-- Home: Trending and top-rated content
+- Home: Trending and top_rated content
 - Movies: Browse and filter movies
 - Shows: TV show browsing
 - Search: Advanced search functionality

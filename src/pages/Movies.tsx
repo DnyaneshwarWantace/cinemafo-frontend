@@ -63,14 +63,21 @@ const Movies = () => {
     
     setTooltipPosition({ x, y });
     
-    // Clear any existing timeout immediately
+    // Clear any existing timeout and hide current tooltip immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
     
-    // Show tooltip immediately for better responsiveness
-    setTooltipItem(item);
+    // Hide current tooltip immediately when moving to new item
+    setTooltipItem(null);
+    
+    // Set timeout for 200ms delay as requested by client
+    const timeout = setTimeout(() => {
+      setTooltipItem(item);
+    }, 400);
+    
+    setTooltipTimeout(timeout);
   };
   const handleTooltipMouseLeave = () => {
     // Clear any existing timeout immediately
@@ -101,7 +108,7 @@ const Movies = () => {
       let trendingMovies, popularMovies, topRatedMovies;
       
       if (cachedTrending && cachedPopular) {
-        // Use cached data for trending and popular, only fetch top-rated
+        // Use cached data for trending and popular, only fetch top_rated
         console.log('🚀 Using cached data for trending and popular movies');
         trendingMovies = cachedTrending;
         popularMovies = cachedPopular;
@@ -153,24 +160,22 @@ const Movies = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Cleanup tooltip on component unmount or when items change
+  // Optimized tooltip cleanup - reduced debounce times for faster response
   useEffect(() => {
-    // Debounced mouse move handler to reduce performance impact
     let mouseMoveTimeout: NodeJS.Timeout;
     
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      // Clear existing timeout
       if (mouseMoveTimeout) {
         clearTimeout(mouseMoveTimeout);
       }
       
-      // Debounce the mouse move check
+      // Much faster debounce for immediate response
       mouseMoveTimeout = setTimeout(() => {
         const moviesElement = document.querySelector('.movies-container');
         if (moviesElement && !moviesElement.contains(e.target as Node)) {
           hideTooltip();
         }
-      }, 50); // 50ms debounce
+      }, 10); // Reduced from 50ms to 10ms
     };
 
     const handleVisibilityChange = () => {
@@ -189,7 +194,7 @@ const Movies = () => {
       }
     };
 
-    // Debounced scroll handler
+    // Optimized scroll handler
     let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
       if (scrollTimeout) {
@@ -197,7 +202,7 @@ const Movies = () => {
       }
       scrollTimeout = setTimeout(() => {
         hideTooltip();
-      }, 100); // 100ms debounce
+      }, 20); // Reduced from 100ms to 20ms
     };
 
     const handleHideTooltips = () => {
@@ -356,8 +361,6 @@ const Movies = () => {
 
   return (
     <div className="min-h-screen bg-black pt-32 sm:pt-32 md:pt-32 movies-container" style={{ position: 'relative' }}>
-      {/* Loading Bar */}
-      <LoadingBar isLoading={loading} />
       {/* Mobile Header - Netflix Style */}
       <div className="lg:hidden">
         <div className="px-4 py-6">
@@ -516,27 +519,66 @@ const Movies = () => {
         {!loading && (
           <div className="space-y-8">
                 <section>
-              <MovieCarousel 
-                title="Trending Movies"
-                items={trendingMovies}
-                onItemClick={handleMovieClick}
-              />
+              {loading && trendingMovies.length === 0 ? (
+                <div className="mb-12">
+                  <h2 className="text-xl md:text-2xl font-bold text-white mb-4 px-4 lg:px-0">Trending Movies</h2>
+                  <div className="flex gap-4 overflow-x-auto px-4 lg:px-0">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px]">
+                        <div className="aspect-[2/3] bg-gray-800 rounded-lg animate-pulse"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <MovieCarousel 
+                  title="Trending Movies"
+                  items={trendingMovies}
+                  onItemClick={handleMovieClick}
+                />
+              )}
             </section>
 
                 <section>
-              <MovieCarousel 
-                title="Popular Movies"
-                items={popularMovies}
-                onItemClick={handleMovieClick}
-              />
+              {loading && popularMovies.length === 0 ? (
+                <div className="mb-12">
+                  <h2 className="text-xl md:text-2xl font-bold text-white mb-4 px-4 lg:px-0">Popular Movies</h2>
+                  <div className="flex gap-4 overflow-x-auto px-4 lg:px-0">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px]">
+                        <div className="aspect-[2/3] bg-gray-800 rounded-lg animate-pulse"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <MovieCarousel 
+                  title="Popular Movies"
+                  items={popularMovies}
+                  onItemClick={handleMovieClick}
+                />
+              )}
             </section>
 
                 <section>
-              <MovieCarousel 
-                title="Top Rated Movies"
-                items={topRatedMovies}
-                onItemClick={handleMovieClick}
-              />
+              {loading && topRatedMovies.length === 0 ? (
+                <div className="mb-12">
+                  <h2 className="text-xl md:text-2xl font-bold text-white mb-4 px-4 lg:px-0">Top Rated Movies</h2>
+                  <div className="flex gap-4 overflow-x-auto px-4 lg:px-0">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px]">
+                        <div className="aspect-[2/3] bg-gray-800 rounded-lg animate-pulse"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <MovieCarousel 
+                  title="Top Rated Movies"
+                  items={topRatedMovies}
+                  onItemClick={handleMovieClick}
+                />
+              )}
             </section>
 
             {/* Bottom Ad */}

@@ -29,24 +29,22 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Cleanup tooltip on component unmount or when items change
+  // Optimized tooltip cleanup - reduced debounce times for faster response
   useEffect(() => {
-    // Debounced mouse move handler to reduce performance impact
     let mouseMoveTimeout: NodeJS.Timeout;
     
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      // Clear existing timeout
       if (mouseMoveTimeout) {
         clearTimeout(mouseMoveTimeout);
       }
       
-      // Debounce the mouse move check
+      // Much faster debounce for immediate response
       mouseMoveTimeout = setTimeout(() => {
         const carouselElement = scrollRef.current;
         if (carouselElement && !carouselElement.contains(e.target as Node)) {
           hideTooltip();
         }
-      }, 50); // 50ms debounce
+      }, 10); // Reduced from 50ms to 10ms
     };
 
     const handleVisibilityChange = () => {
@@ -65,7 +63,6 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       }
     };
 
-    // Debounced scroll handler
     let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
       if (scrollTimeout) {
@@ -73,7 +70,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       }
       scrollTimeout = setTimeout(() => {
         hideTooltip();
-      }, 100); // 100ms debounce
+      }, 20); // Reduced from 100ms to 20ms
     };
 
     document.addEventListener('mousemove', handleGlobalMouseMove, { passive: true });
@@ -250,16 +247,19 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     
     setTooltipPosition({ x, y });
     
-    // Clear any existing timeout
+    // Clear any existing timeout and hide current tooltip immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
     
-    // Set timeout for 200ms (fast and responsive)
+    // Hide current tooltip immediately when moving to new item
+    setTooltipItem(null);
+    
+    // Set timeout for 200ms delay as requested by client
     const timeout = setTimeout(() => {
       setTooltipItem(item);
-    }, 200);
+    }, 400);
     
     setTooltipTimeout(timeout);
   };

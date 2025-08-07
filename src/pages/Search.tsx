@@ -50,18 +50,16 @@ const Search = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [query, mediaType, filters]);
 
-  // Cleanup tooltip on component unmount or when items change
+  // Optimized tooltip cleanup - reduced debounce times for faster response
   useEffect(() => {
-    // Debounced mouse move handler to reduce performance impact
     let mouseMoveTimeout: NodeJS.Timeout;
     
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      // Clear existing timeout
       if (mouseMoveTimeout) {
         clearTimeout(mouseMoveTimeout);
       }
       
-      // Debounce the mouse move check
+      // Much faster debounce for immediate response
       mouseMoveTimeout = setTimeout(() => {
         // Only hide tooltip if mouse is not over any movie card
         const movieCards = document.querySelectorAll('[data-movie-card]');
@@ -76,7 +74,7 @@ const Search = () => {
         if (!isOverCard) {
           hideTooltip();
         }
-      }, 50); // 50ms debounce
+      }, 10); // Reduced from 50ms to 10ms
     };
 
     const handleVisibilityChange = () => {
@@ -95,7 +93,7 @@ const Search = () => {
       }
     };
 
-    // Debounced scroll handler
+    // Optimized scroll handler
     let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
       if (scrollTimeout) {
@@ -103,7 +101,7 @@ const Search = () => {
       }
       scrollTimeout = setTimeout(() => {
         hideTooltip();
-      }, 100); // 100ms debounce
+      }, 20); // Reduced from 100ms to 20ms
     };
 
     const handleHideTooltips = () => {
@@ -251,16 +249,19 @@ const Search = () => {
     
     setTooltipPosition({ x, y });
     
-    // Clear any existing timeout
+    // Clear any existing timeout and hide current tooltip immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
     
-    // Set timeout for 200ms (fast and responsive)
+    // Hide current tooltip immediately when moving to new item
+    setTooltipItem(null);
+    
+    // Set timeout for 200ms delay as requested by client
     const timeout = setTimeout(() => {
       setTooltipItem(item);
-    }, 200);
+    }, 400);
     
     setTooltipTimeout(timeout);
   };

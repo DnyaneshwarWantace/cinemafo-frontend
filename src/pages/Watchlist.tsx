@@ -32,24 +32,22 @@ const Watchlist = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Cleanup tooltip on component unmount or when items change
+  // Optimized tooltip cleanup - reduced debounce times for faster response
   useEffect(() => {
-    // Debounced mouse move handler to reduce performance impact
     let mouseMoveTimeout: NodeJS.Timeout;
     
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      // Clear existing timeout
       if (mouseMoveTimeout) {
         clearTimeout(mouseMoveTimeout);
       }
       
-      // Debounce the mouse move check
+      // Much faster debounce for immediate response
       mouseMoveTimeout = setTimeout(() => {
         const watchlistElement = document.querySelector('.watchlist-container');
         if (watchlistElement && !watchlistElement.contains(e.target as Node)) {
           hideTooltip();
         }
-      }, 50); // 50ms debounce
+      }, 10); // Reduced from 50ms to 10ms
     };
 
     const handleVisibilityChange = () => {
@@ -68,7 +66,7 @@ const Watchlist = () => {
       }
     };
 
-    // Debounced scroll handler
+    // Optimized scroll handler
     let scrollTimeout: NodeJS.Timeout;
     const handleScroll = () => {
       if (scrollTimeout) {
@@ -76,7 +74,7 @@ const Watchlist = () => {
       }
       scrollTimeout = setTimeout(() => {
         hideTooltip();
-      }, 100); // 100ms debounce
+      }, 20); // Reduced from 100ms to 20ms
     };
 
     const handleHideTooltips = () => {
@@ -228,14 +226,21 @@ const Watchlist = () => {
     
     setTooltipPosition({ x, y });
     
-    // Clear any existing timeout immediately
+    // Clear any existing timeout and hide current tooltip immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
     
-    // Show tooltip immediately for better responsiveness
-    setTooltipItem(item);
+    // Hide current tooltip immediately when moving to new item
+    setTooltipItem(null);
+    
+    // Set timeout for 200ms delay as requested by client
+    const timeout = setTimeout(() => {
+      setTooltipItem(item);
+    }, 400);
+    
+    setTooltipTimeout(timeout);
   };
 
   const handleTooltipMouseLeave = () => {
@@ -256,17 +261,7 @@ const Watchlist = () => {
     setTooltipItem(null);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black pt-32 sm:pt-32 md:pt-32">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 watchlist-container">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen bg-black pt-32 sm:pt-32 md:pt-32 relative">
@@ -302,7 +297,13 @@ const Watchlist = () => {
           </div>
 
         {/* Watchlist Items */}
-        {watchlist.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className="aspect-[2/3] bg-gray-800 rounded-lg animate-pulse"></div>
+            ))}
+          </div>
+        ) : watchlist.length === 0 ? (
           <div className="text-center py-16">
             <Bookmark className="mx-auto h-16 w-16 text-gray-600 mb-4" />
             <h3 className="text-xl font-semibold text-gray-400 mb-2">No items in watchlist</h3>

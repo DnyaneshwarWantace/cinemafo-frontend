@@ -509,7 +509,7 @@ const api = {
     try {
       // Try backend first
       console.log('🎬 Fetching top rated movies from backend...');
-      const response = await axios.get(`${BASE_URL}/movies/top-rated`, { params: { language } });
+      const response = await axios.get(`${BASE_URL}/movies/top_rated`, { params: { language } });
       
       // Check if backend returned sample data
       if (isSampleData(response.data)) {
@@ -560,7 +560,7 @@ const api = {
       return Promise.resolve({ data: cached });
     }
     
-    return axios.get(`${BASE_URL}/movies/now-playing`, { params: { language } })
+    return axios.get(`${BASE_URL}/movies/now_playing`, { params: { language } })
       .then(response => {
         setCache(cacheKey, response.data);
         return response;
@@ -697,7 +697,7 @@ const api = {
     
     try {
       console.log('🎬 Fetching top rated shows from backend...');
-      const response = await axios.get(`${BASE_URL}/tv/top-rated`, { params: { language } });
+      const response = await axios.get(`${BASE_URL}/tv/top_rated`, { params: { language } });
       
       if (isSampleData(response.data)) {
         console.log('⚠️ Backend returned sample data, trying TMDB fallback...');
