@@ -43,8 +43,22 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
         const carouselElement = scrollRef.current;
         if (carouselElement && !carouselElement.contains(e.target as Node)) {
           hideTooltip();
+        } else {
+          // Check if mouse is over a different movie card
+          const movieCards = carouselElement?.querySelectorAll('[data-movie-card]');
+          if (movieCards) {
+            let isOverAnyCard = false;
+            movieCards.forEach(card => {
+              if (card.contains(e.target as Node)) {
+                isOverAnyCard = true;
+              }
+            });
+            if (!isOverAnyCard) {
+              hideTooltip();
+            }
+          }
         }
-      }, 10); // Reduced from 50ms to 10ms
+      }, 5); // Even faster debounce for better responsiveness
     };
 
     const handleVisibilityChange = () => {
@@ -259,9 +273,39 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     // Set timeout for 200ms delay as requested by client
     const timeout = setTimeout(() => {
       setTooltipItem(item);
-    }, 400);
+    }, 200);
     
     setTooltipTimeout(timeout);
+  };
+
+  const handleTooltipMouseMove = (e: React.MouseEvent, item: Movie | TVShow) => {
+    // Update tooltip position on mouse move for better tracking
+    if (tooltipItem && tooltipItem.id === item.id) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      let x = rect.left + rect.width / 2;
+      let y = rect.bottom + 10;
+      
+      const tooltipWidth = 320;
+      const tooltipHeight = 120;
+      
+      if (x - tooltipWidth / 2 < 10) {
+        x = tooltipWidth / 2 + 10;
+      } else if (x + tooltipWidth / 2 > viewportWidth - 10) {
+        x = viewportWidth - tooltipWidth / 2 - 10;
+      }
+      
+      if (y + tooltipHeight > viewportHeight - 10) {
+        y = rect.top - tooltipHeight - 10;
+        if (y < 10) {
+          y = 10;
+        }
+      }
+      
+      setTooltipPosition({ x, y });
+    }
   };
 
   const handleTooltipMouseLeave = () => {
@@ -334,9 +378,11 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
           {items.map((item) => (
             <div
               key={item.id}
+              data-movie-card
               className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] cursor-pointer group/item first:ml-4 lg:first:ml-0"
               onClick={() => onItemClick(item)}
               onMouseEnter={(e) => handleMouseEnter(e, item)}
+              onMouseMove={(e) => handleTooltipMouseMove(e, item)}
               onMouseLeave={handleTooltipMouseLeave}
               onMouseOut={handleTooltipMouseLeave}
             >

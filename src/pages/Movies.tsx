@@ -361,6 +361,8 @@ const Movies = () => {
 
   return (
     <div className="min-h-screen bg-black pt-32 sm:pt-32 md:pt-32 movies-container" style={{ position: 'relative' }}>
+      {/* Loading Bar */}
+      <LoadingBar isLoading={loading} />
       {/* Mobile Header - Netflix Style */}
       <div className="lg:hidden">
         <div className="px-4 py-6">
