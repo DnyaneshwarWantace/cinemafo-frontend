@@ -441,9 +441,11 @@ const Shows = () => {
 
                         {/* Play Button Overlay */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
-                          <div className="crystal-play-button">
-                            {/* Triangle is created via CSS ::before pseudo-element */}
-                          </div>
+                          <img 
+                            src="/playbutton.svg" 
+                            alt="Play" 
+                            className="w-24 h-24 drop-shadow-2xl filter brightness-110"
+                          />
                         </div>
                         
                         {/* Rating Badge */}
@@ -667,9 +669,11 @@ const Shows = () => {
 
                           {/* Play Button Overlay */}
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
-                            <div className="crystal-play-button">
-                              {/* Triangle is created via CSS ::before pseudo-element */}
-                            </div>
+                            <img 
+                              src="/playbutton.svg" 
+                              alt="Play" 
+                              className="w-24 h-24 drop-shadow-2xl filter brightness-110"
+                            />
                           </div>
                           
                           {/* Rating Badge */}

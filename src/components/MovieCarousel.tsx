@@ -370,9 +370,11 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                       <Calendar className="w-8 h-8 text-white" />
                     </div>
                   ) : (
-                    <div className="crystal-play-button">
-                      {/* Triangle is created via CSS ::before pseudo-element */}
-                    </div>
+                    <img 
+                      src="/playbutton.svg" 
+                      alt="Play" 
+                      className="w-24 h-24 drop-shadow-2xl filter brightness-110"
+                    />
                   )}
                 </div>
                 

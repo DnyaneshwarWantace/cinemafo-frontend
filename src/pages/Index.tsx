@@ -150,12 +150,15 @@ const Index = () => {
           </div>
           {/* Play Button Overlay */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="crystal-play-button" onClick={(e) => {
-              e.stopPropagation();
-              handleMovieClick(movie);
-            }}>
-              {/* Triangle is created via CSS ::before pseudo-element */}
-            </div>
+            <img 
+              src="/playbutton.svg" 
+              alt="Play" 
+              className="w-24 h-24 drop-shadow-2xl filter brightness-110"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMovieClick(movie);
+              }}
+            />
           </div>
         </div>
       </CardContent>

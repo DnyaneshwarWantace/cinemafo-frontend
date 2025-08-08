@@ -41,20 +41,50 @@ interface AdminSettings {
     };
   };
   ads: {
-    heroOverlayAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
-    mainPageAd1: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
-    mainPageAd2: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
-    mainPageAd3: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
-    mainPageAd4: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
-    searchTopAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
-    searchBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
-    moviesPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
-    moviesPageBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
-    showsPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
-    showsPageBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
-    playerPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl: string; clickUrl: string; };
+    heroOverlayAd: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
+    mainPageAd1: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
+    mainPageAd2: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
+    mainPageAd3: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
+    mainPageAd4: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
+    searchTopAd: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
+    searchBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
+    moviesPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
+    moviesPageBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
+    showsPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
+    showsPageBottomAd: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
+    playerPageAd: { enabled: boolean; imageUrl: string; cloudinaryUrl?: string; clickUrl: string; };
   };
 }
+
+// Helper function to handle API calls with token refresh
+const apiCallWithRefresh = async (apiCall: () => Promise<Response>) => {
+  const response = await apiCall();
+  
+  if (response.status === 401) {
+    const errorData = await response.json();
+    if (errorData.expired) {
+      // Try to refresh the token
+      try {
+        await adminApi.refreshToken();
+        // Retry the request with the new token
+        const newToken = localStorage.getItem('adminToken');
+        const retryResponse = await apiCall();
+        
+        if (!retryResponse.ok) {
+          throw new Error('Request failed after token refresh');
+        }
+        
+        return retryResponse;
+      } catch (refreshError) {
+        // If refresh fails, clear token and throw error
+        localStorage.removeItem('adminToken');
+        throw new Error('Session expired. Please log in again.');
+      }
+    }
+  }
+  
+  return response;
+};
 
 // API functions
 const adminApi = {
@@ -74,11 +104,34 @@ const adminApi = {
     return data;
   },
 
+  refreshToken: async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      throw new Error('No token to refresh');
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/refresh-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Token refresh failed');
+    }
+    
+    const data = await response.json();
+    localStorage.setItem('adminToken', data.token);
+    return data;
+  },
+
   getSettings: async () => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const response = await apiCallWithRefresh(() => 
+      fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+    );
     
     if (!response.ok) {
       throw new Error('Failed to fetch settings');
@@ -517,7 +570,7 @@ const AdminPanel: React.FC = () => {
   const updateAdSettings = (adKey: string, field: string, value: any) => {
     if (!settings) return;
     
-    const currentAd = settings.ads?.[adKey as keyof typeof settings.ads] || { enabled: false, imageUrl: '', clickUrl: '' };
+    const currentAd = settings.ads?.[adKey as keyof typeof settings.ads] || { enabled: false, imageUrl: '', clickUrl: '', cloudinaryUrl: '' };
     
     // If imageUrl is being changed, clear the cloudinaryUrl
     let newAdConfig = {
@@ -820,18 +873,18 @@ const AdminPanel: React.FC = () => {
                       const demoSettings = {
                         ...settings,
                         ads: {
-                          heroOverlayAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=0', clickUrl: 'https://example.com' },
-                          mainPageAd1: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=1', clickUrl: 'https://example.com' },
-                          mainPageAd2: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=2', clickUrl: 'https://example.com' },
-                          mainPageAd3: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=3', clickUrl: 'https://example.com' },
-                          mainPageAd4: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=4', clickUrl: 'https://example.com' },
-                          searchTopAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=5', clickUrl: 'https://example.com' },
-                          searchBottomAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=6', clickUrl: 'https://example.com' },
-                          moviesPageAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=7', clickUrl: 'https://example.com' },
-                          moviesPageBottomAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=11', clickUrl: 'https://example.com' },
-                          showsPageAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=8', clickUrl: 'https://example.com' },
-                          showsPageBottomAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=12', clickUrl: 'https://example.com' },
-                          playerPageAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=10', clickUrl: 'https://example.com' }
+                          heroOverlayAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=0', clickUrl: 'https://example.com', cloudinaryUrl: '' },
+                          mainPageAd1: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=1', clickUrl: 'https://example.com', cloudinaryUrl: '' },
+                          mainPageAd2: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=2', clickUrl: 'https://example.com', cloudinaryUrl: '' },
+                          mainPageAd3: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=3', clickUrl: 'https://example.com', cloudinaryUrl: '' },
+                          mainPageAd4: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=4', clickUrl: 'https://example.com', cloudinaryUrl: '' },
+                          searchTopAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=5', clickUrl: 'https://example.com', cloudinaryUrl: '' },
+                          searchBottomAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=6', clickUrl: 'https://example.com', cloudinaryUrl: '' },
+                          moviesPageAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=7', clickUrl: 'https://example.com', cloudinaryUrl: '' },
+                          moviesPageBottomAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=11', clickUrl: 'https://example.com', cloudinaryUrl: '' },
+                          showsPageAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=8', clickUrl: 'https://example.com', cloudinaryUrl: '' },
+                          showsPageBottomAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=12', clickUrl: 'https://example.com', cloudinaryUrl: '' },
+                          playerPageAd: { enabled: true, imageUrl: 'https://picsum.photos/800/200?random=10', clickUrl: 'https://example.com', cloudinaryUrl: '' }
                         }
                       };
                       setSettings(demoSettings);
@@ -853,7 +906,7 @@ const AdminPanel: React.FC = () => {
                       const disabledSettings = {
                         ...settings,
                         ads: Object.keys(settings.ads || {}).reduce((acc, key) => {
-                          acc[key] = { enabled: false, imageUrl: '', clickUrl: '' };
+                          acc[key] = { enabled: false, imageUrl: '', clickUrl: '', cloudinaryUrl: '' };
                           return acc;
                         }, {} as any)
                       };
