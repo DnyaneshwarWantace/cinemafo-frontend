@@ -279,7 +279,7 @@ const Home = () => {
 
       {/* Trending Movies Section */}
       {!loading && trendingMovies.length > 0 && (
-        <section className="w-full pr-4 sm:pr-6 lg:pr-8 py-8">
+        <section className="w-full px-4 sm:px-6 lg:px-8 py-8">
               <MovieCarousel
                 title="Trending Movies"
                 items={trendingMovies}
@@ -289,7 +289,7 @@ const Home = () => {
       )}
 
       {/* Content Sections */}
-      <div className="w-full pr-4 sm:pr-6 lg:pr-8 space-y-12 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 space-y-12 py-8">
         {!loading && (
           <>
             {/* Ad after Hero Section */}

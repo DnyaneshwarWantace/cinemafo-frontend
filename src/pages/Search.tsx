@@ -28,6 +28,7 @@ const Search = () => {
     rating: 'any',
     sortBy: 'relevance'
   });
+  const [showExtendedFilters, setShowExtendedFilters] = useState(false);
   const { updateProgress } = useWatchHistory();
 
   // Read query from URL on component mount
@@ -37,6 +38,24 @@ const Search = () => {
       setQuery(decodeURIComponent(urlQuery));
     }
   }, [searchParams]);
+
+  // Clear any lingering tooltip state when Search component mounts
+  useEffect(() => {
+    // Dispatch a custom event to hide tooltips globally
+    window.dispatchEvent(new CustomEvent('hideSearchTooltips'));
+    
+    // Also clear any local tooltip state
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      setTooltipTimeout(null);
+    }
+    setTooltipItem(null);
+    
+    // Cleanup function to ensure tooltips are hidden when component unmounts
+    return () => {
+      window.dispatchEvent(new CustomEvent('hideSearchTooltips'));
+    };
+  }, []); // Empty dependency array - runs only on mount and unmount
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -370,7 +389,7 @@ const Search = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Search</h1>
-          <p className="text-xl text-gray-400">Find your favorite movies and TV shows</p>
+                      <p className="text-xl text-gray-500">Find your favorite movies and TV shows</p>
         </div>
 
         {/* Top Ad */}
@@ -386,24 +405,27 @@ const Search = () => {
       </div>
         )}
 
-        {/* Search Bar */}
-        <div className="flex flex-wrap gap-4 mb-8 p-6 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-gray-800">
-          <div className="flex gap-4 items-center flex-wrap w-full">
-            <div className="relative flex-1 min-w-[300px]">
+        {/* Search Bar and Filter Combined */}
+        <div className="mb-8 p-6 bg-gray-900/50 backdrop-blur-sm rounded-lg border border-gray-800">
+          <div className="flex gap-4 items-center">
+            <div className="relative flex-1">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Search movies, TV shows, or people..."
+                placeholder="What do you want to watch?"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && query.trim()) {
                     e.preventDefault();
+                    e.stopPropagation();
+                    // Hide any active tooltip
+                    hideTooltip();
                     // Update URL with new search query
                     const newUrl = `/search?q=${encodeURIComponent(query.trim())}`;
                     window.history.pushState({}, '', newUrl);
                   }
                 }}
-                className="bg-gray-800 border-gray-700 text-white pl-10 pr-10 h-12 text-lg"
+                className="bg-gray-800 border-gray-700 text-white pl-10 pr-10 h-12 text-lg rounded-full focus:border-blue-500 focus:ring-0 focus:outline-none focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
               {query && (
                 <Button
@@ -417,90 +439,103 @@ const Search = () => {
               )}
             </div>
             <Select value={mediaType} onValueChange={setMediaType}>
-              <SelectTrigger className="w-[160px] bg-gray-800 border-gray-700 text-white h-12">
+              <SelectTrigger className="w-[140px] bg-gray-800 border-gray-700 text-white h-12">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="multi">All</SelectItem>
                 <SelectItem value="movie">Movies</SelectItem>
                 <SelectItem value="tv">TV Shows</SelectItem>
-                <SelectItem value="person">People</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
+        {/* Filters Button */}
+        <div className="flex justify-center mb-4">
+          <Button
+            onClick={() => setShowExtendedFilters(!showExtendedFilters)}
+            variant="outline"
+            className="bg-gray-800 hover:bg-gray-700 text-white border-gray-700 flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            {showExtendedFilters ? 'Hide' : 'Show'} Filters
+          </Button>
+        </div>
+
         {/* Advanced Filters Panel */}
-        <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8 border border-gray-700/50">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Year</label>
-                <Input
-                  type="number"
-                  value={filters.year}
-                  onChange={(e) => setFilters({ ...filters, year: e.target.value })}
-                  placeholder="e.g. 2023"
-                  min="1900"
-                  max={new Date().getFullYear()}
-                  className="bg-gray-800 border-gray-700 text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Minimum Rating</label>
-                <Select value={filters.rating} onValueChange={(value) => setFilters({ ...filters, rating: value })}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                    <SelectValue placeholder="Any rating" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="any">Any rating</SelectItem>
-                    <SelectItem value="9">9+ Stars</SelectItem>
-                    <SelectItem value="8">8+ Stars</SelectItem>
-                    <SelectItem value="7">7+ Stars</SelectItem>
-                    <SelectItem value="6">6+ Stars</SelectItem>
-                    <SelectItem value="5">5+ Stars</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Sort By</label>
-                <Select value={filters.sortBy} onValueChange={(value) => setFilters({ ...filters, sortBy: value })}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="relevance">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp size={16} />
-                        Relevance
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="rating">
-                      <div className="flex items-center gap-2">
-                        <Star size={16} />
-                        Rating
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="date">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={16} />
-                        Release Date
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="title">Title A-Z</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-end">
-                <Button
-                  onClick={clearFilters}
-                  variant="outline"
-                  className="w-full bg-gray-800 hover:bg-gray-700 text-white border-gray-700"
-                >
-                  Clear Filters
-                </Button>
+        {showExtendedFilters && (
+          <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg p-6 mb-8 border border-gray-700/50">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Year</label>
+                  <Input
+                    type="number"
+                    value={filters.year}
+                    onChange={(e) => setFilters({ ...filters, year: e.target.value })}
+                    placeholder="e.g. 2023"
+                    min="1900"
+                    max={new Date().getFullYear()}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Minimum Rating</label>
+                  <Select value={filters.rating} onValueChange={(value) => setFilters({ ...filters, rating: value })}>
+                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                      <SelectValue placeholder="Any rating" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any rating</SelectItem>
+                      <SelectItem value="9">9+ Stars</SelectItem>
+                      <SelectItem value="8">8+ Stars</SelectItem>
+                      <SelectItem value="7">7+ Stars</SelectItem>
+                      <SelectItem value="6">6+ Stars</SelectItem>
+                      <SelectItem value="5">5+ Stars</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Sort By</label>
+                  <Select value={filters.sortBy} onValueChange={(value) => setFilters({ ...filters, sortBy: value })}>
+                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="relevance">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp size={16} />
+                          Relevance
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="rating">
+                        <div className="flex items-center gap-2">
+                          <Star size={16} />
+                          Rating
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="date">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={16} />
+                          Release Date
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="title">Title A-Z</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    onClick={clearFilters}
+                    variant="outline"
+                    className="w-full bg-gray-800 hover:bg-gray-700 text-white border-gray-700"
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+        )}
 
         {/* Loading State */}
         {loading && (
@@ -534,7 +569,7 @@ const Search = () => {
 
             {results.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-400 text-lg">No results found for "{query}"</p>
+                <p className="text-gray-500 text-lg">No results found for "{query}"</p>
                 <p className="text-gray-500 mt-2">Try adjusting your search terms or filters</p>
               </div>
             ) : (
@@ -584,7 +619,7 @@ const Search = () => {
                         <img 
                           src="/playbutton.svg" 
                           alt="Play" 
-                          className="w-24 h-24 drop-shadow-2xl filter brightness-110"
+                          className="w-16 h-16 drop-shadow-2xl filter brightness-110"
                         />
                       </div>
                       
@@ -601,9 +636,6 @@ const Search = () => {
                           <h3 className="text-white font-semibold text-sm line-clamp-2">
                             {getItemTitle(item)}
                           </h3>
-                          <p className="text-gray-300 text-xs mt-1">
-                            {formatReleaseDate(getItemReleaseDate(item))}
-                          </p>
                         </div>
                       </div>
                     </div>
@@ -631,7 +663,7 @@ const Search = () => {
       {/* Tooltip */}
       {tooltipItem && (
         <div
-          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-blue-500/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
           style={{ 
             left: tooltipPosition.x,
             top: tooltipPosition.y,
@@ -665,17 +697,18 @@ const Search = () => {
                   <span>{formatReleaseDate(getItemReleaseDate(tooltipItem))}</span>
                 </div>
                 
-                {typeof tooltipItem.vote_average === 'number' && (
+                {tooltipItem.genres && tooltipItem.genres.length > 0 && (
                   <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-400" />
-                    <span>{tooltipItem.vote_average.toFixed(1)}</span>
+                    <span className="text-blue-400">•</span>
+                    <span>{tooltipItem.genres.slice(0, 2).map(g => g.name).join(', ')}</span>
                   </div>
                 )}
                 
-                {tooltipItem.overview && (
-                  <p className="text-gray-400 line-clamp-2 mt-2">
-                    {tooltipItem.overview}
-                  </p>
+                {tooltipItem.runtime && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-blue-400">•</span>
+                    <span>{Math.floor(tooltipItem.runtime / 60)}h {tooltipItem.runtime % 60}m</span>
+                  </div>
                 )}
               </div>
             </div>

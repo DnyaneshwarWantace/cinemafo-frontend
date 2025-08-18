@@ -269,7 +269,11 @@ const validateAndCleanData = (data: any) => {
     }
     
     return item;
-  }).filter(Boolean); // Remove null items
+  }).filter(Boolean) // Remove null items
+    .filter((item: any) => {
+      // Filter out items without poster images
+      return item.poster_path && item.poster_path !== '' && item.poster_path !== null;
+    });
   
   return data;
 };
@@ -519,8 +523,9 @@ const api = {
       }
       
       console.log('✅ Backend returned real data');
-        setCache(cacheKey, response.data);
-        return response;
+      const cleanedData = validateAndCleanData(response.data);
+      setCache(cacheKey, cleanedData);
+      return { data: cleanedData };
     } catch (error) {
       console.log('🔄 Backend failed, using TMDB fallback...');
       

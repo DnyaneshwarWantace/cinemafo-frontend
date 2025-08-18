@@ -126,6 +126,39 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
   // Search functionality with debounce
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
+  // Hide search popup when on search page
+  useEffect(() => {
+    if (location.pathname === '/search') {
+      setShowSearchPopup(false);
+      setSearchResults([]);
+      setSelectedSearchIndex(-1);
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+        setSearchTimeout(null);
+      }
+    }
+  }, [location.pathname, searchTimeout]);
+
+  // Listen for custom event to hide search tooltips
+  useEffect(() => {
+    const handleHideSearchTooltips = () => {
+      setShowSearchPopup(false);
+      setSearchResults([]);
+      setSelectedSearchIndex(-1);
+      setSearchQuery('');
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+        setSearchTimeout(null);
+      }
+    };
+
+    window.addEventListener('hideSearchTooltips', handleHideSearchTooltips);
+    
+    return () => {
+      window.removeEventListener('hideSearchTooltips', handleHideSearchTooltips);
+    };
+  }, [searchTimeout]);
+
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
     console.log('🔍 Search triggered:', query);
@@ -158,6 +191,11 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
         let searchResults = response.data?.results || [];
         searchResults = searchResults.filter(item => 
           item.media_type === 'movie' || item.media_type === 'tv'
+        );
+        
+        // Filter out items without poster images
+        searchResults = searchResults.filter(item => 
+          item.poster_path && item.poster_path !== '' && item.poster_path !== null
         );
         
         setSearchResults(searchResults);
@@ -323,7 +361,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                       }}
                         onBlur={() => setIsSearchFocused(false)}
                         onKeyDown={handleSearchKeyDown}
-                        placeholder="Search movies..."
+                        placeholder="Search..."
                         className="w-full bg-white/10 text-white pl-10 pr-10 py-2.5 rounded-full border border-white/20 focus:border-blue-500 focus:outline-none text-sm placeholder-gray-400 transition-all duration-300 focus:bg-white/15"
                       />
                       {searchQuery && (
@@ -594,7 +632,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                       }}
                       onBlur={() => setIsSearchFocused(false)}
                       onKeyDown={handleSearchKeyDown}
-                      placeholder="Search movies..."
+                      placeholder="Search..."
                       className="w-full bg-white/10 text-white pl-10 pr-10 py-2.5 rounded-full border border-white/20 focus:border-blue-500 focus:outline-none text-sm placeholder-gray-400 transition-all duration-300 focus:bg-white/15"
                     />
                     {searchQuery && (
@@ -822,7 +860,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                         }
                       }}
                       onKeyDown={handleSearchKeyDown}
-                      placeholder="Search movies..."
+                      placeholder="Search..."
                       className="w-full bg-white/10 text-white pl-10 pr-4 py-3 rounded-lg border border-white/20 focus:border-blue-500 focus:outline-none text-sm placeholder-gray-400"
                     />
                     {searchQuery && (

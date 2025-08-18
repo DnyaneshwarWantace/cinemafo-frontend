@@ -129,7 +129,7 @@ const adminApi = {
     const token = localStorage.getItem('adminToken');
     const response = await apiCallWithRefresh(() => 
       fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      headers: { 'Authorization': `Bearer ${token}` }
       })
     );
     

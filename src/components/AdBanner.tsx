@@ -76,14 +76,14 @@ const AdBanner: React.FC<AdBannerProps> = ({
 
       {/* Ad image */}
       <div 
-        className="cursor-pointer relative overflow-hidden rounded-lg w-full"
+        className="cursor-pointer relative overflow-hidden w-full"
         onClick={handleAdClick}
         title="Click to visit advertiser"
       >
         <img
           src={cloudinaryUrl || imageUrl}
           alt="Advertisement"
-          className="w-full h-auto max-h-48 object-contain rounded-lg shadow-md transition-all duration-300 hover:shadow-lg"
+          className="w-full h-auto max-h-48 object-contain shadow-md transition-all duration-300 hover:shadow-lg"
           onError={() => setError('Failed to load ad image')}
           loading="lazy"
         />

@@ -267,7 +267,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProgressUpdateRef = useRef<number>(0);
   
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
@@ -301,6 +301,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const bufferStallTimeoutRef = useRef<NodeJS.Timeout>();
   const [showSourceSwitchNotification, setShowSourceSwitchNotification] = useState(false);
   const sourceSwitchTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // Timestamp preview state
+  const [previewTime, setPreviewTime] = useState<number | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   
   // Skip intro functionality removed
 
@@ -982,9 +986,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         console.log('HLS manifest parsed successfully');
         setLoading(false);
         setError(null);
-        video.play().catch((playError) => {
-          console.warn('Autoplay failed:', playError);
-        });
+        
+        // Don't auto-play if we're resuming from a specific time (continue watching)
+        if (initialTime === 0) {
+          video.play().catch((playError) => {
+            console.warn('Autoplay failed:', playError);
+          });
+        }
 
         // Start background prefetching after manifest is parsed
         if (currentSource?.url) {
@@ -1196,16 +1204,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // Safari native HLS support
       video.src = currentSource.url;
-      video.play().catch((playError) => {
-        console.warn('Safari HLS autoplay failed:', playError);
-        // Only switch to iframe if playback fails
-        const iframeSource = streamingSources.find(s => s.type === 'iframe');
-        if (iframeSource) {
-          setCurrentSource(iframeSource);
-          setError(null);
-          setLoading(true);
-        }
-      });
+      
+      // Don't auto-play if we're resuming from a specific time (continue watching)
+      if (initialTime === 0) {
+        video.play().catch((playError) => {
+          console.warn('Safari HLS autoplay failed:', playError);
+          // Only switch to iframe if playback fails
+          const iframeSource = streamingSources.find(s => s.type === 'iframe');
+          if (iframeSource) {
+            setCurrentSource(iframeSource);
+            setError(null);
+            setLoading(true);
+          }
+        });
+      }
       setLoading(false);
       setError(null);
         }
@@ -1280,6 +1292,44 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
+
+
+
+  // Simplified timestamp preview handler
+  const handleProgressBarHover = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const previewTimeValue = percentage * duration;
+    
+    setPreviewTime(previewTimeValue);
+    setShowPreview(true);
+  }, [duration]);
+
+  const handleProgressBarLeave = useCallback(() => {
+    setShowPreview(false);
+    setPreviewTime(null);
+  }, []);
+
+  // Add mouse move handler to the range input itself
+  const handleRangeInputMouseMove = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
+    if (!duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    const previewTimeValue = percentage * duration;
+    
+    setPreviewTime(previewTimeValue);
+    setShowPreview(true);
+  }, [duration]);
+
+  const handleRangeInputMouseLeave = useCallback(() => {
+    setShowPreview(false);
+    setPreviewTime(null);
+  }, []);
 
   // Auto-hide controls
   useEffect(() => {
@@ -1627,7 +1677,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }
                 onClose();
               }}
-              className="absolute top-4 left-4 z-50 flex items-center gap-2 bg-black/70 hover:bg-black/90 text-white px-4 py-2 rounded-lg transition-all duration-300 pointer-events-auto"
+              className="absolute top-4 left-4 z-50 flex items-center gap-2 bg-black/70 hover:bg-black/90 text-white px-4 py-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             >
               <ArrowLeft size={20} />
               Back
@@ -1661,7 +1711,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
               {/* Progress Bar */}
               <div className="mb-4">
-                <div className="relative w-full h-2 bg-gray-600 rounded-lg overflow-hidden">
+                                 <div 
+                   className="progress-bar-container relative w-full h-2 bg-gray-600 rounded-lg overflow-hidden cursor-pointer"
+                   onMouseMove={handleProgressBarHover}
+                   onMouseLeave={handleProgressBarLeave}
+                 >
                   {/* Background track */}
                   <div className="absolute inset-0 bg-gray-700 rounded-lg"></div>
                   
@@ -1670,6 +1724,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     className="absolute left-0 top-0 h-full gradient-progress-bar rounded-lg transition-all duration-200"
                     style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
                   ></div>
+                  
+                                     {/* Timestamp preview */}
+                   {showPreview && previewTime !== null && (
+                     <div 
+                       className="absolute top-0 transform -translate-y-full -translate-x-1/2 bg-black text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[9999] border-2 border-blue-500 shadow-xl"
+                       style={{ 
+                         left: `${(previewTime / (duration || 1)) * 100}%`,
+                         marginTop: '-15px'
+                       }}
+                     >
+                       {formatTime(previewTime)}
+                     </div>
+                   )}
                   
                   {/* Invisible range input for interaction */}
                 <input
@@ -1682,6 +1749,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     handleSeek(e);
                   }}
                   onClick={(e) => e.stopPropagation()}
+                     onMouseMove={handleRangeInputMouseMove}
+                     onMouseLeave={handleRangeInputMouseLeave}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 </div>

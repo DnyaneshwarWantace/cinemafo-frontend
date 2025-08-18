@@ -153,7 +153,7 @@ const Index = () => {
             <img 
               src="/playbutton.svg" 
               alt="Play" 
-              className="w-24 h-24 drop-shadow-2xl filter brightness-110"
+              className="w-16 h-16 drop-shadow-2xl filter brightness-110"
               onClick={(e) => {
                 e.stopPropagation();
                 handleMovieClick(movie);

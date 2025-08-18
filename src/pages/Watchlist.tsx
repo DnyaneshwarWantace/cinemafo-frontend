@@ -269,11 +269,11 @@ const Watchlist = () => {
         {/* Header with Clear All Button */}
         <div className="mb-8 flex justify-between items-start">
           <div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">My Watchlist</h1>
-          <p className="text-xl text-gray-400">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Your Watchlist</h1>
+                      <p className="text-xl text-gray-500">
             {watchlist.length === 0 
-              ? "Your watchlist is empty. Start adding movies and TV shows!" 
-              : `${watchlist.length} item${watchlist.length !== 1 ? 's' : ''} in your watchlist`
+              ? "Nothing here yet. Start adding movies and TV shows you want to watch." 
+              : `${watchlist.length} title${watchlist.length !== 1 ? 's' : ''} queued up for your next movie night`
             }
           </p>
         </div>
@@ -287,10 +287,9 @@ const Watchlist = () => {
                 console.log('Button clicked!');
                 clearWatchlist();
               }}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer z-50"
-              style={{ pointerEvents: 'auto' }}
+              className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white px-3 py-2 rounded-lg transition-colors duration-200 cursor-pointer text-sm"
             >
-              <Trash2 size={16} />
+              <Trash2 size={14} />
               Clear All
             </button>
           )}
@@ -306,8 +305,8 @@ const Watchlist = () => {
         ) : watchlist.length === 0 ? (
           <div className="text-center py-16">
             <Bookmark className="mx-auto h-16 w-16 text-gray-600 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-400 mb-2">No items in watchlist</h3>
-            <p className="text-gray-500">Start browsing movies and TV shows to add them to your watchlist.</p>
+            <h3 className="text-xl font-semibold text-gray-500 mb-2">Nothing here…</h3>
+            <p className="text-gray-500">Start browsing and adding movies and TV shows to your watchlist.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
@@ -346,7 +345,7 @@ const Watchlist = () => {
                     <img 
                       src="/playbutton.svg" 
                       alt="Play" 
-                      className="w-24 h-24 drop-shadow-2xl filter brightness-110"
+                      className="w-16 h-16 drop-shadow-2xl filter brightness-110"
                     />
                   </div>
                   
@@ -363,9 +362,6 @@ const Watchlist = () => {
                       <h3 className="text-white font-semibold text-sm line-clamp-2">
                         {getItemTitle(item)}
                       </h3>
-                      <p className="text-gray-300 text-xs mt-1">
-                        {formatReleaseDate(getItemReleaseDate(item))}
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -381,7 +377,7 @@ const Watchlist = () => {
       {/* Tooltip */}
       {tooltipItem && (
         <div
-          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-blue-500/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
         style={{ 
             left: tooltipPosition.x,
             top: tooltipPosition.y,
@@ -401,7 +397,7 @@ const Watchlist = () => {
                   target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg==';
                 }}
                 />
-                  </div>
+            </div>
 
             {/* Details */}
             <div className="flex-1 min-w-0">
@@ -415,24 +411,23 @@ const Watchlist = () => {
                   <span>{formatReleaseDate(getItemReleaseDate(tooltipItem))}</span>
                 </div>
                 
-                {typeof tooltipItem.vote_average === 'number' && (
+                {tooltipItem.genres && tooltipItem.genres.length > 0 && (
                   <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-400" />
-                    <span>{tooltipItem.vote_average.toFixed(1)}</span>
+                    <span className="text-blue-400">•</span>
+                    <span>{tooltipItem.genres.slice(0, 2).map(g => g.name).join(', ')}</span>
                   </div>
                 )}
                 
-                {tooltipItem.overview && (
-                  <p className="text-gray-400 line-clamp-2 mt-2">
-                    {tooltipItem.overview}
-                  </p>
+                {tooltipItem.runtime && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-blue-400">•</span>
+                    <span>{Math.floor(tooltipItem.runtime / 60)}h {tooltipItem.runtime % 60}m</span>
+                  </div>
                 )}
-                
-
               </div>
             </div>
           </div>
-          </div>
+        </div>
       )}
 
       {/* Movie Modal */}

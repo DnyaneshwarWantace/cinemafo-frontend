@@ -233,11 +233,6 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
                 <div className="absolute bottom-2 right-2 bg-black/80 text-white px-2 py-1 rounded text-xs font-medium">
                   {formatTime(item.currentTime)} / {formatTime(item.duration)}
                 </div>
-                
-                {/* Progress Percentage */}
-                <div className="absolute bottom-2 left-2 bg-black/80 text-white px-2 py-1 rounded text-xs font-medium">
-                  {Math.round(item.progress)}%
-                </div>
               </div>
 
               {/* Play Button Overlay - Crystal Style */}
@@ -245,7 +240,7 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
                 <img 
                   src="/playbutton.svg" 
                   alt="Play" 
-                  className="w-24 h-24 drop-shadow-2xl filter brightness-110"
+                  className="w-16 h-16 drop-shadow-2xl filter brightness-110"
                 />
               </div>
 

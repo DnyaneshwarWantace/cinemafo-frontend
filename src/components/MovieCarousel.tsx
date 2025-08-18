@@ -29,38 +29,8 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Optimized tooltip cleanup - reduced debounce times for faster response
+  // Simplified tooltip cleanup - only hide when leaving carousel completely
   useEffect(() => {
-    let mouseMoveTimeout: NodeJS.Timeout;
-    
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      if (mouseMoveTimeout) {
-        clearTimeout(mouseMoveTimeout);
-      }
-      
-      // Much faster debounce for immediate response
-      mouseMoveTimeout = setTimeout(() => {
-        const carouselElement = scrollRef.current;
-        if (carouselElement && !carouselElement.contains(e.target as Node)) {
-          hideTooltip();
-        } else {
-          // Check if mouse is over a different movie card
-          const movieCards = carouselElement?.querySelectorAll('[data-movie-card]');
-          if (movieCards) {
-            let isOverAnyCard = false;
-            movieCards.forEach(card => {
-              if (card.contains(e.target as Node)) {
-                isOverAnyCard = true;
-              }
-            });
-            if (!isOverAnyCard) {
-              hideTooltip();
-            }
-          }
-        }
-      }, 5); // Even faster debounce for better responsiveness
-    };
-
     const handleVisibilityChange = () => {
       if (document.hidden) {
         hideTooltip();
@@ -84,32 +54,27 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       }
       scrollTimeout = setTimeout(() => {
         hideTooltip();
-      }, 20); // Reduced from 100ms to 20ms
+      }, 50);
     };
 
-    document.addEventListener('mousemove', handleGlobalMouseMove, { passive: true });
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('click', handleGlobalClick);
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('click', handleGlobalClick);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('scroll', handleScroll);
       
-      if (mouseMoveTimeout) {
-        clearTimeout(mouseMoveTimeout);
-      }
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
       }
       
       hideTooltip();
     };
-  }, [tooltipTimeout, items]);
+  }, []);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -239,21 +204,15 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     const tooltipHeight = 120; // approximate height
     
     // Adjust X position to keep tooltip within viewport
-    // Since we use translateX(-50%), we need to account for that in our calculations
     if (x - tooltipWidth / 2 < 10) {
-      // Too close to left edge
       x = tooltipWidth / 2 + 10;
     } else if (x + tooltipWidth / 2 > viewportWidth - 10) {
-      // Too close to right edge
       x = viewportWidth - tooltipWidth / 2 - 10;
     }
     
     // Adjust Y position to keep tooltip within viewport
     if (y + tooltipHeight > viewportHeight - 10) {
-      // Too close to bottom edge, show above the card
       y = rect.top - tooltipHeight - 10;
-      
-      // If showing above would also be outside viewport, show at top with margin
       if (y < 10) {
         y = 10;
       }
@@ -261,16 +220,13 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     
     setTooltipPosition({ x, y });
     
-    // Clear any existing timeout and hide current tooltip immediately
+    // Clear any existing timeout
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
     }
     
-    // Hide current tooltip immediately when moving to new item
-    setTooltipItem(null);
-    
-    // Set timeout for 200ms delay as requested by client
+    // Set timeout for 200ms delay
     const timeout = setTimeout(() => {
       setTooltipItem(item);
     }, 200);
@@ -279,7 +235,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
   };
 
   const handleTooltipMouseMove = (e: React.MouseEvent, item: Movie | TVShow) => {
-    // Update tooltip position on mouse move for better tracking
+    // Only update position if tooltip is currently showing for this item
     if (tooltipItem && tooltipItem.id === item.id) {
       const rect = e.currentTarget.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
@@ -309,7 +265,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
   };
 
   const handleTooltipMouseLeave = () => {
-    // Clear timeout and hide tooltip immediately
+    // Clear timeout and hide tooltip
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
       setTooltipTimeout(null);
@@ -384,7 +340,6 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
               onMouseEnter={(e) => handleMouseEnter(e, item)}
               onMouseMove={(e) => handleTooltipMouseMove(e, item)}
               onMouseLeave={handleTooltipMouseLeave}
-              onMouseOut={handleTooltipMouseLeave}
             >
               <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                 <img
@@ -419,7 +374,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                     <img 
                       src="/playbutton.svg" 
                       alt="Play" 
-                      className="w-24 h-24 drop-shadow-2xl filter brightness-110"
+                      className="w-16 h-16 drop-shadow-2xl filter brightness-110"
                     />
                   )}
                 </div>
@@ -444,9 +399,6 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                     <h3 className="text-white font-semibold text-sm line-clamp-2">
                       {getItemTitle(item)}
                     </h3>
-                    <p className="text-gray-300 text-xs mt-1">
-                      {formatReleaseDate(getItemReleaseDate(item))}
-                    </p>
                   </div>
                 </div>
               </div>
@@ -458,7 +410,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       {/* Tooltip */}
       {tooltipItem && (
         <div
-          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-blue-500/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
         style={{ 
             left: tooltipPosition.x,
             top: tooltipPosition.y,
@@ -478,7 +430,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                   target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg==';
                 }}
                 />
-                  </div>
+            </div>
 
             {/* Details */}
             <div className="flex-1 min-w-0">
@@ -492,25 +444,24 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                   <span>{formatReleaseDate(getItemReleaseDate(tooltipItem))}</span>
                 </div>
                 
-                {typeof tooltipItem.vote_average === 'number' && (
+                {tooltipItem.genres && tooltipItem.genres.length > 0 && (
                   <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-400" />
-                    <span>{tooltipItem.vote_average.toFixed(1)}</span>
+                    <span className="text-blue-400">•</span>
+                    <span>{tooltipItem.genres.slice(0, 2).map(g => g.name).join(', ')}</span>
                   </div>
                 )}
                 
-                {tooltipItem.overview && (
-                  <p className="text-gray-400 line-clamp-2 mt-2">
-                    {tooltipItem.overview}
-                  </p>
+                {tooltipItem.runtime && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-blue-400">•</span>
+                    <span>{Math.floor(tooltipItem.runtime / 60)}h {tooltipItem.runtime % 60}m</span>
+                  </div>
                 )}
-                
-
               </div>
             </div>
           </div>
-          </div>
-        )}
+        </div>
+      )}
 
       <style dangerouslySetInnerHTML={{
         __html: `

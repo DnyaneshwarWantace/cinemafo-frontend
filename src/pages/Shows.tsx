@@ -264,6 +264,11 @@ const Shows = () => {
       // Filter to only show TV shows
       searchResults = searchResults.filter(item => item.media_type === 'tv');
       
+      // Filter out items without poster images
+      searchResults = searchResults.filter(item => 
+        item.poster_path && item.poster_path !== '' && item.poster_path !== null
+      );
+      
       setSearchResults(searchResults);
     } catch (error) {
       console.error('Error searching shows:', error);
@@ -375,7 +380,7 @@ const Shows = () => {
       <div className="lg:hidden">
         <div className="px-4 py-6">
           <h1 className="text-2xl font-bold text-white mb-2">TV Shows</h1>
-          <p className="text-gray-400 text-sm">Discover amazing TV shows from around the world</p>
+              <p className="text-gray-500 text-sm">Explore amazing shows from around the world.</p>
         </div>
 
         {/* Mobile Search */}
@@ -446,7 +451,7 @@ const Shows = () => {
                           <img 
                             src="/playbutton.svg" 
                             alt="Play" 
-                            className="w-24 h-24 drop-shadow-2xl filter brightness-110"
+                            className="w-16 h-16 drop-shadow-2xl filter brightness-110"
                           />
                         </div>
                         
@@ -463,9 +468,6 @@ const Shows = () => {
                             <h3 className="text-white font-semibold text-sm line-clamp-2">
                               {getItemTitle(show)}
                         </h3>
-                            <p className="text-gray-300 text-xs mt-1">
-                              {formatReleaseDate(getItemReleaseDate(show))}
-                        </p>
                           </div>
                         </div>
                       </div>
@@ -473,7 +475,7 @@ const Shows = () => {
                   ))}
                 </div>
               ) : !isSearching ? (
-                <p className="text-gray-400 text-sm">No TV shows found for "{searchQuery}"</p>
+                <p className="text-gray-500 text-sm">No TV shows found for "{searchQuery}"</p>
               ) : null}
             </div>
           </div>
@@ -485,7 +487,7 @@ const Shows = () => {
         <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 py-8">
           <div className="mb-8">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">TV Shows</h1>
-            <p className="text-xl text-gray-400">Discover amazing TV shows from around the world</p>
+            <p className="text-xl text-gray-500">Explore amazing shows from around the world.</p>
             </div>
 
           {/* Desktop Search */}
@@ -497,7 +499,7 @@ const Shows = () => {
                 placeholder="Search TV shows..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10 pr-10 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 text-lg"
+                className="pl-10 pr-10 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-0 focus:outline-none focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-lg rounded-full"
               />
               {searchQuery && (
                   <button
@@ -674,7 +676,7 @@ const Shows = () => {
                             <img 
                               src="/playbutton.svg" 
                               alt="Play" 
-                              className="w-24 h-24 drop-shadow-2xl filter brightness-110"
+                              className="w-16 h-16 drop-shadow-2xl filter brightness-110"
                             />
                           </div>
                           
@@ -688,12 +690,9 @@ const Shows = () => {
                           
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
                             <div>
-                              <h3 className="text-white font-semibold text-sm line-clamp-2">
-                                {getItemTitle(show)}
+                                                        <h3 className="text-white font-semibold text-sm line-clamp-2">
+                            {getItemTitle(show)}
                           </h3>
-                              <p className="text-gray-300 text-xs mt-1">
-                                {formatReleaseDate(getItemReleaseDate(show))}
-                          </p>
                             </div>
                           </div>
                         </div>
@@ -701,7 +700,7 @@ const Shows = () => {
                     ))}
                   </div>
                 ) : !isSearching ? (
-                  <p className="text-gray-400">No TV shows found for "{searchQuery}"</p>
+                  <p className="text-gray-500">No TV shows found for "{searchQuery}"</p>
                 ) : null}
               </div>
             </div>
@@ -756,7 +755,7 @@ const Shows = () => {
       {/* Tooltip */}
       {tooltipItem && (
         <div
-          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-blue-500/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
         style={{ 
             left: tooltipPosition.x,
             top: tooltipPosition.y,
@@ -776,13 +775,13 @@ const Shows = () => {
                   target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg==';
                 }}
                 />
-                  </div>
+            </div>
 
             {/* Details */}
             <div className="flex-1 min-w-0">
               <h4 className="text-white font-semibold text-sm line-clamp-2 mb-2">
                 {getItemTitle(tooltipItem)}
-          </h4>
+              </h4>
               
               <div className="space-y-1 text-xs text-gray-300">
                 <div className="flex items-center gap-1">
@@ -790,20 +789,19 @@ const Shows = () => {
                   <span>{formatReleaseDate(getItemReleaseDate(tooltipItem))}</span>
                 </div>
                 
-                {typeof tooltipItem.vote_average === 'number' && (
+                {tooltipItem.genres && tooltipItem.genres.length > 0 && (
                   <div className="flex items-center gap-1">
-              <Star className="w-3 h-3 text-yellow-400" />
-                    <span>{tooltipItem.vote_average.toFixed(1)}</span>
+                    <span className="text-blue-400">•</span>
+                    <span>{tooltipItem.genres.slice(0, 2).map(g => g.name).join(', ')}</span>
                   </div>
                 )}
                 
-                {tooltipItem.overview && (
-                  <p className="text-gray-400 line-clamp-2 mt-2">
-                    {tooltipItem.overview}
-                  </p>
+                {tooltipItem.runtime && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-blue-400">•</span>
+                    <span>{Math.floor(tooltipItem.runtime / 60)}h {tooltipItem.runtime % 60}m</span>
+                  </div>
                 )}
-                
-
               </div>
             </div>
           </div>

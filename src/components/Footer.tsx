@@ -43,7 +43,7 @@ const Footer = () => {
             </div>
             
             {aboutUs && (
-              <p className="text-gray-400 text-sm leading-relaxed mb-6">
+              <p className="text-gray-500 text-sm leading-relaxed mb-6">
                 {aboutUs}
               </p>
             )}
@@ -52,7 +52,7 @@ const Footer = () => {
             {disclaimer && (
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 border border-gray-700/50">
                 <h4 className="text-white font-semibold mb-2">Disclaimer:</h4>
-                <p className="text-gray-400 text-xs leading-relaxed">
+                <p className="text-gray-500 text-xs leading-relaxed">
                   {disclaimer}
                 </p>
               </div>
@@ -63,11 +63,11 @@ const Footer = () => {
           <div>
             <h3 className="text-white font-semibold mb-4">Explore</h3>
             <ul className="space-y-2">
-              <li><a href="/" className="text-gray-400 hover:text-gray-300 transition-colors text-sm font-bold">Home</a></li>
-              <li><a href="/search" className="text-gray-400 hover:text-gray-300 transition-colors text-sm font-bold">Search</a></li>
-              <li><a href="/movies" className="text-gray-400 hover:text-gray-300 transition-colors text-sm font-bold">Movies</a></li>
-              <li><a href="/shows" className="text-gray-400 hover:text-gray-300 transition-colors text-sm font-bold">TV Shows</a></li>
-              <li><a href="/watchlist" className="text-gray-400 hover:text-gray-300 transition-colors text-sm font-bold">Watchlist</a></li>
+              <li><a href="/" className="text-gray-500 hover:text-gray-300 transition-colors text-sm font-bold">Home</a></li>
+              <li><a href="/search" className="text-gray-500 hover:text-gray-300 transition-colors text-sm font-bold">Search</a></li>
+              <li><a href="/movies" className="text-gray-500 hover:text-gray-300 transition-colors text-sm font-bold">Movies</a></li>
+              <li><a href="/shows" className="text-gray-500 hover:text-gray-300 transition-colors text-sm font-bold">TV Shows</a></li>
+              <li><a href="/watchlist" className="text-gray-500 hover:text-gray-300 transition-colors text-sm font-bold">Watchlist</a></li>
             </ul>
           </div>
 
@@ -102,7 +102,7 @@ const Footer = () => {
 
         {/* Copyright */}
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-          <p className="text-gray-400 tex-sm font-bold">
+          <p className="text-gray-500 text-sm font-bold">
             © {new Date().getFullYear()} CINEMA.FO. All rights reserved.
           </p>
         </div>

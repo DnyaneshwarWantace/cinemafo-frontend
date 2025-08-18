@@ -233,7 +233,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
         <div className="absolute top-0 left-0 right-0 z-20 h-16 bg-gradient-to-b from-black/50 to-transparent">
           <button
             onClick={handleClose}
-            className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm border border-white/20 shadow-lg"
+            className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm border border-blue-500/50 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             aria-label="Close modal"
           >
             <ArrowLeft className="w-6 h-6" />
@@ -471,7 +471,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                         console.log(`Season ${season.season_number} clicked`);
                         setSelectedSeason(season.season_number);
                       }}
-                      className={`min-w-[80px] sm:min-w-[100px] text-xs sm:text-sm ${
+                      className={`min-w-[80px] sm:min-w-[100px] text-xs sm:text-sm rounded-full ${
                         selectedSeason === season.season_number 
                           ? 'bg-white text-black hover:bg-gray-200' 
                           : 'bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60'
