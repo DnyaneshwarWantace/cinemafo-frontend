@@ -1295,13 +1295,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
 
 
-  // Simplified timestamp preview handler
+  // Enhanced timestamp preview handler
   const handleProgressBarHover = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!duration) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
-    const percentage = clickX / rect.width;
+    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
     const previewTimeValue = percentage * duration;
     
     setPreviewTime(previewTimeValue);
@@ -1313,13 +1313,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setPreviewTime(null);
   }, []);
 
-  // Add mouse move handler to the range input itself
+  // Enhanced mouse move handler for the range input
   const handleRangeInputMouseMove = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
     if (!duration) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
-    const percentage = clickX / rect.width;
+    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
     const previewTimeValue = percentage * duration;
     
     setPreviewTime(previewTimeValue);
@@ -1725,18 +1725,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
                   ></div>
                   
-                                     {/* Timestamp preview */}
-                   {showPreview && previewTime !== null && (
-                     <div 
-                       className="absolute top-0 transform -translate-y-full -translate-x-1/2 bg-black text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[9999] border-2 border-blue-500 shadow-xl"
-                       style={{ 
-                         left: `${(previewTime / (duration || 1)) * 100}%`,
-                         marginTop: '-15px'
-                       }}
-                     >
-                       {formatTime(previewTime)}
-                     </div>
-                   )}
+                  {/* Hover indicator */}
+                  {showPreview && previewTime !== null && (
+                    <div 
+                      className="absolute top-0 h-full w-1 bg-blue-400 rounded-full shadow-lg pointer-events-none z-10 transition-all duration-150 ease-out"
+                      style={{ 
+                        left: `${(previewTime / (duration || 1)) * 100}%`,
+                        transform: 'translateX(-50%)'
+                      }}
+                    ></div>
+                  )}
                   
                   {/* Invisible range input for interaction */}
                 <input
@@ -1758,6 +1756,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   <span>{formatTime(currentTime)}</span>
                   <span>{formatTime(duration)}</span>
                 </div>
+                
+                {/* Timestamp preview tooltip - positioned outside progress bar */}
+                {showPreview && previewTime !== null && (
+                  <div 
+                    className="absolute bottom-full left-0 transform -translate-y-2 bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-400/50 shadow-2xl transition-all duration-150 ease-out"
+                    style={{ 
+                      left: `${(previewTime / (duration || 1)) * 100}%`,
+                      transform: 'translateX(-50%) translateY(-8px)'
+                    }}
+                  >
+                    <div className="flex flex-col items-center">
+                      <span className="text-white font-mono">{formatTime(previewTime)}</span>
+                    </div>
+                    {/* Arrow pointing down */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/95"></div>
+                  </div>
+                )}
               </div>
               
               {/* Control Buttons */}
