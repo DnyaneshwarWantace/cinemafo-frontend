@@ -31,8 +31,6 @@ const Search = () => {
   const [showExtendedFilters, setShowExtendedFilters] = useState(false);
   const { updateProgress } = useWatchHistory();
   const [isMobile, setIsMobile] = useState(false);
-  const [longPressTimeout, setLongPressTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [isLongPressing, setIsLongPressing] = useState(false);
 
   // Detect mobile/touch devices
   useEffect(() => {
@@ -318,87 +316,6 @@ const Search = () => {
       setTooltipTimeout(null);
     }
     setTooltipItem(null);
-  };
-
-  // Long press functions for mobile
-  const handleTouchStart = (e: React.TouchEvent, item: Movie | TVShow) => {
-    if (!isMobile) return;
-    
-    // Clear any existing long press timeout
-    if (longPressTimeout) {
-      clearTimeout(longPressTimeout);
-      setLongPressTimeout(null);
-    }
-    
-    // Set long press timeout (600ms)
-    const timeout = setTimeout(() => {
-      setIsLongPressing(true);
-      showTooltipForItem(e, item);
-    }, 600);
-    
-    setLongPressTimeout(timeout);
-  };
-
-  const handleTouchEnd = () => {
-    if (!isMobile) return;
-    
-    // Clear long press timeout
-    if (longPressTimeout) {
-      clearTimeout(longPressTimeout);
-      setLongPressTimeout(null);
-    }
-    
-    // Hide tooltip after a short delay if it was shown by long press
-    if (isLongPressing) {
-      setTimeout(() => {
-        setTooltipItem(null);
-        setIsLongPressing(false);
-      }, 2000); // Hide after 2 seconds
-    }
-  };
-
-  const handleTouchMove = () => {
-    if (!isMobile) return;
-    
-    // Cancel long press if user moves finger
-    if (longPressTimeout) {
-      clearTimeout(longPressTimeout);
-      setLongPressTimeout(null);
-    }
-    setIsLongPressing(false);
-  };
-
-  const showTooltipForItem = (e: React.TouchEvent, item: Movie | TVShow) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    // Calculate position based on touch point
-    const touch = e.touches[0];
-    let x = touch.clientX;
-    let y = rect.bottom + 10;
-    
-    // Tooltip dimensions (approximate)
-    const tooltipWidth = 320;
-    const tooltipHeight = 120;
-    
-    // Adjust X position to keep tooltip within viewport
-    if (x - tooltipWidth / 2 < 10) {
-      x = tooltipWidth / 2 + 10;
-    } else if (x + tooltipWidth / 2 > viewportWidth - 10) {
-      x = viewportWidth - tooltipWidth / 2 - 10;
-    }
-    
-    // Adjust Y position to keep tooltip within viewport
-    if (y + tooltipHeight > viewportHeight - 10) {
-      y = rect.top - tooltipHeight - 10;
-      if (y < 10) {
-        y = 10;
-      }
-    }
-    
-    setTooltipPosition({ x, y });
-    setTooltipItem(item);
   };
 
   // Watchlist functions
@@ -696,9 +613,15 @@ const Search = () => {
                     }}
                     onMouseEnter={(e) => handleMouseEnter(e, item)}
                     onMouseLeave={handleTooltipMouseLeave}
-                    onTouchStart={(e) => handleTouchStart(e, item)}
-                    onTouchEnd={handleTouchEnd}
-                    onTouchMove={handleTouchMove}
+                    onTouchStart={() => {
+                      // Hide tooltip on touch start
+                      if (tooltipTimeout) {
+                        clearTimeout(tooltipTimeout);
+                        setTooltipTimeout(null);
+                      }
+                      setTooltipItem(null);
+                    }}
+                    onMouseOut={handleTooltipMouseLeave}
                   >
                     <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                       <img

@@ -16,8 +16,6 @@ const Watchlist = () => {
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const [selectedItem, setSelectedItem] = useState<Movie | TVShow | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [longPressTimeout, setLongPressTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [isLongPressing, setIsLongPressing] = useState(false);
   const { updateProgress } = useWatchHistory();
 
   // Detect mobile/touch devices
