@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { 
   Play, Star, Calendar, Clock, Loader2, Film, Users, Globe, Info, DollarSign, 
-  Award, Building2, MapPin, Languages, Tags, ArrowLeft, ChevronLeft, ChevronRight
+  Award, Building2, MapPin, Languages, Tags, ArrowLeft, ChevronLeft, ChevronRight, Bookmark
 } from "lucide-react";
 import AdBanner from "./AdBanner";
 import MovieCarousel from "./MovieCarousel";
@@ -32,9 +32,47 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
   const [isOpen, setIsOpen] = useState(false);
   const [showExpandedDetails, setShowExpandedDetails] = useState(false);
   const [castPage, setCastPage] = useState(0);
+  const [watchlistUpdate, setWatchlistUpdate] = useState(0);
 
   const { settings: adminSettings } = useAdminSettings();
   const { getHistoryItem } = useWatchHistory();
+
+  // Watchlist functions
+  const isInWatchlist = (item: TVShow): boolean => {
+    try {
+      const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
+      return watchlist.some((watchlistItem: any) => 
+        watchlistItem.id === item.id && (watchlistItem.media_type || 'tv') === (item.media_type || 'tv')
+      );
+    } catch {
+      return false;
+    }
+  };
+
+  const toggleWatchlist = (e: React.MouseEvent, item: TVShow) => {
+    e.stopPropagation();
+    try {
+      const watchlist = JSON.parse(localStorage.getItem('watchlist') || '[]');
+      const isInList = isInWatchlist(item);
+      
+      if (isInList) {
+        const updatedWatchlist = watchlist.filter((watchlistItem: any) => 
+          !(watchlistItem.id === item.id && (watchlistItem.media_type || 'tv') === (item.media_type || 'tv'))
+        );
+        localStorage.setItem('watchlist', JSON.stringify(updatedWatchlist));
+      } else {
+        const itemWithType = { ...item, media_type: item.media_type || 'tv' };
+        watchlist.push(itemWithType);
+        localStorage.setItem('watchlist', JSON.stringify(watchlist));
+      }
+      
+      setWatchlistUpdate(prev => prev + 1);
+      // Trigger storage event for other components
+      window.dispatchEvent(new Event('storage'));
+    } catch (error) {
+      console.error('Error updating watchlist:', error);
+    }
+  };
 
   // Debug: Log the show data being passed
   console.log('TVShowPlayer received show data:', show);
@@ -309,6 +347,19 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                   >
                     <Play className="w-4 h-4" />
                     Play S1E1
+                  </Button>
+                  
+                  <Button
+                    onClick={(e) => toggleWatchlist(e, show)}
+                    variant="outline"
+                    className={`flex items-center gap-2 px-6 py-3 rounded-md text-base font-semibold transition-all duration-200 w-full sm:w-auto ${
+                      isInWatchlist(show)
+                        ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+                        : 'bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60'
+                    }`}
+                  >
+                    <Bookmark className={`w-4 h-4 ${isInWatchlist(show) ? 'fill-white' : ''}`} />
+                    {isInWatchlist(show) ? 'Remove from Watchlist' : 'Add to Watchlist'}
                   </Button>
                   
                   <Button

@@ -27,8 +27,14 @@ const Movies = () => {
   const [watchlistUpdate, setWatchlistUpdate] = useState(0);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const { updateProgress } = useWatchHistory();
+  const [isMobile, setIsMobile] = useState(false);
 
   const handleMouseEnter = (e: React.MouseEvent, item: Movie) => {
+    // Don't show tooltips on mobile devices
+    if (isMobile) {
+      return;
+    }
+
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
@@ -158,6 +164,16 @@ const Movies = () => {
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Detect mobile/touch devices
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Optimized tooltip cleanup - reduced debounce times for faster response
@@ -635,15 +651,30 @@ const Movies = () => {
                 {searchResults.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
                     {searchResults.map((movie) => (
-                      <div
-                        key={movie.id}
-                        className="cursor-pointer group/item"
-                        onClick={() => handleMovieClick(movie)}
-                        onMouseEnter={(e) => handleMouseEnter(e, movie)}
-                        onMouseLeave={handleTooltipMouseLeave}
-                        onMouseOut={handleTooltipMouseLeave}
-                      >
-                        <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
+                                              <div
+                          key={movie.id}
+                          className="cursor-pointer group/item"
+                          onClick={(e) => {
+                            // Prevent tooltip from showing on click
+                            if (tooltipTimeout) {
+                              clearTimeout(tooltipTimeout);
+                              setTooltipTimeout(null);
+                            }
+                            setTooltipItem(null);
+                            handleMovieClick(movie);
+                          }}
+                          onMouseEnter={(e) => handleMouseEnter(e, movie)}
+                          onMouseLeave={handleTooltipMouseLeave}
+                          onTouchStart={() => {
+                            // Hide tooltip on touch start
+                            if (tooltipTimeout) {
+                              clearTimeout(tooltipTimeout);
+                              setTooltipTimeout(null);
+                            }
+                            setTooltipItem(null);
+                          }}
+                        >
+                          <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                           <img
                             src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgdmlld0JveD0iMCAwIDMwMCA0NTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iNDUwIiBmaWxsPSIjMWYyOTM3Ii8+Cjx0ZXh0IHg9IjE1MCIgeT0iMjI1IiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM2YjcyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K'}
                             alt={getItemTitle(movie)}

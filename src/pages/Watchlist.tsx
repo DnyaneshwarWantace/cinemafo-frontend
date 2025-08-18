@@ -15,8 +15,18 @@ const Watchlist = () => {
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const [selectedItem, setSelectedItem] = useState<Movie | TVShow | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const { updateProgress } = useWatchHistory();
 
+  // Detect mobile/touch devices
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     loadWatchlist();
@@ -192,6 +202,11 @@ const Watchlist = () => {
 
   // Tooltip functionality
   const handleMouseEnter = (e: React.MouseEvent, item: Movie | TVShow) => {
+    // Don't show tooltips on mobile devices
+    if (isMobile) {
+      return;
+    }
+
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
@@ -314,9 +329,25 @@ const Watchlist = () => {
               <div
                 key={`${item.id}-${item.media_type}`}
                 className="cursor-pointer group/item"
-                onClick={() => handleItemClick(item)}
+                onClick={(e) => {
+                  // Prevent tooltip from showing on click
+                  if (tooltipTimeout) {
+                    clearTimeout(tooltipTimeout);
+                    setTooltipTimeout(null);
+                  }
+                  setTooltipItem(null);
+                  handleItemClick(item);
+                }}
                 onMouseEnter={(e) => handleMouseEnter(e, item)}
                 onMouseLeave={handleTooltipMouseLeave}
+                onTouchStart={() => {
+                  // Hide tooltip on touch start
+                  if (tooltipTimeout) {
+                    clearTimeout(tooltipTimeout);
+                    setTooltipTimeout(null);
+                  }
+                  setTooltipItem(null);
+                }}
                 onMouseOut={handleTooltipMouseLeave}
               >
                 <div className="relative aspect-[2/3] rounded-lg overflow-hidden">

@@ -20,6 +20,17 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
   const [tooltipItem, setTooltipItem] = useState<Movie | TVShow | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile/touch devices
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -191,6 +202,11 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
   };
 
   const handleMouseEnter = (e: React.MouseEvent, item: Movie | TVShow) => {
+    // Don't show tooltips on mobile devices
+    if (isMobile) {
+      return;
+    }
+
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
@@ -336,10 +352,26 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
               key={item.id}
               data-movie-card
               className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] cursor-pointer group/item first:ml-4 lg:first:ml-0"
-              onClick={() => onItemClick(item)}
+              onClick={(e) => {
+                // Prevent tooltip from showing on click
+                if (tooltipTimeout) {
+                  clearTimeout(tooltipTimeout);
+                  setTooltipTimeout(null);
+                }
+                setTooltipItem(null);
+                onItemClick(item);
+              }}
               onMouseEnter={(e) => handleMouseEnter(e, item)}
               onMouseMove={(e) => handleTooltipMouseMove(e, item)}
               onMouseLeave={handleTooltipMouseLeave}
+              onTouchStart={() => {
+                // Hide tooltip on touch start
+                if (tooltipTimeout) {
+                  clearTimeout(tooltipTimeout);
+                  setTooltipTimeout(null);
+                }
+                setTooltipItem(null);
+              }}
             >
               <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                 <img

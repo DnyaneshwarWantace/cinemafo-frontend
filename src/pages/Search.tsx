@@ -30,6 +30,17 @@ const Search = () => {
   });
   const [showExtendedFilters, setShowExtendedFilters] = useState(false);
   const { updateProgress } = useWatchHistory();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile/touch devices
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Read query from URL on component mount
   useEffect(() => {
@@ -234,6 +245,11 @@ const Search = () => {
 
   // Tooltip functions
   const handleMouseEnter = (e: React.MouseEvent, item: Movie | TVShow) => {
+    // Don't show tooltips on mobile devices
+    if (isMobile) {
+      return;
+    }
+
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
@@ -586,9 +602,25 @@ const Search = () => {
                     key={item.id}
                     data-movie-card
                     className="cursor-pointer group/item"
-                    onClick={() => handleItemClick(item)}
+                    onClick={(e) => {
+                      // Prevent tooltip from showing on click
+                      if (tooltipTimeout) {
+                        clearTimeout(tooltipTimeout);
+                        setTooltipTimeout(null);
+                      }
+                      setTooltipItem(null);
+                      handleItemClick(item);
+                    }}
                     onMouseEnter={(e) => handleMouseEnter(e, item)}
                     onMouseLeave={handleTooltipMouseLeave}
+                    onTouchStart={() => {
+                      // Hide tooltip on touch start
+                      if (tooltipTimeout) {
+                        clearTimeout(tooltipTimeout);
+                        setTooltipTimeout(null);
+                      }
+                      setTooltipItem(null);
+                    }}
                     onMouseOut={handleTooltipMouseLeave}
                   >
                     <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
