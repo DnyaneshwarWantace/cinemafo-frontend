@@ -28,6 +28,7 @@ const Shows = () => {
   const [selectedShow, setSelectedShow] = useState<TVShow | null>(null);
   const { updateProgress } = useWatchHistory();
   const [isMobile, setIsMobile] = useState(false);
+  const [showDetailsCache, setShowDetailsCache] = useState<Record<number, TVShow>>({});
 
   // Detect mobile/touch devices
   useEffect(() => {
@@ -88,10 +89,29 @@ const Shows = () => {
     // Hide current tooltip immediately when moving to new item
     setTooltipItem(null);
     
-    // Set timeout for 200ms delay as requested by client
+    // Set timeout for slower delay as requested by client
     const timeout = setTimeout(() => {
       setTooltipItem(item);
-    }, 400);
+
+      // Enrich TV show tooltip with full details if search result is partial
+      const needsDetails = (!item.genres || item.genres.length === 0) || !item.number_of_seasons || !item.seasons || item.seasons.length === 0;
+      if (needsDetails) {
+        const cached = showDetailsCache[item.id];
+        if (cached) {
+          setTooltipItem(prev => (prev && prev.id === item.id) ? { ...prev, ...cached } as TVShow : prev);
+        } else {
+          api.getShowDetails(item.id)
+            .then(res => {
+              const full = res.data as TVShow;
+              setShowDetailsCache(prev => ({ ...prev, [item.id]: full }));
+              setTooltipItem(prev => (prev && prev.id === item.id) ? { ...prev, ...full } as TVShow : prev);
+            })
+            .catch(() => {
+              // ignore
+            });
+        }
+      }
+    }, 600);
     
     setTooltipTimeout(timeout);
   };
@@ -817,7 +837,7 @@ const Shows = () => {
               
               <div className="space-y-1 text-xs text-gray-300">
                 <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
+                  <span className="text-blue-400">•</span>
                   <span>{formatReleaseDate(getItemReleaseDate(tooltipItem))}</span>
                 </div>
                 
@@ -828,12 +848,21 @@ const Shows = () => {
                   </div>
                 )}
                 
-                {tooltipItem.runtime && (
+                {tooltipItem.number_of_seasons && (
                   <div className="flex items-center gap-1">
                     <span className="text-blue-400">•</span>
-                    <span>{Math.floor(tooltipItem.runtime / 60)}h {tooltipItem.runtime % 60}m</span>
+                    <span>{tooltipItem.number_of_seasons} season{tooltipItem.number_of_seasons !== 1 ? 's' : ''}</span>
                   </div>
                 )}
+                
+                {tooltipItem.seasons && tooltipItem.seasons.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-blue-400">•</span>
+                    <span>{tooltipItem.seasons.reduce((total, season) => total + season.episode_count, 0)} episodes</span>
+                  </div>
+                )}
+                
+                {/* Description removed as requested */}
               </div>
             </div>
           </div>

@@ -242,10 +242,10 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       setTooltipTimeout(null);
     }
     
-    // Set timeout for 200ms delay
+    // Set timeout for slightly slower delay
     const timeout = setTimeout(() => {
       setTooltipItem(item);
-    }, 200);
+    }, 400);
     
     setTooltipTimeout(timeout);
   };
@@ -457,11 +457,16 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                 src={tooltipItem.poster_path ? `https://image.tmdb.org/t/p/w92${tooltipItem.poster_path}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg=='}
                 alt={getItemTitle(tooltipItem)}
                 className="w-full h-full object-cover"
+                width={92}
+                height={138}
+                decoding="async"
+                fetchPriority="high"
+                loading="eager"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg==';
                 }}
-                />
+              />
             </div>
 
             {/* Details */}
@@ -472,7 +477,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
               
               <div className="space-y-1 text-xs text-gray-300">
                 <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
+                  <span className="text-blue-400">•</span>
                   <span>{formatReleaseDate(getItemReleaseDate(tooltipItem))}</span>
                 </div>
                 
@@ -483,12 +488,28 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                   </div>
                 )}
                 
-                {tooltipItem.runtime && (
+                {'title' in tooltipItem && tooltipItem.runtime && (
                   <div className="flex items-center gap-1">
                     <span className="text-blue-400">•</span>
                     <span>{Math.floor(tooltipItem.runtime / 60)}h {tooltipItem.runtime % 60}m</span>
                   </div>
                 )}
+
+                {'name' in tooltipItem && (tooltipItem as TVShow).number_of_seasons && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-blue-400">•</span>
+                    <span>{(tooltipItem as TVShow).number_of_seasons} season{(tooltipItem as TVShow).number_of_seasons !== 1 ? 's' : ''}</span>
+                  </div>
+                )}
+
+                {'name' in tooltipItem && (tooltipItem as TVShow).seasons && (tooltipItem as TVShow).seasons!.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-blue-400">•</span>
+                    <span>{(tooltipItem as TVShow).seasons!.reduce((total, season) => total + season.episode_count, 0)} episodes</span>
+                  </div>
+                )}
+                
+                {/* Description removed as requested */}
               </div>
             </div>
           </div>

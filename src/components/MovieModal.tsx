@@ -260,6 +260,9 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
+          <div className="absolute top-4 left-1/2 -translate-x-1/2">
+            <img src="/logo.svg" alt="CINEMA.FO" className="h-8 w-auto drop-shadow" />
+          </div>
             </div>
 
             {/* Content */}
@@ -298,13 +301,13 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
                         )}
                       </Badge>
                     )}
-                  <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-gray-500 text-xs sm:text-sm">
+                  <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-blue-500/50 text-xs sm:text-sm">
                       <Calendar className="w-3 h-3" />
                     <span className="hidden sm:inline">{formatReleaseDate(movie.release_date || movie.first_air_date)}</span>
                     <span className="sm:hidden">{new Date(movie.release_date || movie.first_air_date).getFullYear()}</span>
                     </Badge>
                 {movie.runtime && (
-                    <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-gray-500 text-xs sm:text-sm">
+                    <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-blue-500/50 text-xs sm:text-sm">
                         <Clock className="w-3 h-3" />
                         {formatRuntime(movie.runtime)}
                       </Badge>
@@ -340,7 +343,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
                   className={`flex items-center gap-2 px-6 py-3 rounded-md text-base font-semibold transition-all duration-200 w-full sm:w-auto ${
                     isInWatchlist(movie)
                       ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
-                      : 'bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60'
+                      : 'bg-gray-700/60 text-white border-blue-500/50 hover:bg-gray-600/60'
                   }`}
                 >
                   <Bookmark className={`w-4 h-4 ${isInWatchlist(movie) ? 'fill-white' : ''}`} />
@@ -350,7 +353,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
                 <Button
                   onClick={() => setShowDetails(!showDetails)}
                   variant="outline"
-                  className="flex items-center gap-2 bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60 w-full sm:w-auto"
+                  className="flex items-center gap-2 bg-gray-700/60 text-white border-blue-500/50 hover:bg-gray-600/60 w-full sm:w-auto"
                 >
                   {showDetails ? (
                     <>

@@ -438,7 +438,7 @@ const Watchlist = () => {
               
               <div className="space-y-1 text-xs text-gray-300">
                 <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
+                  <span className="text-blue-400">•</span>
                   <span>{formatReleaseDate(getItemReleaseDate(tooltipItem))}</span>
                 </div>
                 
@@ -449,12 +449,26 @@ const Watchlist = () => {
                   </div>
                 )}
                 
-                {tooltipItem.runtime && (
+                {('title' in tooltipItem) && tooltipItem.runtime && (
                   <div className="flex items-center gap-1">
                     <span className="text-blue-400">•</span>
                     <span>{Math.floor(tooltipItem.runtime / 60)}h {tooltipItem.runtime % 60}m</span>
                   </div>
                 )}
+                {('name' in tooltipItem) && (tooltipItem as TVShow).number_of_seasons && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-blue-400">•</span>
+                    <span>{(tooltipItem as TVShow).number_of_seasons} season{(tooltipItem as TVShow).number_of_seasons !== 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                {('name' in tooltipItem) && (tooltipItem as TVShow).seasons && (tooltipItem as TVShow).seasons!.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-blue-400">•</span>
+                    <span>{(tooltipItem as TVShow).seasons!.reduce((total, season) => total + season.episode_count, 0)} episodes</span>
+                  </div>
+                )}
+                
+                {/* Description removed as requested */}
               </div>
             </div>
           </div>

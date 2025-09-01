@@ -276,6 +276,9 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
+          <div className="absolute top-4 left-1/2 -translate-x-1/2">
+            <img src="/logo.svg" alt="CINEMA.FO" className="h-8 w-auto drop-shadow" />
+          </div>
           </div>
 
         {/* Content */}
@@ -314,13 +317,13 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                       )}
                     </Badge>
                   )}
-                  <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-gray-500 text-xs sm:text-sm">
+                  <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-blue-500/50 text-xs sm:text-sm">
                     <Calendar className="w-3 h-3" />
                     <span className="hidden sm:inline">{formatReleaseDate(show.first_air_date)}</span>
                     <span className="sm:hidden">{new Date(show.first_air_date).getFullYear()}</span>
                   </Badge>
                   {showDetails?.number_of_seasons && (
-                    <Badge variant="outline" className="bg-gray-700/60 text-white border-gray-500 text-xs sm:text-sm">
+                    <Badge variant="outline" className="bg-gray-700/60 text-white border-blue-500/50 text-xs sm:text-sm">
                       {showDetails.number_of_seasons} Season{showDetails.number_of_seasons > 1 ? 's' : ''}
                     </Badge>
                   )}
@@ -355,7 +358,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                     className={`flex items-center gap-2 px-6 py-3 rounded-md text-base font-semibold transition-all duration-200 w-full sm:w-auto ${
                       isInWatchlist(show)
                         ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
-                        : 'bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60'
+                        : 'bg-gray-700/60 text-white border-blue-500/50 hover:bg-gray-600/60'
                     }`}
                   >
                     <Bookmark className={`w-4 h-4 ${isInWatchlist(show) ? 'fill-white' : ''}`} />
@@ -365,7 +368,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                   <Button
                     onClick={() => setShowExpandedDetails(!showExpandedDetails)}
                     variant="outline"
-                    className="flex items-center gap-2 bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60 w-full sm:w-auto"
+                    className="flex items-center gap-2 bg-gray-700/60 text-white border-blue-500/50 hover:bg-gray-600/60 w-full sm:w-auto"
                   >
                     {showExpandedDetails ? (
                       <>
@@ -525,7 +528,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                       className={`min-w-[80px] sm:min-w-[100px] text-xs sm:text-sm rounded-full ${
                         selectedSeason === season.season_number 
                           ? 'bg-white text-black hover:bg-gray-200' 
-                          : 'bg-gray-700/60 text-white border-gray-500 hover:bg-gray-600/60'
+                          : 'bg-gray-700/60 text-white border-blue-500/50 hover:bg-gray-600/60'
                       }`}
                     >
                     Season {season.season_number}
@@ -564,7 +567,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                       episodes.map((episode) => (
                         <button
                           key={episode.episode_number}
-                      className="w-full text-left flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-700/40 rounded-lg hover:bg-gray-600/40 transition-colors cursor-pointer group focus:outline-none focus:ring-2 focus:ring-white/50"
+                      className="w-full text-left flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-700/40 rounded-lg hover:bg-gray-600/40 transition-colors cursor-pointer group focus:outline-none focus:ring-2 focus:ring-blue-500/40 border border-transparent focus:border-blue-500/50"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();

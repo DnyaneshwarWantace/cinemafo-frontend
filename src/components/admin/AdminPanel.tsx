@@ -242,7 +242,7 @@ const adminApi = {
     });
     
     if (!response.ok) {
-              throw new Error('Failed to upload ad image to ImgBB');
+              throw new Error('Failed to upload ad image to Tenor');
     }
     
     return response.json();

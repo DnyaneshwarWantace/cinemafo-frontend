@@ -78,7 +78,7 @@ const Movies = () => {
     // Hide current tooltip immediately when moving to new item
     setTooltipItem(null);
     
-    // Set timeout for 200ms delay as requested by client
+    // Set timeout for slightly slower delay
     const timeout = setTimeout(() => {
       setTooltipItem(item);
     }, 400);
@@ -810,7 +810,7 @@ const Movies = () => {
               
               <div className="space-y-1 text-xs text-gray-300">
                 <div className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
+                  <span className="text-blue-400">•</span>
                   <span>{formatReleaseDate(getItemReleaseDate(tooltipItem))}</span>
                 </div>
                 
@@ -827,6 +827,8 @@ const Movies = () => {
                     <span>{Math.floor(tooltipItem.runtime / 60)}h {tooltipItem.runtime % 60}m</span>
                   </div>
                 )}
+                
+                {/* Description removed as requested */}
               </div>
             </div>
           </div>

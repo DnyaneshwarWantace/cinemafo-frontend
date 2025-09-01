@@ -411,21 +411,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         // Don't throw error, just use fallback
       }
       
-      // If we reach here, no primary source was found, check if we have fallback sources
+      // If we reach here, no primary source was found, build single iframe fallback (vidsrc.xyz)
       const fallbackSources: StreamingSource[] = [];
-      
       if (type === 'movie') {
         fallbackSources.push({
           type: 'iframe',
           url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
-          name: 'VidSrc Player (Fallback)',
+          name: 'VidSrc (xyz)',
           language: 'multi'
         });
-      } else if (type === 'tv' && season && episode) {
+      } else if (type === 'tv') {
+        const seasonNum = season && season > 0 ? season : 1;
+        const episodeNum = episode && episode > 0 ? episode : 1;
         fallbackSources.push({
           type: 'iframe',
-          url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`,
-          name: 'VidSrc Player (Fallback)',
+          url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${episodeNum}`,
+          name: 'VidSrc (xyz)',
           language: 'multi'
         });
       }
@@ -452,21 +453,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } catch (error) {
       console.error('❌ Backend request failed:', error);
       
-      // Fallback to iframe sources only
+      // Fallback to iframe source only (vidsrc.xyz)
       const fallbackSources: StreamingSource[] = [];
-      
       if (type === 'movie') {
         fallbackSources.push({
           type: 'iframe',
           url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
-          name: 'VidSrc Player (Fallback)',
+          name: 'VidSrc (xyz)',
           language: 'multi'
         });
-      } else if (type === 'tv' && season && episode) {
+      } else if (type === 'tv') {
+        const seasonNum = season && season > 0 ? season : 1;
+        const episodeNum = episode && episode > 0 ? episode : 1;
         fallbackSources.push({
           type: 'iframe',
-          url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`,
-          name: 'VidSrc Player (Fallback)',
+          url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${episodeNum}`,
+          name: 'VidSrc (xyz)',
           language: 'multi'
         });
       }
@@ -485,6 +487,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           setShowSourceSwitchNotification(false);
         }, 3000);
         
+        console.log('🔄 Using fallback iframe:', fallbackSources[0]?.url);
         setStreamingSources(fallbackSources);
         setCurrentSource(fallbackSources[0]);
       } else {
@@ -989,9 +992,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         // Don't auto-play if we're resuming from a specific time (continue watching)
         if (initialTime === 0) {
-          video.play().catch((playError) => {
-            console.warn('Autoplay failed:', playError);
-          });
+        video.play().catch((playError) => {
+          console.warn('Autoplay failed:', playError);
+        });
         }
 
         // Start background prefetching after manifest is parsed
@@ -1207,16 +1210,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       
       // Don't auto-play if we're resuming from a specific time (continue watching)
       if (initialTime === 0) {
-        video.play().catch((playError) => {
-          console.warn('Safari HLS autoplay failed:', playError);
-          // Only switch to iframe if playback fails
-          const iframeSource = streamingSources.find(s => s.type === 'iframe');
-          if (iframeSource) {
-            setCurrentSource(iframeSource);
-            setError(null);
-            setLoading(true);
-          }
-        });
+      video.play().catch((playError) => {
+        console.warn('Safari HLS autoplay failed:', playError);
+        // Only switch to iframe if playback fails
+        const iframeSource = streamingSources.find(s => s.type === 'iframe');
+        if (iframeSource) {
+          setCurrentSource(iframeSource);
+          setError(null);
+          setLoading(true);
+        }
+      });
       }
       setLoading(false);
       setError(null);
@@ -1521,8 +1524,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             }}
             onError={() => {
               console.error('Iframe failed to load');
-              setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
-              setLoading(false);
+              // Try next fallback iframe source automatically
+              const currentIndex = streamingSources.findIndex(s => s.url === currentSource?.url);
+              const next = streamingSources.slice(currentIndex + 1).find(s => s.type === 'iframe');
+              if (next) {
+                setShowSourceSwitchNotification(true);
+                setTimeout(() => setShowSourceSwitchNotification(false), 3000);
+                setCurrentSource(next);
+                setLoading(true);
+                setError(null);
+              } else {
+                setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
+                setLoading(false);
+              }
             }}
           />
         )}
