@@ -1460,14 +1460,38 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {/* Settings Tabs */}
         <div className="sticky top-0 bg-black/90 backdrop-blur-xl flex space-x-0 sm:space-x-2 border-b border-white/10 pb-0.5 sm:pb-2">
           <button
-            onClick={() => setSettingsTab('speed')}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSettingsTab('speed');
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              setSettingsTab('speed');
+            }}
             className={`px-1 sm:px-3 py-0.5 sm:py-1 rounded-lg text-xs sm:text-sm touch-manipulation min-h-[28px] sm:min-h-[36px] ${settingsTab === 'speed' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
           >
             Speed
           </button>
           {audioTracks.length > 0 && (
             <button
-              onClick={() => setSettingsTab('audio')}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSettingsTab('audio');
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              onTouchEnd={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setSettingsTab('audio');
+              }}
               className={`px-1 sm:px-3 py-0.5 sm:py-1 rounded-lg text-xs sm:text-sm touch-manipulation min-h-[28px] sm:min-h-[36px] ${settingsTab === 'audio' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               Audio
@@ -1483,7 +1507,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
               <button
                 key={speed}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSpeedChange(speed);
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
                   handleSpeedChange(speed);
                 }}
                 className={`w-full text-left px-1 sm:px-3 py-0.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center justify-between touch-manipulation min-h-[28px] sm:min-h-[40px] ${playbackSpeed === speed ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
@@ -1501,7 +1535,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {audioTracks.map((track) => (
               <button
                 key={track.id}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAudioTrackChange(track.id.toString());
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
                   handleAudioTrackChange(track.id.toString());
                 }}
                 className={`w-full text-left px-1 sm:px-3 py-0.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center justify-between touch-manipulation min-h-[28px] sm:min-h-[40px] ${selectedAudioTrack === track.id ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}

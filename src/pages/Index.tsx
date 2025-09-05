@@ -240,6 +240,26 @@ const Index = () => {
         onItemClick={handleMovieClick}
       />
 
+      {/* Hero Overlay Ad - Overlay on Hero Slider */}
+      {adminSettings?.ads?.heroOverlayAd?.enabled && (
+        <section className="relative -mt-32 lg:-mt-32 z-10">
+          <div className="bg-gradient-to-t from-black via-black/90 to-transparent pt-2 pb-4">
+            <div className="w-full px-4 sm:px-6 lg:px-8">
+              <div className="max-w-4xl mx-auto">
+                <AdBanner 
+                  adKey="heroOverlayAd"
+                  imageUrl={adminSettings.ads.heroOverlayAd.imageUrl}
+                  cloudinaryUrl={adminSettings.ads.heroOverlayAd.cloudinaryUrl}
+                  clickUrl={adminSettings.ads.heroOverlayAd.clickUrl}
+                  enabled={adminSettings.ads.heroOverlayAd.enabled}
+                  className="rounded-lg shadow-2xl"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Mobile Content */}
       <div className="lg:hidden">
         <div className="container mx-auto px-4 py-8 pt-0 bg-black">

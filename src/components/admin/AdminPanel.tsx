@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, FileText, Eye, EyeOff, Upload, Save, X, Plus, Trash2, Monitor, Image, Link, BarChart3, Users, Globe, Palette, Shield, Database, Bell, Zap, LogOut, Home } from 'lucide-react';
+import { Settings, FileText, Eye, EyeOff, Upload, Save, X, Plus, Trash2, Monitor, Image, Link, BarChart3, Users, Globe, Palette, Shield, Database, Bell, Zap, LogOut, Home, TrendingUp, Download, Calendar, MousePointer } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -89,7 +89,7 @@ const apiCallWithRefresh = async (apiCall: () => Promise<Response>) => {
 // API functions
 const adminApi = {
   login: async (username: string, password: string) => {
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/login`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -110,7 +110,7 @@ const adminApi = {
       throw new Error('No token to refresh');
     }
 
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/refresh-token`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/refresh-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token })
@@ -128,7 +128,7 @@ const adminApi = {
   getSettings: async () => {
     const token = localStorage.getItem('adminToken');
     const response = await apiCallWithRefresh(() => 
-      fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings`, {
+      fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/settings`, {
       headers: { 'Authorization': `Bearer ${token}` }
       })
     );
@@ -142,7 +142,7 @@ const adminApi = {
 
   updateAnnouncement: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/announcement`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/settings/announcement`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ const adminApi = {
 
   updateSocialButtons: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/social-buttons`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/settings/social-buttons`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ const adminApi = {
 
   updateSocialLinks: async (socialLinks: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/social-links`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/settings/social-links`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -201,7 +201,7 @@ const adminApi = {
     const token = localStorage.getItem('adminToken');
     console.log('🔑 Frontend: Token exists:', !!token);
     
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/content`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/settings/content`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -226,7 +226,7 @@ const adminApi = {
 
   updateAds: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/ads`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/settings/ads`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -244,7 +244,7 @@ const adminApi = {
 
   uploadAdImage: async (adKey: string, imageUrl: string) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/upload-ad-image`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/upload-ad-image`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -262,7 +262,7 @@ const adminApi = {
 
   updateCSS: async (css: string) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/css`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/settings/css`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -277,6 +277,301 @@ const adminApi = {
     
     return response.json();
   }
+};
+
+// Ad Analytics Dashboard Component
+const AdAnalyticsDashboard: React.FC = () => {
+  const [selectedAd, setSelectedAd] = useState<string>('');
+  const [timeRange, setTimeRange] = useState<number>(7);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchAnalytics = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/admin/ad-analytics?days=${timeRange}${selectedAd ? `&adKey=${selectedAd}` : ''}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAnalyticsData(data);
+      } else {
+        console.error('Failed to fetch analytics');
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSummary = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/admin/ad-summary?days=${timeRange}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+    } catch (error) {
+      console.error('Error fetching summary:', error);
+    }
+    return null;
+  };
+
+  const exportData = async (format: 'json' | 'csv' = 'json') => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/admin/export-ad-data?format=${format}${selectedAd ? `&adKey=${selectedAd}` : ''}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        if (format === 'csv') {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `ad-clicks-${Date.now()}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        } else {
+          const data = await response.json();
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `ad-clicks-${Date.now()}.json`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }
+        toast({
+          title: "Export Successful",
+          description: `Ad data exported as ${format.toUpperCase()}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export ad data",
+        variant: "destructive"
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [selectedAd, timeRange]);
+
+  const adKeys = [
+    'heroOverlayAd', 'mainPageAd1', 'mainPageAd2', 'mainPageAd3', 'mainPageAd4',
+    'searchTopAd', 'searchBottomAd', 'moviesPageAd', 'moviesPageBottomAd',
+    'showsPageAd', 'showsPageBottomAd', 'playerPageAd'
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Controls */}
+      <div className="flex flex-wrap gap-4 items-center">
+        <div className="flex items-center gap-2">
+          <Label className="text-white">Ad:</Label>
+          <select
+            value={selectedAd}
+            onChange={(e) => setSelectedAd(e.target.value)}
+            className="bg-gray-700 text-white px-3 py-1 rounded border border-gray-600"
+          >
+            <option value="">All Ads</option>
+            {adKeys.map(key => (
+              <option key={key} value={key}>{key}</option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Label className="text-white">Time Range:</Label>
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(Number(e.target.value))}
+            className="bg-gray-700 text-white px-3 py-1 rounded border border-gray-600"
+          >
+            <option value={1}>Last 24 hours</option>
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+          </select>
+        </div>
+
+        <Button onClick={fetchAnalytics} disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+          {loading ? 'Loading...' : 'Refresh'}
+        </Button>
+
+        <div className="flex gap-2">
+          <Button onClick={() => exportData('json')} variant="outline" size="sm">
+            <Download className="w-4 h-4 mr-2" />
+            Export JSON
+          </Button>
+          <Button onClick={() => exportData('csv')} variant="outline" size="sm">
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      {analyticsData?.stats && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-gray-700/50 border-gray-600">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Total Clicks</p>
+                  <p className="text-2xl font-bold text-white">
+                    {analyticsData.stats.reduce((sum: number, stat: any) => sum + stat.totalClicks, 0)}
+                  </p>
+                </div>
+                <MousePointer className="w-8 h-8 text-blue-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-700/50 border-gray-600">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Unique Sessions</p>
+                  <p className="text-2xl font-bold text-white">
+                    {analyticsData.totalUniqueSessions || 0}
+                  </p>
+                </div>
+                <Users className="w-8 h-8 text-green-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-700/50 border-gray-600">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Enabled Ads</p>
+                  <p className="text-2xl font-bold text-white">
+                    {analyticsData.totalEnabledAds || 0}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {analyticsData.totalConfiguredAds || 0} total configured
+                  </p>
+                </div>
+                <BarChart3 className="w-8 h-8 text-purple-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Ad Performance Table */}
+      {analyticsData?.stats && (
+        <Card className="bg-gray-700/50 border-gray-600">
+          <CardHeader>
+            <CardTitle className="text-white">Ad Performance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-600">
+                    <th className="text-left text-gray-300 py-2">Ad Key</th>
+                    <th className="text-left text-gray-300 py-2">Total Clicks</th>
+                    <th className="text-left text-gray-300 py-2">Unique Sessions</th>
+                    <th className="text-left text-gray-300 py-2">CTR</th>
+                    <th className="text-left text-gray-300 py-2">Last Click</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analyticsData.stats.map((stat: any, index: number) => (
+                    <tr key={index} className="border-b border-gray-700">
+                      <td className="text-white py-2 font-mono text-xs">{stat.adKey}</td>
+                      <td className="text-white py-2">{stat.totalClicks}</td>
+                      <td className="text-white py-2">{stat.uniqueSessions}</td>
+                      <td className="text-white py-2">
+                        {stat.uniqueSessions > 0 ? ((stat.totalClicks / stat.uniqueSessions) * 100).toFixed(1) : 0}%
+                      </td>
+                      <td className="text-gray-400 py-2 text-xs">
+                        {new Date(stat.lastClick).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Ads with No Clicks */}
+      {analyticsData?.stats && analyticsData?.totalEnabledAds > analyticsData?.stats.length && (
+        <Card className="bg-gray-700/50 border-gray-600">
+          <CardHeader>
+            <CardTitle className="text-white">Ads with No Clicks</CardTitle>
+            <CardDescription className="text-gray-400">
+              Enabled ads that haven't received any clicks yet
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-gray-400">
+              {analyticsData.totalEnabledAds - analyticsData.stats.length} ads are enabled but haven't received clicks yet.
+              <br />
+              <span className="text-xs text-gray-500">
+                These ads are configured and enabled in the admin panel but users haven't clicked on them.
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Clicks */}
+      {analyticsData?.recentClicks && (
+        <Card className="bg-gray-700/50 border-gray-600">
+          <CardHeader>
+            <CardTitle className="text-white">Recent Clicks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {analyticsData.recentClicks.map((click: any, index: number) => (
+                <div key={index} className="flex items-center justify-between p-2 bg-gray-800/50 rounded">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <div>
+                      <p className="text-white text-sm font-mono">{click.adKey}</p>
+                      <p className="text-gray-400 text-xs">{click.deviceType} • {click.browser}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-gray-400 text-xs">{new Date(click.timestamp).toLocaleString()}</p>
+                    <p className="text-gray-500 text-xs">{click.ipAddress}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
 };
 
 const AdminPanel: React.FC = () => {
@@ -762,7 +1057,7 @@ const AdminPanel: React.FC = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-gray-800">
+          <TabsList className="grid w-full grid-cols-6 bg-gray-800">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-blue-600">
               <BarChart3 className="w-4 h-4 mr-2" />
               Dashboard
@@ -778,6 +1073,10 @@ const AdminPanel: React.FC = () => {
             <TabsTrigger value="ads" className="data-[state=active]:bg-blue-600">
               <Image className="w-4 h-4 mr-2" />
               Ads
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-blue-600">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="social" className="data-[state=active]:bg-blue-600">
               <Users className="w-4 h-4 mr-2" />
@@ -1424,6 +1723,23 @@ const AdminPanel: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <BarChart3 className="w-5 h-5 mr-2" />
+                  Ad Click Analytics
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Track and analyze ad click performance
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <AdAnalyticsDashboard />
               </CardContent>
             </Card>
           </TabsContent>

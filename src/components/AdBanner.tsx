@@ -20,11 +20,20 @@ const AdBanner: React.FC<AdBannerProps> = ({
 }) => {
   const [clickCount, setClickCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string>('');
 
   useEffect(() => {
     if (!enabled || !imageUrl || !clickUrl) {
       return;
     }
+
+    // Generate or get session ID
+    let currentSessionId = sessionStorage.getItem('ad_session_id');
+    if (!currentSessionId) {
+      currentSessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      sessionStorage.setItem('ad_session_id', currentSessionId);
+    }
+    setSessionId(currentSessionId);
 
     // Check if user has already clicked this ad in this session
     const sessionKey = `ad_clicked_${adKey}`;
@@ -38,12 +47,46 @@ const AdBanner: React.FC<AdBannerProps> = ({
     return null;
   }
 
-  const handleAdClick = () => {
+  const handleAdClick = async () => {
     try {
-      // Track click
+      // Track click locally
       const sessionKey = `ad_clicked_${adKey}`;
       sessionStorage.setItem(sessionKey, 'true');
       setClickCount(1);
+
+      // Send click data to backend for tracking
+      const trackAdClick = async () => {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api'}/admin/public/track-ad-click`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              adKey,
+              clickUrl,
+              pageUrl: window.location.href,
+              sessionId,
+              deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 
+                         /Tablet|iPad/i.test(navigator.userAgent) ? 'tablet' : 'desktop',
+              browser: getBrowserName(),
+              os: getOSName()
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`[AdBanner ${adKey}] Click tracked successfully:`, data);
+          } else {
+            console.warn(`[AdBanner ${adKey}] Failed to track click:`, response.status);
+          }
+        } catch (trackError) {
+          console.error(`[AdBanner ${adKey}] Error tracking click:`, trackError);
+        }
+      };
+
+      // Track click in background (don't wait for it)
+      trackAdClick();
 
       // Open ad URL in new tab
       window.open(clickUrl, '_blank', 'noopener,noreferrer');
@@ -53,6 +96,28 @@ const AdBanner: React.FC<AdBannerProps> = ({
       console.error(`[AdBanner ${adKey}] Error handling ad click:`, error);
       setError('Failed to open ad link');
     }
+  };
+
+  // Helper function to detect browser
+  const getBrowserName = () => {
+    const userAgent = navigator.userAgent;
+    if (userAgent.includes('Chrome')) return 'Chrome';
+    if (userAgent.includes('Firefox')) return 'Firefox';
+    if (userAgent.includes('Safari')) return 'Safari';
+    if (userAgent.includes('Edge')) return 'Edge';
+    if (userAgent.includes('Opera')) return 'Opera';
+    return 'Unknown';
+  };
+
+  // Helper function to detect OS
+  const getOSName = () => {
+    const userAgent = navigator.userAgent;
+    if (userAgent.includes('Windows')) return 'Windows';
+    if (userAgent.includes('Mac')) return 'macOS';
+    if (userAgent.includes('Linux')) return 'Linux';
+    if (userAgent.includes('Android')) return 'Android';
+    if (userAgent.includes('iOS')) return 'iOS';
+    return 'Unknown';
   };
 
   if (error) {
