@@ -166,9 +166,10 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
   };
 
   const formatRuntime = (minutes: number) => {
+    if (!minutes || minutes === 0) return 'Unknown';
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}m`;
+    return hours > 0 ? `${hours}h ${remainingMinutes}m` : `${remainingMinutes}m`;
   };
 
   const formatMoney = (amount: number) => {
@@ -261,7 +262,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="absolute top-4 left-1/2 -translate-x-1/2">
-            <img src="/logo.svg" alt="CINEMA.FO" className="h-8 w-auto drop-shadow" />
+            <img src="/logo.svg" alt="CINEMA.FO" className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto drop-shadow transition-all duration-300 filter brightness-110" />
           </div>
             </div>
 
@@ -301,19 +302,19 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
                         )}
                       </Badge>
                     )}
-                  <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-blue-500/50 text-xs sm:text-sm">
+                  <Badge variant="outline" className="flex items-center gap-1 bg-blue-600/20 text-white border-blue-500 text-xs sm:text-sm">
                       <Calendar className="w-3 h-3" />
                     <span className="hidden sm:inline">{formatReleaseDate(movie.release_date || movie.first_air_date)}</span>
                     <span className="sm:hidden">{new Date(movie.release_date || movie.first_air_date).getFullYear()}</span>
                     </Badge>
                 {movie.runtime && (
-                    <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-blue-500/50 text-xs sm:text-sm">
+                    <Badge variant="outline" className="flex items-center gap-1 bg-blue-600/20 text-white border-blue-500 text-xs sm:text-sm">
                         <Clock className="w-3 h-3" />
                         {formatRuntime(movie.runtime)}
                       </Badge>
                     )}
                   {movie.genres?.slice(0, 3).map((genre: any) => (
-                    <Badge key={genre.id} variant="secondary" className="bg-gray-700/60 text-white text-xs sm:text-sm">
+                    <Badge key={genre.id} variant="secondary" className="bg-blue-600/20 text-white border-blue-500/50 text-xs sm:text-sm">
                         {genre.name}
                       </Badge>
                     ))}
@@ -353,7 +354,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
                 <Button
                   onClick={() => setShowDetails(!showDetails)}
                   variant="outline"
-                  className="flex items-center gap-2 bg-gray-700/60 text-white border-blue-500/50 hover:bg-gray-600/60 w-full sm:w-auto"
+                  className="flex items-center gap-2 bg-blue-600/20 text-white border-blue-500 hover:bg-blue-600/30 w-full sm:w-auto"
                 >
                   {showDetails ? (
                     <>
@@ -385,7 +386,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
 
               {/* Separator Line - Shows after ad when details are expanded */}
               {showDetails && (
-                <Separator className="my-6 bg-gray-700" />
+                <Separator className="my-6 bg-blue-500/50" />
               )}
               
                   {/* Detailed Information Grid - Hidden by default */}
@@ -458,7 +459,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
                   {/* Cast Section */}
                   {mainCast.length > 0 && (
                     <>
-                    <Separator className="my-6 bg-gray-700" />
+                    <Separator className="my-6 bg-blue-500/50" />
                       <div>
                       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
                           <Users className="w-5 h-5" />

@@ -236,6 +236,12 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     
     setTooltipPosition({ x, y });
     
+    // Preload tooltip image for faster display
+    if (item.poster_path) {
+      const img = new Image();
+      img.src = `https://image.tmdb.org/t/p/w92${item.poster_path}`;
+    }
+    
     // Clear any existing timeout
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
@@ -313,8 +319,8 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       <h2 className="text-xl md:text-2xl font-bold text-white mb-4 px-4 lg:px-0">{title}</h2>
       
       <div className="relative">
-        {/* Left Arrow */}
-        {showLeftArrow && (
+        {/* Left Arrow - Hidden on mobile */}
+        {showLeftArrow && !isMobile && (
           <button
             onClick={() => scroll('left')}
             className="absolute left-4 lg:left-0 top-1/2 -translate-y-1/2 z-10 bg-black/80 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
@@ -323,8 +329,8 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
           </button>
         )}
 
-        {/* Right Arrow */}
-        {showRightArrow && (
+        {/* Right Arrow - Hidden on mobile */}
+        {showRightArrow && !isMobile && (
           <button
             onClick={() => scroll('right')}
             className="absolute right-4 lg:right-0 top-1/2 -translate-y-1/2 z-10 bg-black/80 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
@@ -488,7 +494,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                   </div>
                 )}
                 
-                {'title' in tooltipItem && tooltipItem.runtime && (
+                {'title' in tooltipItem && tooltipItem.runtime && tooltipItem.runtime > 0 && (
                   <div className="flex items-center gap-1">
                     <span className="text-blue-400">•</span>
                     <span>{Math.floor(tooltipItem.runtime / 60)}h {tooltipItem.runtime % 60}m</span>

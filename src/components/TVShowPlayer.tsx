@@ -277,7 +277,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="absolute top-4 left-1/2 -translate-x-1/2">
-            <img src="/logo.svg" alt="CINEMA.FO" className="h-8 w-auto drop-shadow" />
+            <img src="/logo.svg" alt="CINEMA.FO" className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto drop-shadow transition-all duration-300 filter brightness-110" />
           </div>
           </div>
 
@@ -317,18 +317,18 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                       )}
                     </Badge>
                   )}
-                  <Badge variant="outline" className="flex items-center gap-1 bg-gray-700/60 text-white border-blue-500/50 text-xs sm:text-sm">
+                  <Badge variant="outline" className="flex items-center gap-1 bg-blue-600/20 text-white border-blue-500 text-xs sm:text-sm">
                     <Calendar className="w-3 h-3" />
                     <span className="hidden sm:inline">{formatReleaseDate(show.first_air_date)}</span>
                     <span className="sm:hidden">{new Date(show.first_air_date).getFullYear()}</span>
                   </Badge>
                   {showDetails?.number_of_seasons && (
-                    <Badge variant="outline" className="bg-gray-700/60 text-white border-blue-500/50 text-xs sm:text-sm">
+                    <Badge variant="outline" className="bg-blue-600/20 text-white border-blue-500 text-xs sm:text-sm">
                       {showDetails.number_of_seasons} Season{showDetails.number_of_seasons > 1 ? 's' : ''}
                     </Badge>
                   )}
                   {show.genres?.slice(0, 3).map((genre: any) => (
-                    <Badge key={genre.id} variant="secondary" className="bg-gray-700/60 text-white text-xs sm:text-sm">
+                    <Badge key={genre.id} variant="secondary" className="bg-blue-600/20 text-white border-blue-500/50 text-xs sm:text-sm">
                       {genre.name}
                     </Badge>
                   ))}
@@ -368,7 +368,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                   <Button
                     onClick={() => setShowExpandedDetails(!showExpandedDetails)}
                     variant="outline"
-                    className="flex items-center gap-2 bg-gray-700/60 text-white border-blue-500/50 hover:bg-gray-600/60 w-full sm:w-auto"
+                    className="flex items-center gap-2 bg-blue-600/20 text-white border-blue-500 hover:bg-blue-600/30 w-full sm:w-auto"
                   >
                     {showExpandedDetails ? (
                       <>
@@ -402,7 +402,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
 
               {/* Separator Line - Shows after ad when details are expanded */}
               {showExpandedDetails && (
-                <Separator className="my-6 bg-gray-700" />
+                <Separator className="my-6 bg-blue-500/50" />
               )}
 
                 {/* Detailed Information Grid - Hidden by default */}
@@ -471,7 +471,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                 {/* Cast Section */}
                 {mainCast.length > 0 && (
                   <>
-                    <Separator className="my-6 bg-gray-600" />
+                    <Separator className="my-6 bg-blue-500/50" />
                     <div>
                       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white justify-center lg:justify-start">
                         <Users className="w-5 h-5" />
@@ -511,7 +511,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
 
 
             {/* Season Selector */}
-            <Separator className="my-6 bg-gray-600" />
+            <Separator className="my-6 bg-blue-500/50" />
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-4 text-white text-center lg:text-left">Select Season</h3>
               <div className="flex gap-2 flex-wrap justify-center lg:justify-start">
@@ -528,7 +528,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                       className={`min-w-[80px] sm:min-w-[100px] text-xs sm:text-sm rounded-full ${
                         selectedSeason === season.season_number 
                           ? 'bg-white text-black hover:bg-gray-200' 
-                          : 'bg-gray-700/60 text-white border-blue-500/50 hover:bg-gray-600/60'
+                          : 'bg-blue-600/20 text-white border-blue-500 hover:bg-blue-600/30'
                       }`}
                     >
                     Season {season.season_number}
@@ -567,7 +567,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                       episodes.map((episode) => (
                         <button
                           key={episode.episode_number}
-                      className="w-full text-left flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-700/40 rounded-lg hover:bg-gray-600/40 transition-colors cursor-pointer group focus:outline-none focus:ring-2 focus:ring-blue-500/40 border border-transparent focus:border-blue-500/50"
+                      className="w-full text-left flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-700/40 rounded-lg hover:bg-blue-600/20 transition-colors cursor-pointer group focus:outline-none focus:ring-2 focus:ring-blue-500 border border-blue-500/50 hover:border-blue-500/50 focus:border-blue-500"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();

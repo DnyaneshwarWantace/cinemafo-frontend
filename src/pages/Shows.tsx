@@ -80,6 +80,12 @@ const Shows = () => {
     
     setTooltipPosition({ x, y });
     
+    // Preload tooltip image for faster display
+    if (item.poster_path) {
+      const img = new Image();
+      img.src = `https://image.tmdb.org/t/p/w92${item.poster_path}`;
+    }
+    
     // Clear any existing timeout and hide current tooltip immediately
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
@@ -115,6 +121,24 @@ const Shows = () => {
     
     setTooltipTimeout(timeout);
   };
+
+  const handleMouseMove = (e: React.MouseEvent, item: TVShow) => {
+    // Don't show tooltips on mobile devices
+    if (isMobile) {
+      return;
+    }
+
+    // If we're already showing a tooltip for this item, don't do anything
+    if (tooltipItem && tooltipItem.id === item.id) {
+      return;
+    }
+
+    // If we're moving to a different item, handle it like a new mouse enter
+    if (!tooltipItem || tooltipItem.id !== item.id) {
+      handleMouseEnter(e, item);
+    }
+  };
+
   const handleTooltipMouseLeave = () => {
     // Clear any existing timeout immediately
     if (tooltipTimeout) {
@@ -280,7 +304,18 @@ const Shows = () => {
   }, [tooltipTimeout, searchResults]);
 
   const handleShowClick = (show: TVShow) => {
-    setSelectedShow(show);
+    // On mobile, go directly to video player
+    if (isMobile) {
+      const params = new URLSearchParams({
+        id: show.id.toString(),
+        type: 'tv',
+        title: show.name || 'TV Show'
+      });
+      navigate(`/watch?${params.toString()}`);
+    } else {
+      // On desktop, show modal
+      setSelectedShow(show);
+    }
   };
 
   // Search functionality
@@ -689,6 +724,7 @@ const Shows = () => {
                           handleShowClick(show);
                         }}
                         onMouseEnter={(e) => handleMouseEnter(e, show)}
+                        onMouseMove={(e) => handleMouseMove(e, show)}
                         onMouseLeave={handleTooltipMouseLeave}
                         onTouchStart={() => {
                           // Hide tooltip on touch start
@@ -822,6 +858,11 @@ const Shows = () => {
                 src={tooltipItem.poster_path ? `https://image.tmdb.org/t/p/w92${tooltipItem.poster_path}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg=='}
                 alt={getItemTitle(tooltipItem)}
                 className="w-full h-full object-cover"
+                width={92}
+                height={138}
+                decoding="async"
+                fetchPriority="high"
+                loading="eager"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiB2aWV3Qm94PSIwIDAgOTIgMTM4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iOTIiIGhlaWdodD0iMTM4IiBmaWxsPSIjNjY2NjY2Ii8+Cjx0ZXh0IHg9IjQ2IiB5PSI2OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5ObyBJbWFnZTwvdGV4dD4KPC9zdmc+Cg==';

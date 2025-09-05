@@ -89,7 +89,7 @@ const apiCallWithRefresh = async (apiCall: () => Promise<Response>) => {
 // API functions
 const adminApi = {
   login: async (username: string, password: string) => {
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/login`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -110,7 +110,7 @@ const adminApi = {
       throw new Error('No token to refresh');
     }
 
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/refresh-token`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/refresh-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token })
@@ -128,7 +128,7 @@ const adminApi = {
   getSettings: async () => {
     const token = localStorage.getItem('adminToken');
     const response = await apiCallWithRefresh(() => 
-      fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings`, {
+      fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings`, {
       headers: { 'Authorization': `Bearer ${token}` }
       })
     );
@@ -142,7 +142,7 @@ const adminApi = {
 
   updateAnnouncement: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/announcement`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/announcement`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ const adminApi = {
 
   updateSocialButtons: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/social-buttons`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/social-buttons`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ const adminApi = {
 
   updateSocialLinks: async (socialLinks: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/social-links`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/social-links`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -194,27 +194,39 @@ const adminApi = {
     return response.json();
   },
 
-  updateContent: async (settings: any) => {
+  updateContent: async (contentData: any) => {
+    console.log('📝 Frontend: Updating content settings (disclaimer & about us only)...');
+    console.log('📤 Frontend: Sending data:', contentData);
+    
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/content`, {
+    console.log('🔑 Frontend: Token exists:', !!token);
+    
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/content`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(settings)
+      body: JSON.stringify(contentData)
     });
     
+    console.log('📊 Frontend: Response status:', response.status);
+    console.log('📊 Frontend: Response ok:', response.ok);
+    
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Frontend: Response error:', errorText);
       throw new Error('Failed to update content settings');
     }
     
-    return response.json();
+    const result = await response.json();
+    console.log('✅ Frontend: Success response:', result);
+    return result;
   },
 
   updateAds: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/ads`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/ads`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -232,7 +244,7 @@ const adminApi = {
 
   uploadAdImage: async (adKey: string, imageUrl: string) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/upload-ad-image`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/upload-ad-image`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -250,7 +262,7 @@ const adminApi = {
 
   updateCSS: async (css: string) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/settings/css`, {
+    const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol//api/admin'}/settings/css`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -963,54 +975,11 @@ const AdminPanel: React.FC = () => {
                   />
                 </div>
                 
-                <Separator className="bg-gray-600" />
-                
-                <div>
-                  <Label className="text-white text-lg font-semibold">Social Media Links</Label>
-                  <p className="text-gray-400 text-sm mb-4">Configure social media links for the footer</p>
-                </div>
-                
-                <div>
-                  <Label htmlFor="discordLink" className="text-white">Discord URL</Label>
-                  <Input
-                    id="discordLink"
-                    value={settings.content.socialLinks?.discord || ''}
-                    onChange={(e) => setSettings(prev => prev ? {
-                      ...prev,
-                      content: { 
-                        ...prev.content, 
-                        socialLinks: { 
-                          ...prev.content.socialLinks, 
-                          discord: e.target.value 
-                        } 
-                      }
-                    } : null)}
-                    className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="https://discord.gg/your-server"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="telegramLink" className="text-white">Telegram URL</Label>
-                  <Input
-                    id="telegramLink"
-                    value={settings.content.socialLinks?.telegram || ''}
-                    onChange={(e) => setSettings(prev => prev ? {
-                      ...prev,
-                      content: { 
-                        ...prev.content, 
-                        socialLinks: { 
-                          ...prev.content.socialLinks, 
-                          telegram: e.target.value 
-                        } 
-                      }
-                    } : null)}
-                    className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="https://t.me/your-channel"
-                  />
-                </div>
                 <Button 
-                  onClick={() => updateContentMutation.mutate(settings.content)}
+                  onClick={() => updateContentMutation.mutate({
+                    disclaimer: settings.content.disclaimer,
+                    aboutUs: settings.content.aboutUs
+                  })}
                   disabled={updateContentMutation.isPending}
                   className="bg-blue-600 hover:bg-blue-700"
                 >

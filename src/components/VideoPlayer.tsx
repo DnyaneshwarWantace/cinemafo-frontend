@@ -143,6 +143,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       console.error = originalError;
     };
   }, []);
+
+  // Detect mobile/touch devices
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { updateProgress } = useWatchHistory();
@@ -168,7 +178,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         <div className="text-center">
           <h2 className="text-2xl font-bold text-white mb-4">Invalid Video ID</h2>
           <button 
-            onClick={onClose}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('🎬 Go Back button clicked for invalid video ID');
+              onClose();
+            }}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Go Back
@@ -301,6 +316,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const bufferStallTimeoutRef = useRef<NodeJS.Timeout>();
   const [showSourceSwitchNotification, setShowSourceSwitchNotification] = useState(false);
   const sourceSwitchTimeoutRef = useRef<NodeJS.Timeout>();
+  const [isMobile, setIsMobile] = useState(false);
   
   // Timestamp preview state
   const [previewTime, setPreviewTime] = useState<number | null>(null);
@@ -314,7 +330,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api';
       
       // Test backend connectivity first (optional)
       try {
@@ -609,8 +625,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (!videoRef.current) return;
     
     const video = videoRef.current;
-    const skipToTime = Math.min(video.currentTime + skipIntroTimeRemaining, 40);
-    video.currentTime = skipToTime;
+    // Fix: Use a more reliable skip time calculation
+    const skipToTime = Math.min(video.currentTime + skipIntroTimeRemaining, video.duration - 1);
+    
+    // Ensure we don't skip beyond the video duration
+    if (skipToTime < video.duration) {
+      video.currentTime = skipToTime;
+    }
     setShowSkipIntro(false);
   }, [skipIntroTimeRemaining]);
 
@@ -905,7 +926,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return;
     }
     
-    // Only handle single click if not part of a double click
+    // On mobile, immediately toggle play/pause without delay
+    if (isMobile) {
+      if (currentSource?.type === 'hls') {
+        togglePlayPause();
+      }
+      return;
+    }
+    
+    // Only handle single click if not part of a double click (desktop only)
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
       clickTimeoutRef.current = null;
@@ -1423,23 +1452,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     return (
       <div 
-        className="settings-menu absolute bottom-20 right-4 bg-black/90 backdrop-blur-xl rounded-xl border border-white/10 p-4 w-64 space-y-4 z-50"
+        className="settings-menu absolute bottom-20 right-2 sm:right-4 bg-black/90 backdrop-blur-xl rounded-xl border border-white/10 p-3 sm:p-4 w-56 sm:w-64 max-w-[calc(100vw-1rem)] space-y-3 sm:space-y-4 z-50"
         onClick={(e) => e.stopPropagation()}
         onMouseEnter={handleSettingsMouseEnter}
         onMouseLeave={handleSettingsMouseLeave}
       >
         {/* Settings Tabs */}
-        <div className="flex space-x-2 border-b border-white/10 pb-2">
+        <div className="flex space-x-1 sm:space-x-2 border-b border-white/10 pb-1.5 sm:pb-2">
           <button
             onClick={() => setSettingsTab('speed')}
-            className={`px-3 py-1 rounded-lg text-sm ${settingsTab === 'speed' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
+            className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm touch-manipulation min-h-[32px] sm:min-h-[36px] ${settingsTab === 'speed' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
           >
             Speed
           </button>
           {audioTracks.length > 0 && (
             <button
               onClick={() => setSettingsTab('audio')}
-              className={`px-3 py-1 rounded-lg text-sm ${settingsTab === 'audio' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm touch-manipulation min-h-[32px] sm:min-h-[36px] ${settingsTab === 'audio' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               Audio
             </button>
@@ -1450,14 +1479,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Playback Speed Settings */}
         {settingsTab === 'speed' && (
-          <div className="space-y-2">
+          <div className="space-y-1 sm:space-y-2">
             {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
               <button
                 key={speed}
                 onClick={() => {
                   handleSpeedChange(speed);
                 }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${playbackSpeed === speed ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center justify-between touch-manipulation min-h-[36px] sm:min-h-[40px] ${playbackSpeed === speed ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
               >
                 <span>{speed === 1 ? 'Normal' : `${speed}x`}</span>
                 {playbackSpeed === speed && <span className="text-blue-400">✓</span>}
@@ -1468,17 +1497,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Audio Track Settings */}
         {settingsTab === 'audio' && (
-          <div className="space-y-2">
+          <div className="space-y-1 sm:space-y-2">
             {audioTracks.map((track) => (
               <button
                 key={track.id}
                 onClick={() => {
                   handleAudioTrackChange(track.id.toString());
                 }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between ${selectedAudioTrack === track.id ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center justify-between touch-manipulation min-h-[36px] sm:min-h-[40px] ${selectedAudioTrack === track.id ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
               >
-                <span>{track.name} ({track.language})</span>
-                {selectedAudioTrack === track.id && <span className="text-blue-400">✓</span>}
+                <span className="truncate">{track.name} ({track.language})</span>
+                {selectedAudioTrack === track.id && <span className="text-blue-400 flex-shrink-0">✓</span>}
               </button>
             ))}
           </div>
@@ -1502,6 +1531,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onDoubleClick={handleScreenDoubleClick}
         onMouseMove={() => setShowControls(true)}
         onMouseLeave={() => isPlaying && setShowControls(false)}
+        onTouchStart={(e) => {
+          if (isMobile) {
+            e.preventDefault();
+            setShowControls(true);
+            // Toggle play/pause on touch
+            if (currentSource?.type === 'hls') {
+              togglePlayPause();
+            }
+          }
+        }}
+        onTouchEnd={(e) => {
+          if (isMobile) {
+            e.preventDefault();
+          }
+        }}
       >
         {currentSource?.type === 'hls' ? (
           <video
@@ -1652,7 +1696,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   <RefreshCw className="w-4 h-4" />
                   Retry ({retryCount})
                 </Button>
-                <Button onClick={() => {
+                <Button onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🎬 Close button clicked in first error overlay');
                   // Capture final screenshot before closing
                   if (videoRef.current && onProgressUpdate) {
                     const currentTime = videoRef.current.currentTime;
@@ -1662,9 +1709,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     onProgressUpdate(currentTime, duration, videoRef.current);
                   }
                   onClose();
-                }} className="bg-blue-600 hover:bg-blue-700">
+                }} 
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🎬 Close button touched in first error overlay (mobile)');
+                  // Capture final screenshot before closing
+                  if (videoRef.current && onProgressUpdate) {
+                    const currentTime = videoRef.current.currentTime;
+                    const duration = videoRef.current.duration;
+                    console.log('🎬 Close button touched - calling onProgressUpdate with video element');
+                    console.log('🎬 Current time:', currentTime, 'Duration:', duration);
+                    onProgressUpdate(currentTime, duration, videoRef.current);
+                  }
+                  onClose();
+                }} 
+                className="bg-blue-600 hover:bg-blue-700 touch-manipulation min-h-[44px] min-w-[44px]">
                   Close
-              </Button>
+                </Button>
               </div>
             </div>
           </div>
@@ -1680,7 +1742,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {/* Back Button - Top Left */}
             <button
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
+                console.log('🎬 Back button clicked');
                 // Capture final screenshot before closing
                 if (videoRef.current && onProgressUpdate) {
                   const currentTime = videoRef.current.currentTime;
@@ -1691,7 +1755,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }
                 onClose();
               }}
-              className="absolute top-4 left-4 z-50 flex items-center gap-2 bg-black/70 hover:bg-black/90 text-white px-4 py-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🎬 Back button touched (mobile)');
+                // Capture final screenshot before closing
+                if (videoRef.current && onProgressUpdate) {
+                  const currentTime = videoRef.current.currentTime;
+                  const duration = videoRef.current.duration;
+                  console.log('🎬 Back button touched - calling onProgressUpdate with video element');
+                  console.log('🎬 Current time:', currentTime, 'Duration:', duration);
+                  onProgressUpdate(currentTime, duration, videoRef.current);
+                }
+                onClose();
+              }}
+              className="absolute top-4 left-4 z-50 flex items-center gap-2 bg-black/70 hover:bg-black/90 text-white px-4 py-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 touch-manipulation min-h-[44px] min-w-[44px]"
             >
               <ArrowLeft size={20} />
               Back
@@ -1931,8 +2009,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={onClose}
-            className="absolute top-4 right-4 z-10 text-white bg-black/60 hover:bg-black/80"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('🎬 Iframe close button clicked');
+              onClose();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('🎬 Iframe close button touched (mobile)');
+              onClose();
+            }}
+            className="absolute top-4 right-4 z-10 text-white bg-black/60 hover:bg-black/80 touch-manipulation min-h-[44px] min-w-[44px]"
           >
             <X className="w-6 h-6" />
           </Button>
@@ -1956,9 +2045,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   Try Again
                 </Button>
                 <Button
-                  onClick={onClose}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🎬 Close button clicked in error overlay');
+                    onClose();
+                  }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🎬 Close button touched in error overlay (mobile)');
+                    onClose();
+                  }}
                   variant="outline"
-                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700 touch-manipulation min-h-[44px] min-w-[44px]"
                 >
                   Close
                 </Button>
