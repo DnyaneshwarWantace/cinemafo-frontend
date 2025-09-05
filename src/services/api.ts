@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
 
 // Rotating API keys for fallback
 const TMDB_API_KEYS = import.meta.env.VITE_TMDB_API_KEYS 

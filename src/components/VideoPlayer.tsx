@@ -330,7 +330,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol//api';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
       
       // Test backend connectivity first (optional)
       try {
