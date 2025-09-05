@@ -630,7 +630,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     
     // Ensure we don't skip beyond the video duration
     if (skipToTime < video.duration) {
-      video.currentTime = skipToTime;
+    video.currentTime = skipToTime;
     }
     setShowSkipIntro(false);
   }, [skipIntroTimeRemaining]);
@@ -1452,23 +1452,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     return (
       <div 
-        className="settings-menu absolute bottom-20 right-2 sm:right-4 bg-black/90 backdrop-blur-xl rounded-xl border border-white/10 p-3 sm:p-4 w-56 sm:w-64 max-w-[calc(100vw-1rem)] space-y-3 sm:space-y-4 z-50"
+        className="settings-menu absolute bottom-20 right-0 sm:right-4 bg-black/90 backdrop-blur-xl rounded-xl border border-white/10 p-1.5 sm:p-4 w-40 sm:w-64 max-w-[calc(100vw-0.25rem)] max-h-[calc(100vh-6rem)] overflow-y-auto space-y-1 sm:space-y-4 z-50 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
         onClick={(e) => e.stopPropagation()}
         onMouseEnter={handleSettingsMouseEnter}
         onMouseLeave={handleSettingsMouseLeave}
       >
         {/* Settings Tabs */}
-        <div className="flex space-x-1 sm:space-x-2 border-b border-white/10 pb-1.5 sm:pb-2">
+        <div className="sticky top-0 bg-black/90 backdrop-blur-xl flex space-x-0 sm:space-x-2 border-b border-white/10 pb-0.5 sm:pb-2">
           <button
             onClick={() => setSettingsTab('speed')}
-            className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm touch-manipulation min-h-[32px] sm:min-h-[36px] ${settingsTab === 'speed' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
+            className={`px-1 sm:px-3 py-0.5 sm:py-1 rounded-lg text-xs sm:text-sm touch-manipulation min-h-[28px] sm:min-h-[36px] ${settingsTab === 'speed' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
           >
             Speed
           </button>
           {audioTracks.length > 0 && (
             <button
               onClick={() => setSettingsTab('audio')}
-              className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm touch-manipulation min-h-[32px] sm:min-h-[36px] ${settingsTab === 'audio' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`px-1 sm:px-3 py-0.5 sm:py-1 rounded-lg text-xs sm:text-sm touch-manipulation min-h-[28px] sm:min-h-[36px] ${settingsTab === 'audio' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'}`}
             >
               Audio
             </button>
@@ -1479,14 +1479,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Playback Speed Settings */}
         {settingsTab === 'speed' && (
-          <div className="space-y-1 sm:space-y-2">
+          <div className="space-y-0 sm:space-y-2">
             {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
               <button
                 key={speed}
                 onClick={() => {
                   handleSpeedChange(speed);
                 }}
-                className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center justify-between touch-manipulation min-h-[36px] sm:min-h-[40px] ${playbackSpeed === speed ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                className={`w-full text-left px-1 sm:px-3 py-0.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center justify-between touch-manipulation min-h-[28px] sm:min-h-[40px] ${playbackSpeed === speed ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
               >
                 <span>{speed === 1 ? 'Normal' : `${speed}x`}</span>
                 {playbackSpeed === speed && <span className="text-blue-400">✓</span>}
@@ -1497,14 +1497,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Audio Track Settings */}
         {settingsTab === 'audio' && (
-          <div className="space-y-1 sm:space-y-2">
+          <div className="space-y-0 sm:space-y-2">
             {audioTracks.map((track) => (
               <button
                 key={track.id}
                 onClick={() => {
                   handleAudioTrackChange(track.id.toString());
                 }}
-                className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center justify-between touch-manipulation min-h-[36px] sm:min-h-[40px] ${selectedAudioTrack === track.id ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                className={`w-full text-left px-1 sm:px-3 py-0.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center justify-between touch-manipulation min-h-[28px] sm:min-h-[40px] ${selectedAudioTrack === track.id ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
               >
                 <span className="truncate">{track.name} ({track.language})</span>
                 {selectedAudioTrack === track.id && <span className="text-blue-400 flex-shrink-0">✓</span>}
@@ -1754,7 +1754,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }} 
                 className="bg-blue-600 hover:bg-blue-700 touch-manipulation min-h-[44px] min-w-[44px]">
                   Close
-                </Button>
+              </Button>
               </div>
             </div>
           </div>
@@ -1896,8 +1896,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               </div>
               
               {/* Control Buttons */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between flex-wrap gap-1 sm:gap-2">
+                <div className="flex items-center gap-1 sm:gap-4 flex-wrap">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1969,7 +1969,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   </Button>
                   
                   <div 
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-0.5 sm:gap-2"
                     onClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.stopPropagation()}
                     onMouseUp={(e) => e.stopPropagation()}
@@ -1981,7 +1981,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                         e.stopPropagation();
                         toggleMute();
                       }}
-                      className="text-white hover:bg-white/20"
+                      onTouchStart={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        toggleMute();
+                      }}
+                      className="text-white hover:bg-white/20 touch-manipulation min-h-[44px] min-w-[44px]"
                     >
                       {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                     </Button>
@@ -2022,9 +2031,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1 sm:gap-4 flex-wrap">
                   {/* Speed Display */}
-                  <div className="text-white text-sm bg-black/50 px-2 py-1 rounded">
+                  <div className="text-white text-sm bg-black/50 px-1.5 sm:px-2 py-1 rounded">
                     {playbackSpeed}x
                   </div>
 
