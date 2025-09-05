@@ -1631,7 +1631,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   e.stopPropagation();
                   handleSkipIntro(e);
                 }}
-                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-blue-400/50 shadow-lg shadow-blue-500/30 hover:shadow-blue-400/50 hover:border-blue-300/70"
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  // Create a synthetic mouse event for compatibility
+                  const syntheticEvent = {
+                    preventDefault: () => {},
+                    stopPropagation: () => {}
+                  } as React.MouseEvent;
+                  handleSkipIntro(syntheticEvent);
+                }}
+                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-blue-400/50 shadow-lg shadow-blue-500/30 hover:shadow-blue-400/50 hover:border-blue-300/70 touch-manipulation min-h-[44px]"
               >
                 <SkipIntro className="w-4 h-4 text-blue-400" />
                 <span className="text-sm font-medium">Skip Intro ({Math.ceil(skipIntroTimeRemaining)}s)</span>
@@ -1645,7 +1659,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   e.stopPropagation();
                   handleNextEpisode(e);
                 }}
-                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-white/20"
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  // Create a synthetic mouse event for compatibility
+                  const syntheticEvent = {
+                    preventDefault: () => {},
+                    stopPropagation: () => {}
+                  } as React.MouseEvent;
+                  handleNextEpisode(syntheticEvent);
+                }}
+                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-white/20 touch-manipulation min-h-[44px]"
               >
                 <NextEpisode className="w-4 h-4" />
                 <span className="text-sm font-medium">Next Episode</span>
@@ -1877,7 +1905,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       e.stopPropagation();
                       skipBackward();
                     }}
-                    className="text-white hover:bg-white/20"
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      skipBackward();
+                    }}
+                    className="text-white hover:bg-white/20 touch-manipulation min-h-[44px] min-w-[44px]"
                   >
                     <SkipBack className="w-5 h-5" />
                   </Button>
@@ -1889,8 +1926,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       e.stopPropagation();
                       togglePlayPause();
                     }}
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      togglePlayPause();
+                    }}
                     disabled={isPlayPausePending}
-                    className={`text-white hover:bg-white/20 ${isPlayPausePending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`text-white hover:bg-white/20 touch-manipulation min-h-[44px] min-w-[44px] ${isPlayPausePending ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {isPlayPausePending ? (
                       <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1908,7 +1954,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       e.stopPropagation();
                       skipForward();
                     }}
-                    className="text-white hover:bg-white/20"
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      skipForward();
+                    }}
+                    className="text-white hover:bg-white/20 touch-manipulation min-h-[44px] min-w-[44px]"
                   >
                     <SkipForward className="w-5 h-5" />
                   </Button>
@@ -1981,7 +2036,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       e.stopPropagation();
                       setShowSettingsMenu(!showSettingsMenu);
                     }}
-                    className="settings-button text-white hover:bg-white/20"
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                    }}
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setShowSettingsMenu(!showSettingsMenu);
+                    }}
+                    className="settings-button text-white hover:bg-white/20 touch-manipulation min-h-[44px] min-w-[44px]"
                   >
                     <Settings className="w-5 h-5" />
                   </Button>
@@ -1993,7 +2057,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     e.stopPropagation();
                     toggleFullscreen();
                   }}
-                  className="text-white hover:bg-white/20"
+                  onTouchStart={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                  onTouchEnd={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    toggleFullscreen();
+                  }}
+                  className="text-white hover:bg-white/20 touch-manipulation min-h-[44px] min-w-[44px]"
                   title={isFullscreen ? (isLandscape ? 'Exit Fullscreen (Landscape)' : 'Exit Fullscreen') : 'Enter Fullscreen (Auto Landscape)'}
                 >
                   {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
