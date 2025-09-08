@@ -148,8 +148,8 @@ const Index = () => {
               <span>{new Date(movie.release_date || movie.first_air_date).getFullYear()}</span>
             </div>
           </div>
-          {/* Play Button Overlay */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          {/* Play Button Overlay - Hidden on mobile */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden md:flex">
             <img 
               src="/playbutton.svg" 
               alt="Play" 
@@ -242,8 +242,8 @@ const Index = () => {
 
       {/* Hero Overlay Ad - Overlay on Hero Slider */}
       {adminSettings?.ads?.heroOverlayAd?.enabled && (
-        <section className="relative -mt-32 lg:-mt-32 z-10">
-          <div className="bg-gradient-to-t from-black via-black/90 to-transparent pt-2 pb-4">
+        <section className="relative -mt-32 lg:-mt-32 z-20 pointer-events-none">
+          <div className="bg-gradient-to-t from-black via-black/90 to-transparent pt-2 pb-4 pointer-events-auto">
             <div className="w-full px-4 sm:px-6 lg:px-8">
               <div className="max-w-4xl mx-auto">
                 <AdBanner 

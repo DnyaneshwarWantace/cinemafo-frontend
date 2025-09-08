@@ -32,6 +32,11 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Clear tooltips when component mounts (e.g., returning from video player)
+  useEffect(() => {
+    hideTooltip();
+  }, []);
+
   useEffect(() => {
     const handleStorageChange = () => {
       setWatchlistUpdate(prev => prev + 1);
@@ -402,8 +407,8 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                   />
                 </button>
 
-                {/* Play Button or Calendar Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
+                {/* Play Button or Calendar Overlay - Hidden on mobile */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 hidden md:flex">
                   {isUpcoming ? (
                     <div className="bg-black/40 rounded-full p-4 flex items-center justify-center">
                       <Calendar className="w-8 h-8 text-white" />
@@ -446,9 +451,9 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       </div>
 
       {/* Tooltip */}
-      {tooltipItem && (
+      {tooltipItem && !isMobile && (
         <div
-          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-blue-500/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-blue-500/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none hidden md:block"
         style={{ 
             left: tooltipPosition.x,
             top: tooltipPosition.y,

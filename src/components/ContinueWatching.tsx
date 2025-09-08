@@ -235,8 +235,8 @@ const ContinueWatching: React.FC<ContinueWatchingProps> = ({
                 </div>
               </div>
 
-              {/* Play Button Overlay - Crystal Style */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
+              {/* Play Button Overlay - Crystal Style - Hidden on mobile */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 hidden md:flex">
                 <img 
                   src="/playbutton.svg" 
                   alt="Play" 

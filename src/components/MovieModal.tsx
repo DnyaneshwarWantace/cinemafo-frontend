@@ -253,7 +253,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with Back Button */}
-        <div className="absolute top-0 left-0 right-0 z-20 h-16 bg-gradient-to-b from-black/50 to-transparent">
+        <div className="absolute top-0 left-0 right-0 z-20 h-20 bg-gradient-to-b from-black/50 to-transparent">
           <button
             onClick={handleClose}
             className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm border border-blue-500/50 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
@@ -262,15 +262,15 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="absolute top-4 left-1/2 -translate-x-1/2">
-            <img src="/logo.svg" alt="CINEMA.FO" className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto drop-shadow transition-all duration-300 filter brightness-110" />
+            <img src="/logo.svg" alt="CINEMA.FO" className="h-6 sm:h-8 md:h-10 lg:h-12 w-auto drop-shadow transition-all duration-300 filter brightness-110" />
           </div>
             </div>
 
             {/* Content */}
-        <div className="h-full max-w-6xl w-full mx-2 sm:mx-4 flex items-center justify-center">
-          <div className="max-h-[90vh] w-full overflow-y-auto scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="h-full max-w-6xl w-full mx-2 sm:mx-4 flex items-start justify-center">
+          <div className="max-h-[90vh] w-full overflow-y-auto scrollbar-hide pt-40" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Content */}
-          <div className="p-3 sm:p-4 md:p-6 pt-20 sm:pt-24 relative z-10">
+          <div className="p-3 sm:p-4 md:p-6 pt-24 sm:pt-28 relative z-10">
             <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 md:gap-6">
               {/* Poster Image */}
               <div className="flex-shrink-0 flex justify-center lg:justify-start">
@@ -341,10 +341,8 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
                 <Button
                   onClick={(e) => toggleWatchlist(e, movie)}
                   variant="outline"
-                  className={`flex items-center gap-2 px-6 py-3 rounded-md text-base font-semibold transition-all duration-200 w-full sm:w-auto ${
-                    isInWatchlist(movie)
-                      ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
-                      : 'bg-gray-700/60 text-white border-blue-500/50 hover:bg-gray-600/60'
+                  className={`flex items-center gap-2 bg-blue-600/20 text-white border-blue-500 hover:bg-blue-600/30 w-full sm:w-auto ${
+                    isInWatchlist(movie) ? 'fill-white' : ''
                   }`}
                 >
                   <Bookmark className={`w-4 h-4 ${isInWatchlist(movie) ? 'fill-white' : ''}`} />

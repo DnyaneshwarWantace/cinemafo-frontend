@@ -252,6 +252,11 @@ const Shows = () => {
       }
     };
 
+    const handleFocus = () => {
+      // Clear tooltips when window regains focus (e.g., returning from video player)
+      hideTooltip();
+    };
+
     const handleGlobalClick = () => {
       hideTooltip();
     };
@@ -283,6 +288,7 @@ const Shows = () => {
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('scroll', handleScroll, { passive: true });
     document.addEventListener('hideTooltips', handleHideTooltips);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
@@ -291,6 +297,7 @@ const Shows = () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('scroll', handleScroll);
       document.removeEventListener('hideTooltips', handleHideTooltips);
+      window.removeEventListener('focus', handleFocus);
       
       if (mouseMoveTimeout) {
         clearTimeout(mouseMoveTimeout);
@@ -303,19 +310,14 @@ const Shows = () => {
     };
   }, [tooltipTimeout, searchResults]);
 
+  // Clear tooltips when component mounts (e.g., returning from video player)
+  useEffect(() => {
+    hideTooltip();
+  }, []);
+
   const handleShowClick = (show: TVShow) => {
-    // On mobile, go directly to video player
-    if (isMobile) {
-      const params = new URLSearchParams({
-        id: show.id.toString(),
-        type: 'tv',
-        title: show.name || 'TV Show'
-      });
-      navigate(`/watch?${params.toString()}`);
-    } else {
-      // On desktop, show modal
-      setSelectedShow(show);
-    }
+    // Always show modal first
+    setSelectedShow(show);
   };
 
   // Search functionality
@@ -517,8 +519,8 @@ const Shows = () => {
                           />
                         </button>
 
-                        {/* Play Button Overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
+                        {/* Play Button Overlay - Hidden on mobile */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 hidden md:flex">
                           <img 
                             src="/playbutton.svg" 
                             alt="Play" 
@@ -759,8 +761,8 @@ const Shows = () => {
                             />
                           </button>
 
-                          {/* Play Button Overlay */}
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
+                          {/* Play Button Overlay - Hidden on mobile */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 hidden md:flex">
                             <img 
                               src="/playbutton.svg" 
                               alt="Play" 
@@ -840,10 +842,10 @@ const Shows = () => {
 
 
 
-      {/* Tooltip */}
-      {tooltipItem && (
+      {/* Tooltip - Hidden on mobile */}
+      {tooltipItem && !isMobile && (
         <div
-          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-blue-500/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-blue-500/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none hidden md:block"
         style={{ 
             left: tooltipPosition.x,
             top: tooltipPosition.y,

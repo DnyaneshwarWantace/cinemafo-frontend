@@ -1363,6 +1363,47 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setPreviewTime(null);
   }, []);
 
+  // Touch event handlers for mobile
+  const handleProgressBarTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (!duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touchX = e.touches[0].clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, touchX / rect.width));
+    const previewTimeValue = percentage * duration;
+    
+    setPreviewTime(previewTimeValue);
+    setShowPreview(true);
+  }, [duration]);
+
+  const handleProgressBarTouchEnd = useCallback(() => {
+    // Keep preview visible for a moment on mobile
+    setTimeout(() => {
+      setShowPreview(false);
+      setPreviewTime(null);
+    }, 1000);
+  }, []);
+
+  const handleRangeInputTouchMove = useCallback((e: React.TouchEvent<HTMLInputElement>) => {
+    if (!duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touchX = e.touches[0].clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, touchX / rect.width));
+    const previewTimeValue = percentage * duration;
+    
+    setPreviewTime(previewTimeValue);
+    setShowPreview(true);
+  }, [duration]);
+
+  const handleRangeInputTouchEnd = useCallback(() => {
+    // Keep preview visible for a moment on mobile
+    setTimeout(() => {
+      setShowPreview(false);
+      setPreviewTime(null);
+    }, 1000);
+  }, []);
+
   // Auto-hide controls
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -1413,7 +1454,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Handle click outside settings menu
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const settingsMenu = document.querySelector('.settings-menu');
       const settingsButton = document.querySelector('.settings-button');
       
@@ -1427,7 +1468,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     if (showSettingsMenu) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
     }
   }, [showSettingsMenu]);
 
@@ -1734,7 +1779,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <img 
                 src="/logo.svg" 
                 alt="CINEMA.FO" 
-                className="h-16 sm:h-20 md:h-24 lg:h-32 w-auto mb-6 transition-all duration-300 filter brightness-110"
+                className="h-8 sm:h-10 md:h-12 lg:h-16 w-auto mb-6 transition-all duration-300 filter brightness-110"
               />
               {/* Movie Title */}
               <h2 className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold px-4">{title}</h2>
@@ -1879,6 +1924,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                    className="progress-bar-container relative w-full h-2 bg-gray-600 rounded-lg overflow-hidden cursor-pointer"
                    onMouseMove={handleProgressBarHover}
                    onMouseLeave={handleProgressBarLeave}
+                   onTouchMove={handleProgressBarTouchMove}
+                   onTouchEnd={handleProgressBarTouchEnd}
                  >
                   {/* Background track */}
                   <div className="absolute inset-0 bg-gray-700 rounded-lg"></div>
@@ -1913,6 +1960,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   onClick={(e) => e.stopPropagation()}
                      onMouseMove={handleRangeInputMouseMove}
                      onMouseLeave={handleRangeInputMouseLeave}
+                     onTouchMove={handleRangeInputTouchMove}
+                     onTouchEnd={handleRangeInputTouchEnd}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 </div>

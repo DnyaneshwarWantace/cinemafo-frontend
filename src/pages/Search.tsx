@@ -115,6 +115,11 @@ const Search = () => {
       }
     };
 
+    const handleFocus = () => {
+      // Clear tooltips when window regains focus (e.g., returning from video player)
+      hideTooltip();
+    };
+
     const handleGlobalClick = () => {
       hideTooltip();
     };
@@ -146,6 +151,7 @@ const Search = () => {
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('scroll', handleScroll, { passive: true });
     document.addEventListener('hideTooltips', handleHideTooltips);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
@@ -154,6 +160,7 @@ const Search = () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('scroll', handleScroll);
       document.removeEventListener('hideTooltips', handleHideTooltips);
+      window.removeEventListener('focus', handleFocus);
       
       if (mouseMoveTimeout) {
         clearTimeout(mouseMoveTimeout);
@@ -165,6 +172,11 @@ const Search = () => {
       hideTooltip();
     };
   }, [tooltipTimeout, results]);
+
+  // Clear tooltips when component mounts (e.g., returning from video player)
+  useEffect(() => {
+    hideTooltip();
+  }, []);
 
   const performSearch = async () => {
     if (!query.trim()) return;
@@ -233,29 +245,8 @@ const Search = () => {
   };
 
   const handleItemClick = (item: Movie | TVShow) => {
-    // On mobile, go directly to video player or TV show player
-    if (isMobile) {
-      if ('title' in item) {
-        // Movie
-        const params = new URLSearchParams({
-          id: item.id.toString(),
-          type: 'movie',
-          title: item.title || 'Movie'
-        });
-        navigate(`/watch?${params.toString()}`);
-      } else {
-        // TV Show
-        const params = new URLSearchParams({
-          id: item.id.toString(),
-          type: 'tv',
-          title: item.name || 'TV Show'
-        });
-        navigate(`/watch?${params.toString()}`);
-      }
-    } else {
-      // On desktop, show modal
-      setSelectedItem(item);
-    }
+    // Always show modal first
+    setSelectedItem(item);
   };
 
   const clearFilters = () => {
@@ -717,7 +708,7 @@ const Search = () => {
                       </button>
 
                       {/* Play Button Overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300">
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 hidden md:flex">
                         <img 
                           src="/playbutton.svg" 
                           alt="Play" 
@@ -763,9 +754,9 @@ const Search = () => {
       </div>
 
       {/* Tooltip */}
-      {tooltipItem && (
+      {tooltipItem && !isMobile && (
         <div
-          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-blue-500/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none"
+          className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-blue-500/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none hidden md:block"
           style={{ 
             left: tooltipPosition.x,
             top: tooltipPosition.y,

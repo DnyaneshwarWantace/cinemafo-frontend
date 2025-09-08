@@ -241,8 +241,8 @@ const Home = () => {
 
       {/* Hero Overlay Ad - Above Continue Watching */}
       {!loading && adminSettings?.ads?.heroOverlayAd?.enabled && (
-        <section className="relative -mt-32 lg:-mt-32 z-10">
-          <div className="bg-gradient-to-t from-black via-black/90 to-transparent pt-2 pb-4">
+        <section className="relative -mt-32 lg:-mt-32 z-20 pointer-events-none">
+          <div className="bg-gradient-to-t from-black via-black/90 to-transparent pt-2 pb-4 pointer-events-auto">
             <div className="w-full px-4 sm:px-6 lg:px-8">
               <div className="max-w-4xl mx-auto">
                 <AdBanner 

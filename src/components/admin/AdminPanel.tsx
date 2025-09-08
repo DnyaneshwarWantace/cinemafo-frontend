@@ -254,7 +254,7 @@ const adminApi = {
     });
     
     if (!response.ok) {
-              throw new Error('Failed to upload ad image to Tenor');
+              throw new Error('Failed to upload ad image to Google Drive');
     }
     
     return response.json();
@@ -699,7 +699,7 @@ const AdminPanel: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['adminSettings'] });
       toast({
         title: "Success",
-        description: data.message || "Image uploaded to ImgBB successfully!",
+        description: data.message || "Image uploaded to Google Drive successfully!",
       });
     },
     onError: (error) => {
@@ -729,7 +729,7 @@ const AdminPanel: React.FC = () => {
     
     toast({
       title: "Starting upload",
-      description: `Uploading ${adsToUpload.length} ads to ImgBB...`,
+      description: `Uploading ${adsToUpload.length} ads to Google Drive...`,
     });
     
     // Upload ads one by one
@@ -1583,7 +1583,7 @@ const AdminPanel: React.FC = () => {
                             </div>
                             {adConfig.imageUrl && !adConfig.cloudinaryUrl && (
                               <p className="text-xs text-yellow-400 mt-1">
-                                ⚠️ Image URL set but not uploaded. Use "Upload All Ads" button below.
+                                ⚠️ Image URL set but not uploaded to Google Drive. Use "Upload All Ads to Google Drive" button below.
                               </p>
                             )}
                           </div>
@@ -1600,37 +1600,53 @@ const AdminPanel: React.FC = () => {
                         </div>
                         {adConfig.cloudinaryUrl && (
                           <div>
-                            <Label className="text-white">✅ ImgBB Image URL (Ready to use)</Label>
+                            <Label className="text-white">
+                              {adConfig.cloudinaryUrl.startsWith('http') ? '✅ Google Drive Image URL (Ready to use)' : '⚠️ Local Image URL (Fallback)'}
+                            </Label>
                             <Input
                               value={adConfig.cloudinaryUrl}
                               readOnly
-                              className="bg-blue-900/20 border-blue-600 text-blue-300"
+                              className={adConfig.cloudinaryUrl.startsWith('http') ? "bg-blue-900/20 border-blue-600 text-blue-300" : "bg-yellow-900/20 border-yellow-600 text-yellow-300"}
                             />
                             <div className="flex items-center gap-2 mt-1">
-                              <p className="text-xs text-blue-400">
-                                ✅ Image uploaded to ImgBB successfully! This image is stored in the cloud and optimized for fast loading.
+                              <p className={`text-xs ${adConfig.cloudinaryUrl.startsWith('http') ? 'text-blue-400' : 'text-yellow-400'}`}>
+                                {adConfig.cloudinaryUrl.startsWith('http') 
+                                  ? '✅ Image uploaded to Google Drive successfully! This image is stored in the cloud and optimized for fast loading.'
+                                  : '⚠️ Image saved locally (Google Drive upload failed). Check your Google Drive configuration.'
+                                }
                               </p>
                               <Button
                                 type="button"
                                 size="sm"
                                 variant="destructive"
-                                onClick={() => {
-                                  const newSettings = {
-                                    ...settings,
-                                    ads: {
-                                      ...settings.ads,
-                                      [adKey]: {
-                                        ...adConfig,
-                                        cloudinaryUrl: ''
+                                onClick={async () => {
+                                  try {
+                                    const newSettings = {
+                                      ...settings,
+                                      ads: {
+                                        ...settings.ads,
+                                        [adKey]: {
+                                          ...adConfig,
+                                          cloudinaryUrl: ''
+                                        }
                                       }
-                                    }
-                                  };
-                                  setSettings(newSettings);
-                                  updateAdsMutation.mutate(newSettings.ads);
-                                  toast({
-                                    title: "Cleared",
-                                    description: "Uploaded image removed. Upload a new image to continue.",
-                                  });
+                                    };
+                                    setSettings(newSettings);
+                                    await updateAdsMutation.mutateAsync(newSettings.ads);
+                                    toast({
+                                      title: "Cleared",
+                                      description: "Google Drive image removed. Upload a new image to continue.",
+                                    });
+                                    // Force refresh the settings to get the latest data from backend
+                                    queryClient.invalidateQueries({ queryKey: ['adminSettings'] });
+                                  } catch (error) {
+                                    console.error('Error clearing uploaded image:', error);
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to clear Google Drive image. Please try again.",
+                                      variant: "destructive",
+                                    });
+                                  }
                                 }}
                                 className="text-xs px-2 py-1 h-6"
                               >
@@ -1657,7 +1673,7 @@ const AdminPanel: React.FC = () => {
                     disabled={uploadAdImageMutation.isPending}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    {uploadAdImageMutation.isPending ? 'Uploading...' : '☁️ Upload All Ads'}
+                    {uploadAdImageMutation.isPending ? 'Uploading...' : '☁️ Upload All Ads to Google Drive'}
                   </Button>
                 </div>
               </CardContent>
