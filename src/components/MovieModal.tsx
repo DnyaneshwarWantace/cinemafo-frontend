@@ -314,7 +314,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
                       </Badge>
                     )}
                   {movie.genres?.slice(0, 3).map((genre: any) => (
-                    <Badge key={genre.id} variant="secondary" className="bg-blue-600/20 text-white border-blue-500/50 text-xs sm:text-sm">
+                    <Badge key={genre.id} variant="secondary" className="bg-blue-600/20 text-white border-blue-500/50 text-xs sm:text-sm hover:bg-blue-600/20 hover:text-white">
                         {genre.name}
                       </Badge>
                     ))}
