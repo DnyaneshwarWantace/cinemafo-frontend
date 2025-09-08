@@ -1907,7 +1907,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {/* Controls Overlay */}
         {showControls && currentSource?.type === 'hls' && (
           <div 
-            className="controls-overlay absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20 pointer-events-none"
+            className={`controls-overlay absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20 pointer-events-none ${isFullscreen ? 'fullscreen-controls' : ''}`}
             style={{ pointerEvents: 'none' }}
             onClick={(e) => e.stopPropagation()}
           >
