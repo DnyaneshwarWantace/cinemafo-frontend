@@ -728,8 +728,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
-      // Try to enter fullscreen
-      const element = videoRef.current || playerContainerRef.current;
+      // Try to enter fullscreen using the container, not the video element
+      const element = playerContainerRef.current;
       if (element) {
         // Check for different fullscreen methods
         const requestFullscreen = element.requestFullscreen || 
@@ -749,30 +749,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             }
           }).catch((error: any) => {
             console.log('Fullscreen request failed:', error);
-            // Fallback: try to make the video element fullscreen using CSS
-            if (videoRef.current) {
-              videoRef.current.style.position = 'fixed';
-              videoRef.current.style.top = '0';
-              videoRef.current.style.left = '0';
-              videoRef.current.style.width = '100vw';
-              videoRef.current.style.height = '100vh';
-              videoRef.current.style.zIndex = '9999';
-              videoRef.current.style.backgroundColor = 'black';
-              setIsFullscreen(true);
-            }
+            // Don't use CSS fallback that breaks custom elements
+            console.log('Fullscreen not supported on this device');
           });
-        } else if (isMobile) {
-          // Mobile fallback: try to make the video element fullscreen using CSS
-          if (videoRef.current) {
-            videoRef.current.style.position = 'fixed';
-            videoRef.current.style.top = '0';
-            videoRef.current.style.left = '0';
-            videoRef.current.style.width = '100vw';
-            videoRef.current.style.height = '100vh';
-            videoRef.current.style.zIndex = '9999';
-            videoRef.current.style.backgroundColor = 'black';
-            setIsFullscreen(true);
-          }
+        } else {
+          console.log('Fullscreen API not supported on this device');
         }
       }
     } else {
@@ -791,30 +772,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           }
         }).catch((error: any) => {
           console.log('Exit fullscreen failed:', error);
-          // Fallback: reset video element styles
-          if (videoRef.current) {
-            videoRef.current.style.position = '';
-            videoRef.current.style.top = '';
-            videoRef.current.style.left = '';
-            videoRef.current.style.width = '';
-            videoRef.current.style.height = '';
-            videoRef.current.style.zIndex = '';
-            videoRef.current.style.backgroundColor = '';
-            setIsFullscreen(false);
-          }
         });
-      } else if (isMobile) {
-        // Mobile fallback: reset video element styles
-        if (videoRef.current) {
-          videoRef.current.style.position = '';
-          videoRef.current.style.top = '';
-          videoRef.current.style.left = '';
-          videoRef.current.style.width = '';
-          videoRef.current.style.height = '';
-          videoRef.current.style.zIndex = '';
-          videoRef.current.style.backgroundColor = '';
-          setIsFullscreen(false);
-        }
       }
     }
   }, [isFullscreen, isMobile]);
@@ -898,23 +856,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       );
       setIsFullscreen(isFullscreenNow);
       
-      // If exiting fullscreen, unlock orientation and reset video styles
+      // If exiting fullscreen, unlock orientation
       if (!isFullscreenNow) {
         if (screen.orientation && 'unlock' in screen.orientation) {
           (screen.orientation as any).unlock();
         }
         setIsLandscape(false);
-        
-        // Reset video element styles if they were set by fallback
-        if (videoRef.current) {
-          videoRef.current.style.position = '';
-          videoRef.current.style.top = '';
-          videoRef.current.style.left = '';
-          videoRef.current.style.width = '';
-          videoRef.current.style.height = '';
-          videoRef.current.style.zIndex = '';
-          videoRef.current.style.backgroundColor = '';
-        }
       } else {
         // When entering fullscreen, try to lock orientation on mobile
         if (screen.orientation && 'lock' in screen.orientation) {
@@ -1531,20 +1478,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return () => clearTimeout(timer);
   }, [isPlaying, showControls]);
 
-  const enterFullscreen = () => {
-    const container = document.querySelector('.video-player-container');
-    if (container) {
-      container.requestFullscreen();
-      setIsFullscreen(true);
-    }
-  };
-
-  const exitFullscreen = () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
-  };
 
   const handleSpeedChange = (speed: number) => {
     const video = videoRef.current;
@@ -1724,7 +1657,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   return (
     <div 
       ref={playerContainerRef} 
-      className="fixed inset-0 z-[200] bg-black"
+      className={`fixed inset-0 z-[200] bg-black ${isFullscreen ? 'fullscreen-container' : ''}`}
       tabIndex={0}
       style={{ outline: 'none' }}
       onFocus={() => console.log('Video player focused')}
@@ -1755,7 +1688,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {currentSource?.type === 'hls' ? (
           <video
             ref={videoRef}
-            className="w-full h-full object-contain"
+            className={`w-full h-full object-contain ${isFullscreen ? 'fullscreen-video' : ''}`}
             playsInline
             controls={false}
             webkit-playsinline="true"
