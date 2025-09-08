@@ -816,7 +816,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         case 'Escape':
           e.preventDefault();
           if (isFullscreen) {
-            exitFullscreen();
+            toggleFullscreen();
           } else {
             // Capture final screenshot before closing
             if (videoRef.current && onProgressUpdate) {
@@ -1546,7 +1546,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     return (
       <div 
-        className="settings-menu absolute bottom-20 right-0 sm:right-4 bg-black/90 backdrop-blur-xl rounded-xl border border-white/10 p-1.5 sm:p-4 w-40 sm:w-64 max-w-[calc(100vw-0.25rem)] max-h-[calc(100vh-6rem)] overflow-y-auto space-y-1 sm:space-y-4 z-50 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+        className={`settings-menu absolute bottom-20 right-0 sm:right-4 bg-black/90 backdrop-blur-xl rounded-xl border border-white/10 p-1.5 sm:p-4 w-40 sm:w-64 max-w-[calc(100vw-0.25rem)] max-h-[calc(100vh-6rem)] overflow-y-auto space-y-1 sm:space-y-4 z-50 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent ${isFullscreen ? 'fullscreen-settings-menu' : ''}`}
         onClick={(e) => e.stopPropagation()}
         onMouseEnter={handleSettingsMouseEnter}
         onMouseLeave={handleSettingsMouseLeave}
@@ -1976,7 +1976,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               {/* Progress Bar */}
               <div className="mb-4">
                                  <div 
-                   className="progress-bar-container relative w-full h-2 bg-gray-600 rounded-lg overflow-hidden cursor-pointer"
+                   className={`progress-bar-container relative w-full h-2 bg-gray-600 rounded-lg overflow-hidden cursor-pointer ${isFullscreen ? 'fullscreen-progress-bar' : ''}`}
                    onMouseMove={handleProgressBarHover}
                    onMouseLeave={handleProgressBarLeave}
                    onTouchMove={handleProgressBarTouchMove}
@@ -2028,7 +2028,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 {/* Timestamp preview tooltip - positioned outside progress bar */}
                 {showPreview && previewTime !== null && (
                   <div 
-                    className="absolute bottom-full left-0 transform -translate-y-2 bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-400/50 shadow-2xl transition-all duration-150 ease-out"
+                    className={`absolute bottom-full left-0 transform -translate-y-2 bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-400/50 shadow-2xl transition-all duration-150 ease-out ${isFullscreen ? 'fullscreen-tooltip' : ''}`}
                     style={{ 
                       left: `${(previewTime / (duration || 1)) * 100}%`,
                       transform: 'translateX(-50%) translateY(-8px)'
@@ -2143,7 +2143,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                     </Button>
                     <div 
-                      className="relative w-20 h-2 hidden sm:block"
+                      className={`relative w-20 h-2 hidden sm:block ${isFullscreen ? 'fullscreen-volume-container' : ''}`}
                       onClick={(e) => e.stopPropagation()}
                       onMouseDown={(e) => e.stopPropagation()}
                       onMouseUp={(e) => e.stopPropagation()}
@@ -2153,7 +2153,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       
                       {/* Gradient progress fill */}
                       <div 
-                        className="absolute left-0 top-0 h-full gradient-progress-bar rounded-lg transition-all duration-200"
+                        className={`absolute left-0 top-0 h-full gradient-progress-bar rounded-lg transition-all duration-200 ${isFullscreen ? 'fullscreen-volume-bar' : ''}`}
                         style={{ width: `${(volume * 100)}%` }}
                       ></div>
                       
@@ -2164,6 +2164,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       max="1"
                       step="0.1"
                       value={volume}
+                      className={`w-full h-full absolute inset-0 opacity-0 cursor-pointer ${isFullscreen ? 'fullscreen-volume-slider' : ''}`}
                       onChange={(e) => {
                         e.stopPropagation();
                         handleVolumeChange(e);
@@ -2173,7 +2174,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       onMouseUp={(e) => e.stopPropagation()}
                       onPointerDown={(e) => e.stopPropagation()}
                       onPointerUp={(e) => e.stopPropagation()}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
                   </div>
                   </div>
