@@ -144,7 +144,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     };
   }, []);
 
-  // Detect mobile/touch devices and WebView browsers
+  // Detect mobile/touch devices
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
@@ -152,30 +152,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Detect WebView browsers (Telegram, Instagram, Facebook, etc.)
-  const isWebView = useRef(false);
-  useEffect(() => {
-    const userAgent = navigator.userAgent.toLowerCase();
-    const isInWebView = 
-      userAgent.includes('telegram') ||
-      userAgent.includes('instagram') ||
-      userAgent.includes('fban') || // Facebook
-      userAgent.includes('fbav') || // Facebook
-      userAgent.includes('whatsapp') ||
-      userAgent.includes('line') ||
-      userAgent.includes('wechat') ||
-      userAgent.includes('tiktok') ||
-      userAgent.includes('snapchat') ||
-      // Check for WebView indicators
-      ((window.navigator as any).standalone === false && /iphone|ipad|ipod/.test(userAgent)) ||
-      ((window.navigator as any).standalone === undefined && /iphone|ipad|ipod/.test(userAgent)) ||
-      // Android WebView detection
-      (userAgent.includes('android') && userAgent.includes('wv'));
-    
-    isWebView.current = isInWebView;
-    console.log('WebView detected:', isInWebView);
   }, []);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -751,14 +727,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, []);
 
   const toggleFullscreen = useCallback(() => {
-    // Check if we're in a WebView browser
-    if (isWebView.current) {
-      console.log('WebView detected - fullscreen not supported, showing message');
-      // Show a message to user about WebView limitations
-      alert('Fullscreen is not available in this browser. Please open this link in your default browser (Chrome, Safari, etc.) for the best experience.');
-      return;
-    }
-
     if (!isFullscreen) {
       // Try to enter fullscreen using the container, not the video element
       const element = playerContainerRef.current;
@@ -781,12 +749,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             }
           }).catch((error: any) => {
             console.log('Fullscreen request failed:', error);
-            // Show user-friendly message for fullscreen failures
-            alert('Fullscreen is not supported in this browser. Please try opening this link in your default browser.');
+            // Don't use CSS fallback that breaks custom elements
+            console.log('Fullscreen not supported on this device');
           });
         } else {
           console.log('Fullscreen API not supported on this device');
-          alert('Fullscreen is not supported in this browser. Please try opening this link in your default browser.');
         }
       }
     } else {
@@ -2270,7 +2237,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     toggleFullscreen();
                   }}
                   className={`text-white hover:bg-white/20 touch-manipulation min-h-[44px] min-w-[44px] active:bg-white/30 ${isMobile ? 'bg-black/20 border border-white/20 rounded-lg shadow-lg backdrop-blur-sm transform transition-transform active:scale-95 select-none' : ''}`}
-                  title={isWebView.current ? 'Open in Default Browser for Fullscreen' : (isFullscreen ? (isLandscape ? 'Exit Fullscreen (Landscape)' : 'Exit Fullscreen') : (isMobile ? 'Enter Fullscreen (Mobile)' : 'Enter Fullscreen (Auto Landscape)'))}
+                  title={isFullscreen ? (isLandscape ? 'Exit Fullscreen (Landscape)' : 'Exit Fullscreen') : (isMobile ? 'Enter Fullscreen (Mobile)' : 'Enter Fullscreen (Auto Landscape)')}
                 >
                   {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
                 </Button>
