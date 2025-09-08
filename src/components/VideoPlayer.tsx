@@ -1518,9 +1518,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (showSettingsMenu) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener('touchend', handleClickOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
         document.removeEventListener('touchstart', handleClickOutside);
+        document.removeEventListener('touchend', handleClickOutside);
       };
     }
   }, [showSettingsMenu]);
@@ -2031,7 +2033,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     className={`absolute bottom-full left-0 transform -translate-y-2 bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-400/50 shadow-2xl transition-all duration-150 ease-out ${isFullscreen ? 'fullscreen-tooltip' : ''}`}
                     style={{ 
                       left: `${(previewTime / (duration || 1)) * 100}%`,
-                      transform: 'translateX(-50%) translateY(-8px)'
+                      transform: 'translateX(-50%) translateY(-8px)',
+                      position: 'absolute'
                     }}
                   >
                     <div className="flex flex-col items-center">
