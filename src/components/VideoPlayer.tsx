@@ -728,41 +728,96 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
-      if (playerContainerRef.current) {
-        // Request fullscreen first
-        playerContainerRef.current.requestFullscreen().then(() => {
-          // After fullscreen is activated, try to lock to landscape
-          if (screen.orientation && 'lock' in screen.orientation) {
-            (screen.orientation as any).lock('landscape').catch((error: any) => {
-              console.log('Could not lock to landscape orientation:', error);
-              // Fallback: try to rotate the screen if lock fails
-              if (screen.orientation && screen.orientation.angle !== 90) {
-                try {
-                  // Some devices support this method
-                  (screen.orientation as any).rotate(90);
-                } catch (rotateError) {
-                  console.log('Could not rotate screen:', rotateError);
-                }
-              }
-            });
-    } else {
-            // Fallback for devices without screen orientation API
-            console.log('Screen orientation API not supported');
+      // Try to enter fullscreen
+      const element = videoRef.current || playerContainerRef.current;
+      if (element) {
+        // Check for different fullscreen methods
+        const requestFullscreen = element.requestFullscreen || 
+                                 (element as any).webkitRequestFullscreen || 
+                                 (element as any).webkitRequestFullScreen || 
+                                 (element as any).mozRequestFullScreen || 
+                                 (element as any).msRequestFullscreen;
+
+        if (requestFullscreen) {
+          requestFullscreen.call(element).then(() => {
+            // After fullscreen is activated, try to lock to landscape on mobile
+            if (screen.orientation && 'lock' in screen.orientation) {
+              (screen.orientation as any).lock('landscape').catch((error: any) => {
+                console.log('Could not lock to landscape orientation:', error);
+                // Don't worry if orientation lock fails, fullscreen should still work
+              });
+            }
+          }).catch((error: any) => {
+            console.log('Fullscreen request failed:', error);
+            // Fallback: try to make the video element fullscreen using CSS
+            if (videoRef.current) {
+              videoRef.current.style.position = 'fixed';
+              videoRef.current.style.top = '0';
+              videoRef.current.style.left = '0';
+              videoRef.current.style.width = '100vw';
+              videoRef.current.style.height = '100vh';
+              videoRef.current.style.zIndex = '9999';
+              videoRef.current.style.backgroundColor = 'black';
+              setIsFullscreen(true);
+            }
+          });
+        } else if (isMobile) {
+          // Mobile fallback: try to make the video element fullscreen using CSS
+          if (videoRef.current) {
+            videoRef.current.style.position = 'fixed';
+            videoRef.current.style.top = '0';
+            videoRef.current.style.left = '0';
+            videoRef.current.style.width = '100vw';
+            videoRef.current.style.height = '100vh';
+            videoRef.current.style.zIndex = '9999';
+            videoRef.current.style.backgroundColor = 'black';
+            setIsFullscreen(true);
           }
-        }).catch(console.error);
+        }
       }
     } else {
-      // Exit fullscreen and unlock orientation
-      if (document.fullscreenElement) {
-        document.exitFullscreen().then(() => {
+      // Exit fullscreen
+      const exitFullscreen = document.exitFullscreen || 
+                            (document as any).webkitExitFullscreen || 
+                            (document as any).webkitCancelFullScreen || 
+                            (document as any).mozCancelFullScreen || 
+                            (document as any).msExitFullscreen;
+
+      if (exitFullscreen) {
+        exitFullscreen.call(document).then(() => {
           // Unlock orientation when exiting fullscreen
           if (screen.orientation && 'unlock' in screen.orientation) {
             (screen.orientation as any).unlock();
           }
-        }).catch(console.error);
+        }).catch((error: any) => {
+          console.log('Exit fullscreen failed:', error);
+          // Fallback: reset video element styles
+          if (videoRef.current) {
+            videoRef.current.style.position = '';
+            videoRef.current.style.top = '';
+            videoRef.current.style.left = '';
+            videoRef.current.style.width = '';
+            videoRef.current.style.height = '';
+            videoRef.current.style.zIndex = '';
+            videoRef.current.style.backgroundColor = '';
+            setIsFullscreen(false);
+          }
+        });
+      } else if (isMobile) {
+        // Mobile fallback: reset video element styles
+        if (videoRef.current) {
+          videoRef.current.style.position = '';
+          videoRef.current.style.top = '';
+          videoRef.current.style.left = '';
+          videoRef.current.style.width = '';
+          videoRef.current.style.height = '';
+          videoRef.current.style.zIndex = '';
+          videoRef.current.style.backgroundColor = '';
+          setIsFullscreen(false);
+        }
       }
     }
-  }, [isFullscreen]);
+  }, [isFullscreen, isMobile]);
 
   // Keyboard controls
   useEffect(() => {
@@ -835,13 +890,49 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Fullscreen detection and orientation handling
   useEffect(() => {
     const handleFullscreenChange = () => {
-      const isFullscreenNow = !!document.fullscreenElement;
+      const isFullscreenNow = !!(
+        document.fullscreenElement || 
+        (document as any).webkitFullscreenElement || 
+        (document as any).mozFullScreenElement || 
+        (document as any).msFullscreenElement
+      );
       setIsFullscreen(isFullscreenNow);
       
-      // If exiting fullscreen, unlock orientation
-      if (!isFullscreenNow && screen.orientation && 'unlock' in screen.orientation) {
-        (screen.orientation as any).unlock();
+      // If exiting fullscreen, unlock orientation and reset video styles
+      if (!isFullscreenNow) {
+        if (screen.orientation && 'unlock' in screen.orientation) {
+          (screen.orientation as any).unlock();
+        }
         setIsLandscape(false);
+        
+        // Reset video element styles if they were set by fallback
+        if (videoRef.current) {
+          videoRef.current.style.position = '';
+          videoRef.current.style.top = '';
+          videoRef.current.style.left = '';
+          videoRef.current.style.width = '';
+          videoRef.current.style.height = '';
+          videoRef.current.style.zIndex = '';
+          videoRef.current.style.backgroundColor = '';
+        }
+      } else {
+        // When entering fullscreen, try to lock orientation on mobile
+        if (screen.orientation && 'lock' in screen.orientation) {
+          (screen.orientation as any).lock('landscape').catch((error: any) => {
+            console.log('Could not lock to landscape orientation:', error);
+          });
+        }
+      }
+    };
+
+    // Mobile-specific fullscreen detection
+    const handleMobileFullscreenChange = () => {
+      if (isMobile) {
+        // Check if we're in mobile fullscreen mode
+        const isMobileFullscreen = window.innerHeight === screen.height && window.innerWidth === screen.width;
+        if (isMobileFullscreen !== isFullscreen) {
+          setIsFullscreen(isMobileFullscreen);
+        }
       }
     };
 
@@ -852,8 +943,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
     };
 
+    // Add multiple event listeners for different browsers
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
     window.addEventListener('orientationchange', handleOrientationChange);
+    
+    // Add mobile-specific fullscreen detection
+    if (isMobile) {
+      window.addEventListener('resize', handleMobileFullscreenChange);
+      window.addEventListener('scroll', handleMobileFullscreenChange);
+    }
     
     // Initial orientation check
     if (screen.orientation) {
@@ -863,7 +964,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
       window.removeEventListener('orientationchange', handleOrientationChange);
+      
+      // Remove mobile-specific listeners
+      if (isMobile) {
+        window.removeEventListener('resize', handleMobileFullscreenChange);
+        window.removeEventListener('scroll', handleMobileFullscreenChange);
+      }
     };
   }, []);
 
@@ -1374,6 +1484,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     
     setPreviewTime(previewTimeValue);
     setShowPreview(true);
+    
+    // Prevent default to avoid scrolling
+    e.preventDefault();
   }, [duration]);
 
   const handleProgressBarTouchEnd = useCallback(() => {
@@ -1394,6 +1507,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     
     setPreviewTime(previewTimeValue);
     setShowPreview(true);
+    
+    // Prevent default to avoid scrolling
+    e.preventDefault();
   }, [duration]);
 
   const handleRangeInputTouchEnd = useCallback(() => {
@@ -1642,6 +1758,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             className="w-full h-full object-contain"
             playsInline
             controls={false}
+            webkit-playsinline="true"
+            x5-playsinline="true"
+            x5-video-player-type="h5"
+            x5-video-player-fullscreen="true"
+            x5-video-orientation="landscape"
+            preload="metadata"
           />
         ) : (
           <iframe
@@ -2157,6 +2279,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
+                    e.preventDefault();
                     toggleFullscreen();
                   }}
                   onTouchStart={(e) => {
@@ -2168,8 +2291,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     e.preventDefault();
                     toggleFullscreen();
                   }}
-                  className="text-white hover:bg-white/20 touch-manipulation min-h-[44px] min-w-[44px]"
-                  title={isFullscreen ? (isLandscape ? 'Exit Fullscreen (Landscape)' : 'Exit Fullscreen') : 'Enter Fullscreen (Auto Landscape)'}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                  onMouseUp={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    toggleFullscreen();
+                  }}
+                  className={`text-white hover:bg-white/20 touch-manipulation min-h-[44px] min-w-[44px] active:bg-white/30 ${isMobile ? 'bg-black/20 border border-white/20 rounded-lg shadow-lg backdrop-blur-sm transform transition-transform active:scale-95 select-none' : ''}`}
+                  title={isFullscreen ? (isLandscape ? 'Exit Fullscreen (Landscape)' : 'Exit Fullscreen') : (isMobile ? 'Enter Fullscreen (Mobile)' : 'Enter Fullscreen (Auto Landscape)')}
                 >
                   {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
                 </Button>
