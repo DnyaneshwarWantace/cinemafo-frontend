@@ -330,7 +330,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
       
       // Test backend connectivity first (optional)
       try {
@@ -359,35 +359,58 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       let streamUrl = null;
       let endpointUsed = '';
 
-      // Try each endpoint until one works
+      // Try each endpoint until one works with retry logic
       for (const endpoint of endpoints) {
-        try {
-          console.log(`🎬 Trying endpoint: ${baseUrl}${endpoint}`);
-          
-          const response = await fetch(`${baseUrl}${endpoint}`, {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-            },
-            signal: AbortSignal.timeout(15000) // 15 second timeout
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
+        let success = false;
+        const maxRetries = 2;
+        
+        for (let retry = 0; retry <= maxRetries && !success; retry++) {
+          try {
+            if (retry > 0) {
+              console.log(`🔄 Retry ${retry}/${maxRetries} for endpoint: ${baseUrl}${endpoint}`);
+              // Add delay before retry (exponential backoff)
+              await new Promise(resolve => setTimeout(resolve, retry * 1000));
+            } else {
+              console.log(`🎬 Trying endpoint: ${baseUrl}${endpoint}`);
+            }
             
-            if (data.stream && data.stream.url) {
-              streamUrl = data.stream.url;
-              endpointUsed = endpoint;
-              console.log(`✅ Stream URL found from ${endpoint}: ${streamUrl}`);
+            const response = await fetch(`${baseUrl}${endpoint}`, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+              },
+              signal: AbortSignal.timeout(30000) // 30 second timeout
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              
+              if (data.stream && data.stream.url) {
+                streamUrl = data.stream.url;
+                endpointUsed = endpoint;
+                console.log(`✅ Stream URL found from ${endpoint} (attempt ${retry + 1}): ${streamUrl}`);
+                success = true;
+                break;
+              }
+            } else {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+          } catch (error) {
+            console.log(`❌ Endpoint ${endpoint} failed (attempt ${retry + 1}/${maxRetries + 1}):`, error);
+            if (error instanceof Error) {
+              console.log(`Error type: ${error.name}, Message: ${error.message}`);
+            }
+            
+            // If this was the last retry, continue to next endpoint
+            if (retry === maxRetries) {
               break;
             }
           }
-        } catch (error) {
-          console.log(`❌ Endpoint ${endpoint} failed:`, error);
-          if (error instanceof Error) {
-            console.log(`Error type: ${error.name}, Message: ${error.message}`);
-          }
-          continue;
+        }
+        
+        // If we successfully got a stream URL, break out of the endpoint loop
+        if (success) {
+          break;
         }
       }
       
@@ -423,8 +446,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         setCurrentSource(sources[0]);
         return;
       } else {
-        console.log('⚠️ No stream URL found from backend, using iframe fallback');
-        // Don't throw error, just use fallback
+        console.log('⚠️ No stream URL found from backend after retries, using iframe fallback');
+        // Show specific error message based on what failed
+        const timeoutOccurred = endpoints.some(endpoint => 
+          document.querySelectorAll(`[data-endpoint="${endpoint}"]`).length > 0
+        );
+        
+        if (timeoutOccurred) {
+          console.log('🕒 Backend requests timed out - this may be due to high server load');
+        }
       }
       
       // If we reach here, no primary source was found, build single iframe fallback (vidsrc.xyz)
@@ -433,7 +463,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         fallbackSources.push({
           type: 'iframe',
           url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
-          name: 'VidSrc (xyz)',
+          name: 'VidSrc (xyz) - Fallback',
           language: 'multi'
         });
       } else if (type === 'tv') {
@@ -442,29 +472,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         fallbackSources.push({
           type: 'iframe',
           url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${episodeNum}`,
-          name: 'VidSrc (xyz)',
+          name: 'VidSrc (xyz) - Fallback',
           language: 'multi'
         });
       }
 
       if (fallbackSources.length > 0) {
-        console.log('🔄 Using fallback sources:', fallbackSources);
+        console.log('🔄 Using fallback sources after API timeout:', fallbackSources);
         
         // Show notification for automatic fallback to secondary source
         setShowSourceSwitchNotification(true);
         
-        // Auto-hide notification after 3 seconds
+        // Auto-hide notification after 5 seconds (increased from 3)
         if (sourceSwitchTimeoutRef.current) {
           clearTimeout(sourceSwitchTimeoutRef.current);
         }
         sourceSwitchTimeoutRef.current = setTimeout(() => {
           setShowSourceSwitchNotification(false);
-        }, 3000);
+        }, 5000);
         
         setStreamingSources(fallbackSources);
         setCurrentSource(fallbackSources[0]);
       } else {
-        setError('This movie/show is not available on any streaming service at the moment. Please try again later or check back soon.');
+        setError('Backend servers are experiencing high load. Video streaming may be temporarily unavailable. Please try again in a few minutes.');
       }
     } catch (error) {
       console.error('❌ Backend request failed:', error);
@@ -1759,9 +1789,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {showSourceSwitchNotification && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
             <div className="animate-pulse">
-              <div className="flex items-center gap-2 bg-black/90 backdrop-blur-sm text-white px-6 py-4 rounded-xl border border-blue-400/50 shadow-lg shadow-blue-500/30">
-                <RefreshCw className="w-5 h-5 text-blue-400 animate-spin" />
-                <span className="text-sm font-medium">Switching to secondary source...</span>
+              <div className="flex items-center gap-3 bg-black/90 backdrop-blur-sm text-white px-6 py-4 rounded-xl border border-blue-400/50 shadow-lg shadow-blue-500/30 max-w-md text-center">
+                <RefreshCw className="w-5 h-5 text-blue-400 animate-spin flex-shrink-0" />
+                <div>
+                  <span className="text-sm font-medium block">Backend timed out</span>
+                  <span className="text-xs text-gray-300">Switching to fallback player...</span>
+                </div>
               </div>
             </div>
           </div>
