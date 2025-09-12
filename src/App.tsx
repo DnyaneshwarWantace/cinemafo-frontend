@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { useReferralTracking } from './hooks/useReferralTracking';
 import Navigation from './components/Navigation';
 import AnnouncementBar from './components/AnnouncementBar';
 import FloatingSocialButtons from './components/FloatingSocialButtons';
@@ -24,6 +25,7 @@ const queryClient = new QueryClient();
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
+  const { trackPageView } = useReferralTracking();
 
   // Trigger admin settings event on app load to ensure ads show
   useEffect(() => {
@@ -33,6 +35,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       window.dispatchEvent(new CustomEvent('adminSettingsChanged', { detail: settings }));
     }
   }, []);
+
+  // Track page views for referral analytics
+  useEffect(() => {
+    trackPageView();
+  }, [location.pathname, trackPageView]);
 
   return (
     <div className="min-h-screen bg-black">

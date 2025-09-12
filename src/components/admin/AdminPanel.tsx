@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, FileText, Eye, EyeOff, Upload, Save, X, Plus, Trash2, Monitor, Image, Link, BarChart3, Users, Globe, Palette, Shield, Database, Bell, Zap, LogOut, Home, TrendingUp, Download, Calendar, MousePointer } from 'lucide-react';
+import { Settings, FileText, Eye, EyeOff, Upload, Save, X, Plus, Trash2, Monitor, Image, Link, BarChart3, Users, Globe, Palette, Shield, Database, Bell, Zap, LogOut, Home, TrendingUp, Download, Calendar, MousePointer, Share2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
+import ReferralManager from './ReferralManager';
 
 interface AdminSettings {
   appearance: {
@@ -1057,7 +1058,7 @@ const AdminPanel: React.FC = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-gray-800">
+          <TabsList className="grid w-full grid-cols-7 bg-gray-800">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-blue-600">
               <BarChart3 className="w-4 h-4 mr-2" />
               Dashboard
@@ -1081,6 +1082,10 @@ const AdminPanel: React.FC = () => {
             <TabsTrigger value="social" className="data-[state=active]:bg-blue-600">
               <Users className="w-4 h-4 mr-2" />
               Social
+            </TabsTrigger>
+            <TabsTrigger value="referrals" className="data-[state=active]:bg-blue-600">
+              <Share2 className="w-4 h-4 mr-2" />
+              Referrals
             </TabsTrigger>
           </TabsList>
 
@@ -1918,6 +1923,10 @@ const AdminPanel: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="referrals" className="space-y-6">
+            <ReferralManager />
           </TabsContent>
         </Tabs>
       </div>
