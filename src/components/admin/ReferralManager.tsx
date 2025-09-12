@@ -404,7 +404,7 @@ const ReferralManager: React.FC = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => copyToClipboard(`${BACKEND_SERVER_URL}/${referral.code.toLowerCase()}`)}
+                      onClick={() => copyToClipboard(`${BASE_URL}/referral/${referral.code.toLowerCase()}`)}
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
@@ -446,7 +446,7 @@ const ReferralManager: React.FC = () => {
                 </div>
                 
                 <div className="text-sm text-gray-400">
-                  <p>Link: <span className="font-mono text-blue-400">{BACKEND_SERVER_URL}/{referral.code.toLowerCase()}</span></p>
+                  <p>Link: <span className="font-mono text-blue-400">{BASE_URL}/referral/{referral.code.toLowerCase()}</span></p>
                   {referral.description && <p className="mt-1">{referral.description}</p>}
                   <p className="mt-1">Created: {formatDate(referral.createdAt)}</p>
                   {referral.lastUsed && <p>Last used: {formatDate(referral.lastUsed)}</p>}
