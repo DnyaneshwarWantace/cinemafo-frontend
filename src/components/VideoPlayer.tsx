@@ -427,19 +427,95 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         // Add fallback iframe sources
         if (type === 'movie') {
-          sources.push({
-            type: 'iframe',
-            url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
-            name: 'VidSrc Player (Fallback)',
-            language: 'multi'
-          });
+          sources.push(
+            {
+              type: 'iframe',
+              url: `https://mappletv.uk/watch/movie/${tmdbId}`,
+              name: 'MappleTV (Primary Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://videasy.net/embed/movie/${tmdbId}`,
+              name: 'Videasy (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
+              name: 'VidSrc WTF (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://vidfast.pro/embed/movie/${tmdbId}`,
+              name: 'VidFast (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://vidjoy.pro/embed/movie/${tmdbId}`,
+              name: 'VidJoy (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
+              name: 'VidSrc XYZ (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://vidora.su/movie/${tmdbId}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
+              name: 'Vidora (Last Fallback)',
+              language: 'multi'
+            }
+          );
         } else if (type === 'tv' && season && episode) {
-          sources.push({
-            type: 'iframe',
-            url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`,
-            name: 'VidSrc Player (Fallback)',
-            language: 'multi'
-          });
+          sources.push(
+            {
+              type: 'iframe',
+              url: `https://mappletv.uk/watch/tv/${tmdbId}-${season}-${episode}`,
+              name: 'MappleTV (Primary Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://videasy.net/embed/tv/${tmdbId}/${season}/${episode}`,
+              name: 'Videasy (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${season}/${episode}`,
+              name: 'VidSrc WTF (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://vidfast.pro/embed/tv/${tmdbId}/${season}/${episode}`,
+              name: 'VidFast (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://vidjoy.pro/embed/tv/${tmdbId}/${season}/${episode}`,
+              name: 'VidJoy (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`,
+              name: 'VidSrc XYZ (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://vidora.su/tv/${tmdbId}/${season}/${episode}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
+              name: 'Vidora (Last Fallback)',
+              language: 'multi'
+            }
+          );
         }
 
         setStreamingSources(sources);
@@ -457,24 +533,100 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       }
       
-      // If we reach here, no primary source was found, build single iframe fallback (vidsrc.xyz)
+      // If we reach here, no primary source was found, build multiple iframe fallbacks
       const fallbackSources: StreamingSource[] = [];
       if (type === 'movie') {
-        fallbackSources.push({
-          type: 'iframe',
-          url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
-          name: 'VidSrc (xyz) - Fallback',
-          language: 'multi'
-        });
+        fallbackSources.push(
+          {
+            type: 'iframe',
+            url: `https://mappletv.uk/watch/movie/${tmdbId}`,
+            name: 'MappleTV - Primary Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://videasy.net/embed/movie/${tmdbId}`,
+            name: 'Videasy - Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
+            name: 'VidSrc WTF - Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidfast.pro/embed/movie/${tmdbId}`,
+            name: 'VidFast - Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidjoy.pro/embed/movie/${tmdbId}`,
+            name: 'VidJoy - Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
+            name: 'VidSrc XYZ - Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidora.su/movie/${tmdbId}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
+            name: 'Vidora - Last Fallback',
+            language: 'multi'
+          }
+        );
       } else if (type === 'tv') {
         const seasonNum = season && season > 0 ? season : 1;
         const episodeNum = episode && episode > 0 ? episode : 1;
-        fallbackSources.push({
-          type: 'iframe',
-          url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${episodeNum}`,
-          name: 'VidSrc (xyz) - Fallback',
-          language: 'multi'
-        });
+        fallbackSources.push(
+          {
+            type: 'iframe',
+            url: `https://mappletv.uk/watch/tv/${tmdbId}-${seasonNum}-${episodeNum}`,
+            name: 'MappleTV - Primary Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://videasy.net/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'Videasy - Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'VidSrc WTF - Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidfast.pro/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'VidFast - Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidjoy.pro/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'VidJoy - Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${episodeNum}`,
+            name: 'VidSrc XYZ - Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidora.su/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
+            name: 'Vidora - Last Fallback',
+            language: 'multi'
+          }
+        );
       }
 
       if (fallbackSources.length > 0) {
@@ -499,24 +651,100 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } catch (error) {
       console.error('❌ Backend request failed:', error);
       
-      // Fallback to iframe source only (vidsrc.xyz)
+      // Fallback to multiple iframe sources
       const fallbackSources: StreamingSource[] = [];
       if (type === 'movie') {
-        fallbackSources.push({
-          type: 'iframe',
-          url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
-          name: 'VidSrc (xyz)',
-          language: 'multi'
-        });
+        fallbackSources.push(
+          {
+            type: 'iframe',
+            url: `https://mappletv.uk/watch/movie/${tmdbId}`,
+            name: 'MappleTV',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://videasy.net/embed/movie/${tmdbId}`,
+            name: 'Videasy',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
+            name: 'VidSrc WTF',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidfast.pro/embed/movie/${tmdbId}`,
+            name: 'VidFast',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidjoy.pro/embed/movie/${tmdbId}`,
+            name: 'VidJoy',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
+            name: 'VidSrc XYZ',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidora.su/movie/${tmdbId}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
+            name: 'Vidora',
+            language: 'multi'
+          }
+        );
       } else if (type === 'tv') {
         const seasonNum = season && season > 0 ? season : 1;
         const episodeNum = episode && episode > 0 ? episode : 1;
-        fallbackSources.push({
-          type: 'iframe',
-          url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${episodeNum}`,
-          name: 'VidSrc (xyz)',
-          language: 'multi'
-        });
+        fallbackSources.push(
+          {
+            type: 'iframe',
+            url: `https://mappletv.uk/watch/tv/${tmdbId}-${seasonNum}-${episodeNum}`,
+            name: 'MappleTV',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://videasy.net/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'Videasy',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'VidSrc WTF',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidfast.pro/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'VidFast',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidjoy.pro/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'VidJoy',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${episodeNum}`,
+            name: 'VidSrc XYZ',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://vidora.su/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
+            name: 'Vidora',
+            language: 'multi'
+          }
+        );
       }
 
       if (fallbackSources.length > 0) {
@@ -1732,12 +1960,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           />
         ) : (
           <iframe
+            key={`iframe-${currentSource?.url}-no-sandbox`}
             ref={iframeRef}
             src={currentSource?.url}
             className="w-full h-full border-0"
             allowFullScreen
             allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
             onLoad={() => {
               setLoading(false);
               setError(null);
