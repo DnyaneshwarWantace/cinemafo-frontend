@@ -2020,8 +2020,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <div className="flex items-center gap-3 bg-black/90 backdrop-blur-sm text-white px-6 py-4 rounded-xl border border-blue-400/50 shadow-lg shadow-blue-500/30 max-w-md text-center">
                 <RefreshCw className="w-5 h-5 text-blue-400 animate-spin flex-shrink-0" />
                 <div>
-                  <span className="text-sm font-medium block">Backend timed out</span>
-                  <span className="text-xs text-gray-300">Switching to fallback player...</span>
+                  <span className="text-sm font-medium block">Switching source</span>
+                  <span className="text-xs text-gray-300">Loading alternative player...</span>
                 </div>
               </div>
             </div>
