@@ -436,7 +436,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             },
             {
               type: 'iframe',
-              url: `https://videasy.net/embed/movie/${tmdbId}`,
+              url: `https://player.videasy.net/movie/${tmdbId}`,
               name: 'Videasy (Fallback)',
               language: 'multi'
             },
@@ -448,7 +448,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             },
             {
               type: 'iframe',
-              url: `https://vidfast.pro/embed/movie/${tmdbId}`,
+              url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
               name: 'VidFast (Fallback)',
               language: 'multi'
             },
@@ -481,7 +481,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             },
             {
               type: 'iframe',
-              url: `https://videasy.net/embed/tv/${tmdbId}/${season}/${episode}`,
+              url: `https://player.videasy.net/tv/${tmdbId}/${season}/${episode}`,
               name: 'Videasy (Fallback)',
               language: 'multi'
             },
@@ -493,7 +493,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             },
             {
               type: 'iframe',
-              url: `https://vidfast.pro/embed/tv/${tmdbId}/${season}/${episode}`,
+              url: `https://vidfast.pro/tv/${tmdbId}/${season}/${episode}?autoPlay=true`,
               name: 'VidFast (Fallback)',
               language: 'multi'
             },
@@ -545,7 +545,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://videasy.net/embed/movie/${tmdbId}`,
+            url: `https://player.videasy.net/movie/${tmdbId}`,
             name: 'Videasy - Fallback',
             language: 'multi'
           },
@@ -557,7 +557,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://vidfast.pro/embed/movie/${tmdbId}`,
+            url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
             name: 'VidFast - Fallback',
             language: 'multi'
           },
@@ -592,7 +592,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://videasy.net/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            url: `https://player.videasy.net/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
             name: 'Videasy - Fallback',
             language: 'multi'
           },
@@ -604,7 +604,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://vidfast.pro/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            url: `https://vidfast.pro/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoPlay=true`,
             name: 'VidFast - Fallback',
             language: 'multi'
           },
@@ -663,7 +663,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://videasy.net/embed/movie/${tmdbId}`,
+            url: `https://player.videasy.net/movie/${tmdbId}`,
             name: 'Videasy',
             language: 'multi'
           },
@@ -675,7 +675,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://vidfast.pro/embed/movie/${tmdbId}`,
+            url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
             name: 'VidFast',
             language: 'multi'
           },
@@ -710,7 +710,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://videasy.net/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            url: `https://player.videasy.net/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
             name: 'Videasy',
             language: 'multi'
           },
@@ -722,7 +722,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://vidfast.pro/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            url: `https://vidfast.pro/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoPlay=true`,
             name: 'VidFast',
             language: 'multi'
           },
