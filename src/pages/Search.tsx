@@ -33,6 +33,8 @@ const Search = () => {
   const { updateProgress } = useWatchHistory();
   const [isMobile, setIsMobile] = useState(false);
   const [showDetailsCache, setShowDetailsCache] = useState<Record<number, TVShow>>({});
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showMovieName, setShowMovieName] = useState<number | null>(null);
 
   // Detect mobile/touch devices
   useEffect(() => {
@@ -168,7 +170,12 @@ const Search = () => {
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
       }
-      
+
+      // Clean up long press timers
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+
       hideTooltip();
     };
   }, [tooltipTimeout, results]);
@@ -376,6 +383,39 @@ const Search = () => {
       setTooltipTimeout(null);
     }
     setTooltipItem(null);
+  };
+
+  const handleLongPressStart = (item: Movie | TVShow) => {
+    if (!isMobile) return;
+
+    const timer = setTimeout(() => {
+      // Show movie name on long press
+      setShowMovieName(item.id);
+      // Hide it after 3 seconds
+      setTimeout(() => {
+        setShowMovieName(null);
+      }, 3000);
+    }, 500); // 500ms for long press detection
+
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = (item: Movie | TVShow) => {
+    if (!isMobile) return;
+
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+
+    // Don't handle opening here - let onClick handle it always
+  };
+
+  const handleLongPressCancel = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
   };
 
   // Watchlist functions
@@ -663,26 +703,33 @@ const Search = () => {
                     data-movie-card
                     className="cursor-pointer group/item"
                     onClick={(e) => {
-                      // Prevent tooltip from showing on click
+                      // Handle both mobile and desktop clicks
                       if (tooltipTimeout) {
                         clearTimeout(tooltipTimeout);
                         setTooltipTimeout(null);
                       }
                       setTooltipItem(null);
+
+                      // On mobile, if name is showing, hide it and open movie
+                      if (isMobile && showMovieName === item.id) {
+                        setShowMovieName(null);
+                      }
+
                       handleItemClick(item);
                     }}
-                    onMouseEnter={(e) => handleMouseEnter(e, item)}
-                    onMouseMove={(e) => handleMouseMove(e, item)}
-                    onMouseLeave={handleTooltipMouseLeave}
-                    onTouchStart={() => {
-                      // Hide tooltip on touch start
-                      if (tooltipTimeout) {
-                        clearTimeout(tooltipTimeout);
-                        setTooltipTimeout(null);
-                      }
-                      setTooltipItem(null);
-                    }}
-                    onMouseOut={handleTooltipMouseLeave}
+                    onMouseEnter={isMobile ? undefined : (e) => handleMouseEnter(e, item)}
+                    onMouseMove={isMobile ? undefined : (e) => handleMouseMove(e, item)}
+                    onMouseLeave={isMobile ? undefined : handleTooltipMouseLeave}
+                    onTouchStart={isMobile ? (e) => {
+                      // Don't prevent default to allow normal click behavior
+                      handleLongPressStart(item);
+                    } : undefined}
+                    onTouchEnd={isMobile ? (e) => {
+                      // Don't prevent default - let onClick handle it
+                      handleLongPressEnd(item);
+                    } : undefined}
+                    onTouchMove={isMobile ? handleLongPressCancel : undefined}
+                    onTouchCancel={isMobile ? handleLongPressCancel : undefined}
                   >
                     <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                       <img
@@ -696,14 +743,14 @@ const Search = () => {
                         }}
                       />
                       
-                      {/* Watchlist Button */}
+                      {/* Watchlist Button - Always visible */}
                       <button
                         onClick={(e) => toggleWatchlist(e, item)}
-                        className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover/item:opacity-100 z-20"
+                        className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-100 z-20"
                         title={isInWatchlist(item) ? "Remove from watchlist" : "Add to watchlist"}
                       >
-                        <Bookmark 
-                          className={`w-4 h-4 ${isInWatchlist(item) ? 'fill-blue-500 text-blue-500' : 'text-white'}`} 
+                        <Bookmark
+                          className={`w-4 h-4 ${isInWatchlist(item) ? 'fill-blue-500 text-blue-500' : 'text-white'}`}
                         />
                       </button>
 
@@ -724,7 +771,11 @@ const Search = () => {
                         </div>
                       )}
                       
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                      <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 ${
+                        isMobile
+                          ? (showMovieName === item.id ? 'opacity-100' : 'opacity-0')
+                          : 'opacity-0 group-hover/item:opacity-100'
+                      }`}>
                         <div>
                           <h3 className="text-white font-semibold text-sm line-clamp-2">
                             {getItemTitle(item)}
@@ -845,6 +896,20 @@ const Search = () => {
           onProgressUpdate={handleProgressUpdate}
         />
       )}
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          /* Disable hover effects on touch devices */
+          @media (hover: none) and (pointer: coarse) {
+            .group\\/item:hover .group-hover\\/item\\:scale-105 {
+              transform: none !important;
+            }
+            .group\\/item:hover .group-hover\\/item\\:opacity-100 {
+              opacity: 0 !important;
+            }
+          }
+        `
+      }} />
     </div>
   );
 };

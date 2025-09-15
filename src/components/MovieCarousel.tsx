@@ -21,6 +21,8 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [tooltipTimeout, setTooltipTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showMovieName, setShowMovieName] = useState<number | null>(null);
 
   // Detect mobile/touch devices
   useEffect(() => {
@@ -83,11 +85,16 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
       document.removeEventListener('click', handleGlobalClick);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('scroll', handleScroll);
-      
+
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
       }
-      
+
+      // Clean up long press timers
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+
       hideTooltip();
     };
   }, []);
@@ -308,6 +315,40 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
     setTooltipItem(null);
   };
 
+  const handleLongPressStart = (item: Movie | TVShow) => {
+    if (!isMobile) return;
+
+    const timer = setTimeout(() => {
+      // Show movie name on long press
+      setShowMovieName(item.id);
+      // Hide it after 3 seconds
+      setTimeout(() => {
+        setShowMovieName(null);
+      }, 3000);
+    }, 500); // 500ms for long press detection
+
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = (item: Movie | TVShow) => {
+    if (!isMobile) return;
+
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+
+    // Don't handle opening here - let onClick handle it always
+  };
+
+  const handleLongPressCancel = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+
   if (!items || items.length === 0) {
     return (
       <div className="mb-12">
@@ -364,25 +405,33 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
               data-movie-card
               className="flex-none w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] cursor-pointer group/item first:ml-4 lg:first:ml-0"
               onClick={(e) => {
-                // Prevent tooltip from showing on click
+                // Handle both mobile and desktop clicks
                 if (tooltipTimeout) {
                   clearTimeout(tooltipTimeout);
                   setTooltipTimeout(null);
                 }
                 setTooltipItem(null);
+
+                // On mobile, if name is showing, hide it and open movie
+                if (isMobile && showMovieName === item.id) {
+                  setShowMovieName(null);
+                }
+
                 onItemClick(item);
               }}
-              onMouseEnter={(e) => handleMouseEnter(e, item)}
-              onMouseMove={(e) => handleTooltipMouseMove(e, item)}
-              onMouseLeave={handleTooltipMouseLeave}
-              onTouchStart={() => {
-                // Hide tooltip on touch start
-                if (tooltipTimeout) {
-                  clearTimeout(tooltipTimeout);
-                  setTooltipTimeout(null);
-                }
-                setTooltipItem(null);
-              }}
+              onMouseEnter={isMobile ? undefined : (e) => handleMouseEnter(e, item)}
+              onMouseMove={isMobile ? undefined : (e) => handleTooltipMouseMove(e, item)}
+              onMouseLeave={isMobile ? undefined : handleTooltipMouseLeave}
+              onTouchStart={isMobile ? (e) => {
+                // Don't prevent default to allow normal click behavior
+                handleLongPressStart(item);
+              } : undefined}
+              onTouchEnd={isMobile ? (e) => {
+                // Don't prevent default - let onClick handle it
+                handleLongPressEnd(item);
+              } : undefined}
+              onTouchMove={isMobile ? handleLongPressCancel : undefined}
+              onTouchCancel={isMobile ? handleLongPressCancel : undefined}
             >
               <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                 <img
@@ -396,14 +445,14 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                   }}
                 />
                 
-                {/* Watchlist Button */}
+                {/* Watchlist Button - Always visible */}
                 <button
                   onClick={(e) => toggleWatchlist(e, item)}
-                  className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-0 group-hover/item:opacity-100 z-20"
+                  className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 z-20 opacity-100"
                 >
-                  <Bookmark 
-                    size={16} 
-                    className={isInWatchlist(item) ? 'fill-blue-500 text-blue-500' : 'text-white'} 
+                  <Bookmark
+                    size={16}
+                    className={isInWatchlist(item) ? 'fill-blue-500 text-blue-500' : 'text-white'}
                   />
                 </button>
 
@@ -437,7 +486,11 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                   )
                 )}
                 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 ${
+                  isMobile
+                    ? (showMovieName === item.id ? 'opacity-100' : 'opacity-0')
+                    : 'opacity-0 group-hover/item:opacity-100'
+                }`}>
                   <div>
                     <h3 className="text-white font-semibold text-sm line-clamp-2">
                       {getItemTitle(item)}
@@ -450,7 +503,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
         </div>
       </div>
 
-      {/* Tooltip */}
+      {/* Tooltip - Only show on desktop */}
       {tooltipItem && !isMobile && (
         <div
           className="fixed z-[9998] bg-black/95 backdrop-blur-xl border border-blue-500/50 rounded-lg shadow-2xl p-4 max-w-xs pointer-events-none hidden md:block"
@@ -531,6 +584,19 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
         __html: `
           .scrollbar-hide::-webkit-scrollbar {
             display: none;
+          }
+
+          /* Disable hover effects on touch devices */
+          @media (hover: none) and (pointer: coarse) {
+            .group\\/item:hover .group-hover\\/item\\:scale-105 {
+              transform: none !important;
+            }
+            .group\\/item:hover .group-hover\\/item\\:opacity-100 {
+              opacity: 0 !important;
+            }
+            .group:hover .group-hover\\:opacity-100 {
+              opacity: 0 !important;
+            }
           }
         `
       }} />
