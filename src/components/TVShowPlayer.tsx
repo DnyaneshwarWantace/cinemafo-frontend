@@ -328,7 +328,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                     </Badge>
                   )}
                   {show.genres?.slice(0, 3).map((genre: any) => (
-                    <Badge key={genre.id} variant="secondary" className="bg-blue-600/20 text-white border-blue-500/50 text-xs sm:text-sm hover:bg-blue-600/20 hover:text-white">
+                    <Badge key={genre.id} variant="outline" className="bg-blue-600/20 text-white border-blue-500 text-xs sm:text-sm hover:bg-blue-600/20 hover:text-white">
                       {genre.name}
                     </Badge>
                   ))}
@@ -565,7 +565,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                       episodes.map((episode) => (
                         <button
                           key={episode.episode_number}
-                      className="w-full text-left flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-700/40 rounded-lg hover:bg-blue-600/20 transition-colors cursor-pointer group focus:outline-none focus:ring-2 focus:ring-blue-500 border border-blue-500/50 hover:border-blue-500/50 focus:border-blue-500"
+                      className="w-full text-left flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-700/40 rounded-lg hover:bg-blue-600/20 transition-colors cursor-pointer group focus:outline-none focus:ring-2 focus:ring-blue-500 border border-blue-500 hover:border-blue-500 focus:border-blue-500"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -596,7 +596,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                           {/* Episode Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                          <span className="text-gray-400 text-xs sm:text-sm">E{episode.episode_number}</span>
+                          <span className="text-white text-xs sm:text-sm">E{episode.episode_number}</span>
                           <h4 className="font-medium truncate text-white text-sm sm:text-base">{episode.name}</h4>
 
                             </div>
