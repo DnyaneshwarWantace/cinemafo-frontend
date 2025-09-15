@@ -330,7 +330,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
       
       // Test backend connectivity first (optional)
       try {
@@ -2091,16 +2091,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         {/* Pause Screen Overlay with Logo */}
         {!isPlaying && currentSource?.type === 'hls' && (
-          <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center pointer-events-none">
-            <div className="text-center mb-8">
-              {/* Logo */}
-              <img 
-                src="/logo.svg" 
-                alt="CINEMA.FO" 
-                className="h-8 sm:h-10 md:h-12 lg:h-16 w-auto mb-6 transition-all duration-300 filter brightness-110"
+          <div className="absolute inset-0 bg-black/30 pointer-events-none">
+            {/* Logo - Centered independently from left to right and top to bottom */}
+            <div className="absolute inset-0 flex items-center justify-center -mt-10 sm:-mt-12 md:-mt-16">
+              <img
+                src="/logo.svg"
+                alt="CINEMA.FO"
+                className="h-8 sm:h-10 md:h-12 lg:h-16 w-auto transition-all duration-300 filter brightness-110"
               />
-              {/* Movie Title */}
-              <h2 className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold px-4">{title}</h2>
+            </div>
+
+            {/* Movie Title - Centered independently from left to right, positioned below center */}
+            <div className="absolute inset-0 flex items-center justify-center mt-10 sm:mt-12 md:mt-16">
+              <h2 className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-center px-4 w-full">{title}</h2>
             </div>
           </div>
         )}
