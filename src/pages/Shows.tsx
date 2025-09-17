@@ -564,10 +564,10 @@ const Shows = () => {
                           }}
                         />
                         
-                        {/* Watchlist Button - Always visible */}
+                        {/* Watchlist Button - Hidden on mobile */}
                         <button
                           onClick={(e) => toggleWatchlist(e, show)}
-                          className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-100 z-20"
+                          className={`absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-100 z-20 ${isMobile ? 'hidden' : ''}`}
                         >
                           <Bookmark
                             size={16}
@@ -584,8 +584,8 @@ const Shows = () => {
                           />
                         </div>
                         
-                        {/* Rating Badge */}
-                        {typeof show.vote_average === 'number' && (
+                        {/* Rating Badge - Hidden on mobile */}
+                        {!isMobile && typeof show.vote_average === 'number' && (
                           <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                             <Star className="w-3 h-3" />
                             {show.vote_average.toFixed(1)}
@@ -818,10 +818,10 @@ const Shows = () => {
                             }}
                           />
                           
-                          {/* Watchlist Button - Always visible */}
+                          {/* Watchlist Button - Hidden on mobile */}
                           <button
                             onClick={(e) => toggleWatchlist(e, show)}
-                            className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-100 z-20"
+                            className={`absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 opacity-100 z-20 ${isMobile ? 'hidden' : ''}`}
                           >
                             <Bookmark
                               size={16}
@@ -838,8 +838,8 @@ const Shows = () => {
                             />
                           </div>
                           
-                          {/* Rating Badge */}
-                          {typeof show.vote_average === 'number' && (
+                          {/* Rating Badge - Hidden on mobile */}
+                          {!isMobile && typeof show.vote_average === 'number' && (
                             <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                               <Star className="w-3 h-3" />
                               {show.vote_average.toFixed(1)}

@@ -445,10 +445,10 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                   }}
                 />
                 
-                {/* Watchlist Button - Always visible */}
+                {/* Watchlist Button - Hidden on mobile */}
                 <button
                   onClick={(e) => toggleWatchlist(e, item)}
-                  className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 z-20 opacity-100"
+                  className={`absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white p-2 rounded-full transition-all duration-300 z-20 opacity-100 ${isMobile ? 'hidden' : ''}`}
                 >
                   <Bookmark
                     size={16}
@@ -471,8 +471,8 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                   )}
                 </div>
                 
-                {/* Rating Badge or Release Date Badge */}
-                {isUpcoming ? (
+                {/* Rating Badge or Release Date Badge - Hidden on mobile */}
+                {!isMobile && (isUpcoming ? (
                   <div className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 z-10">
                     <Calendar className="w-3 h-3" />
                     {formatReleaseDate(getItemReleaseDate(item))}
@@ -484,7 +484,7 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({ title, items, onItemClick
                       {item.vote_average.toFixed(1)}
                     </div>
                   )
-                )}
+                ))}
                 
                 <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 ${
                   isMobile

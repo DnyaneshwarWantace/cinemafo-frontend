@@ -986,40 +986,78 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   const toggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
-      // Try to enter fullscreen using the container, not the video element
-      const element = playerContainerRef.current;
-      if (element) {
+      const video = videoRef.current;
+      const container = playerContainerRef.current;
+
+      // iOS Safari and some mobile browsers need video.webkitEnterFullscreen()
+      if (isMobile && video && (video as any).webkitEnterFullscreen) {
+        try {
+          (video as any).webkitEnterFullscreen();
+          return;
+        } catch (error) {
+          // iOS video fullscreen failed, try container fullscreen
+        }
+      }
+
+      // Try container fullscreen for desktop and other mobile browsers
+      if (container) {
         // Check for different fullscreen methods
-        const requestFullscreen = element.requestFullscreen || 
-                                 (element as any).webkitRequestFullscreen || 
-                                 (element as any).webkitRequestFullScreen || 
-                                 (element as any).mozRequestFullScreen || 
-                                 (element as any).msRequestFullscreen;
+        const requestFullscreen = container.requestFullscreen ||
+                                 (container as any).webkitRequestFullscreen ||
+                                 (container as any).webkitRequestFullScreen ||
+                                 (container as any).mozRequestFullScreen ||
+                                 (container as any).msRequestFullscreen;
 
         if (requestFullscreen) {
-          requestFullscreen.call(element).then(() => {
+          requestFullscreen.call(container).then(() => {
             // After fullscreen is activated, try to lock to landscape on mobile
             if (screen.orientation && 'lock' in screen.orientation) {
               (screen.orientation as any).lock('landscape').catch((error: any) => {
-                console.log('Could not lock to landscape orientation:', error);
-                // Don't worry if orientation lock fails, fullscreen should still work
+                // Could not lock to landscape orientation
               });
             }
           }).catch((error: any) => {
-            console.log('Fullscreen request failed:', error);
-            // Don't use CSS fallback that breaks custom elements
-            console.log('Fullscreen not supported on this device');
+            // Container fullscreen request failed
+            // Try video fullscreen as fallback
+            if (video && (video as any).webkitEnterFullscreen) {
+              try {
+                console.log('🔄 Fallback to video fullscreen');
+                (video as any).webkitEnterFullscreen();
+              } catch (videoError) {
+                console.log('Video fullscreen fallback also failed:', videoError);
+              }
+            }
           });
         } else {
-          console.log('Fullscreen API not supported on this device');
+          // Fullscreen API not supported, try video fullscreen
+          if (video && (video as any).webkitEnterFullscreen) {
+            try {
+              (video as any).webkitEnterFullscreen();
+            } catch (videoError) {
+              // Video fullscreen not available
+            }
+          }
         }
       }
     } else {
       // Exit fullscreen
-      const exitFullscreen = document.exitFullscreen || 
-                            (document as any).webkitExitFullscreen || 
-                            (document as any).webkitCancelFullScreen || 
-                            (document as any).mozCancelFullScreen || 
+      const video = videoRef.current;
+
+      // First try to exit iOS video fullscreen
+      if (video && (video as any).webkitExitFullscreen) {
+        try {
+          (video as any).webkitExitFullscreen();
+          return;
+        } catch (error) {
+          console.log('iOS video exit fullscreen failed:', error);
+        }
+      }
+
+      // Try standard document fullscreen exit
+      const exitFullscreen = document.exitFullscreen ||
+                            (document as any).webkitExitFullscreen ||
+                            (document as any).webkitCancelFullScreen ||
+                            (document as any).mozCancelFullScreen ||
                             (document as any).msExitFullscreen;
 
       if (exitFullscreen) {
@@ -1107,13 +1145,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isFullscreenNow = !!(
-        document.fullscreenElement || 
-        (document as any).webkitFullscreenElement || 
-        (document as any).mozFullScreenElement || 
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
         (document as any).msFullscreenElement
       );
       setIsFullscreen(isFullscreenNow);
-      
+
       // If exiting fullscreen, unlock orientation
       if (!isFullscreenNow) {
         if (screen.orientation && 'unlock' in screen.orientation) {
@@ -1127,6 +1165,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             console.log('Could not lock to landscape orientation:', error);
           });
         }
+      }
+    };
+
+    // iOS video fullscreen detection
+    const handleVideoFullscreenChange = () => {
+      const video = videoRef.current;
+      if (video) {
+        // iOS Safari video fullscreen detection
+        const isVideoFullscreen = (video as any).webkitDisplayingFullscreen;
+        console.log('📱 iOS video fullscreen state:', isVideoFullscreen);
+        setIsFullscreen(isVideoFullscreen);
       }
     };
 
@@ -1154,7 +1203,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
     window.addEventListener('orientationchange', handleOrientationChange);
-    
+
+    // Add iOS video fullscreen listeners
+    const video = videoRef.current;
+    if (video) {
+      video.addEventListener('webkitbeginfullscreen', handleVideoFullscreenChange);
+      video.addEventListener('webkitendfullscreen', handleVideoFullscreenChange);
+    }
+
     // Add mobile-specific fullscreen detection
     if (isMobile) {
       window.addEventListener('resize', handleMobileFullscreenChange);
@@ -1173,7 +1229,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
       window.removeEventListener('orientationchange', handleOrientationChange);
-      
+
+      // Remove iOS video fullscreen listeners
+      const video = videoRef.current;
+      if (video) {
+        video.removeEventListener('webkitbeginfullscreen', handleVideoFullscreenChange);
+        video.removeEventListener('webkitendfullscreen', handleVideoFullscreenChange);
+      }
+
       // Remove mobile-specific listeners
       if (isMobile) {
         window.removeEventListener('resize', handleMobileFullscreenChange);
@@ -1241,28 +1304,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return;
     }
     
-    // On mobile, immediately toggle play/pause without delay
-    if (isMobile) {
-      if (currentSource?.type === 'hls') {
-        togglePlayPause();
-      }
-      return;
-    }
-    
-    // Only handle single click if not part of a double click (desktop only)
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-      clickTimeoutRef.current = null;
-    }
-    clickTimeoutRef.current = setTimeout(() => {
-      // Single click: toggle play/pause only if not clicking on controls
-      if (currentSource?.type === 'hls') {
-        togglePlayPause();
-      }
-      // Focus the container for keyboard events
-      playerContainerRef.current?.focus();
-      clickTimeoutRef.current = null;
-    }, 200); // 200ms is a good threshold for double-click
+    // Only focus the container for keyboard events - no play/pause toggle
+    playerContainerRef.current?.focus();
   };
 
   // Initialize HLS player with quality levels
@@ -1933,10 +1976,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           if (isMobile) {
             e.preventDefault();
             setShowControls(true);
-            // Toggle play/pause on touch
-            if (currentSource?.type === 'hls') {
-              togglePlayPause();
-            }
+            // Only show controls on touch - no play/pause toggle
           }
         }}
         onTouchEnd={(e) => {
@@ -1951,6 +1991,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             className={`w-full h-full object-contain ${isFullscreen ? 'fullscreen-video' : ''}`}
             playsInline
             controls={false}
+            autoPlay
             webkit-playsinline="true"
             x5-playsinline="true"
             x5-video-player-type="h5"
@@ -2207,18 +2248,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }
                 onClose();
               }}
-              className="absolute top-4 left-4 z-50 flex items-center gap-2 bg-black/70 hover:bg-black/90 text-white px-4 py-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 touch-manipulation min-h-[44px] min-w-[44px]"
+              className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 touch-manipulation min-h-[44px] min-w-[44px]"
             >
               <ArrowLeft size={20} />
-              Back
             </button>
 
             {/* Movie Title - Top Center */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 text-center pointer-events-auto">
-                <h1 className="text-white text-xl font-bold">
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 text-center pointer-events-auto max-w-[calc(100vw-120px)] px-2">
+                <h1 className="text-white text-sm sm:text-lg md:text-xl font-bold truncate">
                   {title}
                   {type === 'tv' && season && episode && (
-                    <span className="text-gray-300 text-lg ml-2">S{season}E{episode}</span>
+                    <span className="text-gray-300 text-xs sm:text-base md:text-lg ml-1 sm:ml-2">S{season}E{episode}</span>
                   )}
                 </h1>
               </div>
