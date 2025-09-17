@@ -430,8 +430,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           sources.push(
             {
               type: 'iframe',
+              url: `https://player.vidzee.wtf/embed/movie/${tmdbId}`,
+              name: 'VidZee (Primary Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://player.vidzee.wtf/embed/movie/4k/${tmdbId}`,
+              name: 'VidZee 4K (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
               url: `https://mappletv.uk/watch/movie/${tmdbId}`,
-              name: 'MappleTV (Primary Fallback)',
+              name: 'MappleTV (Fallback)',
               language: 'multi'
             },
             {
@@ -442,14 +454,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             },
             {
               type: 'iframe',
-              url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
-              name: 'VidSrc WTF (Fallback)',
+              url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
+              name: 'VidFast (Fallback)',
               language: 'multi'
             },
             {
               type: 'iframe',
-              url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
-              name: 'VidFast (Fallback)',
+              url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
+              name: 'VidSrc WTF (Fallback)',
               language: 'multi'
             },
             {
@@ -475,8 +487,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           sources.push(
             {
               type: 'iframe',
+              url: `https://player.vidzee.wtf/embed/tv/${tmdbId}/${season}/${episode}`,
+              name: 'VidZee (Primary Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
               url: `https://mappletv.uk/watch/tv/${tmdbId}-${season}-${episode}`,
-              name: 'MappleTV (Primary Fallback)',
+              name: 'MappleTV (Fallback)',
               language: 'multi'
             },
             {
@@ -487,14 +505,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             },
             {
               type: 'iframe',
-              url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${season}/${episode}`,
-              name: 'VidSrc WTF (Fallback)',
+              url: `https://vidfast.pro/tv/${tmdbId}/${season}/${episode}?autoPlay=true`,
+              name: 'VidFast (Fallback)',
               language: 'multi'
             },
             {
               type: 'iframe',
-              url: `https://vidfast.pro/tv/${tmdbId}/${season}/${episode}?autoPlay=true`,
-              name: 'VidFast (Fallback)',
+              url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${season}/${episode}`,
+              name: 'VidSrc WTF (Fallback)',
               language: 'multi'
             },
             {
@@ -539,8 +557,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         fallbackSources.push(
           {
             type: 'iframe',
+            url: `https://player.vidzee.wtf/embed/movie/${tmdbId}`,
+            name: 'VidZee - Primary Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://player.vidzee.wtf/embed/movie/4k/${tmdbId}`,
+            name: 'VidZee 4K - Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
             url: `https://mappletv.uk/watch/movie/${tmdbId}`,
-            name: 'MappleTV - Primary Fallback',
+            name: 'MappleTV - Fallback',
             language: 'multi'
           },
           {
@@ -551,14 +581,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
-            name: 'VidSrc WTF - Fallback',
+            url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
+            name: 'VidFast - Fallback',
             language: 'multi'
           },
           {
             type: 'iframe',
-            url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
-            name: 'VidFast - Fallback',
+            url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
+            name: 'VidSrc WTF - Fallback',
             language: 'multi'
           },
           {
@@ -586,8 +616,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         fallbackSources.push(
           {
             type: 'iframe',
+            url: `https://player.vidzee.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'VidZee - Primary Fallback',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
             url: `https://mappletv.uk/watch/tv/${tmdbId}-${seasonNum}-${episodeNum}`,
-            name: 'MappleTV - Primary Fallback',
+            name: 'MappleTV - Fallback',
             language: 'multi'
           },
           {
@@ -598,14 +634,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
-            name: 'VidSrc WTF - Fallback',
+            url: `https://vidfast.pro/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoPlay=true`,
+            name: 'VidFast - Fallback',
             language: 'multi'
           },
           {
             type: 'iframe',
-            url: `https://vidfast.pro/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoPlay=true`,
-            name: 'VidFast - Fallback',
+            url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'VidSrc WTF - Fallback',
             language: 'multi'
           },
           {
@@ -657,6 +693,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         fallbackSources.push(
           {
             type: 'iframe',
+            url: `https://player.vidzee.wtf/embed/movie/${tmdbId}`,
+            name: 'VidZee',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
+            url: `https://player.vidzee.wtf/embed/movie/4k/${tmdbId}`,
+            name: 'VidZee 4K',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
             url: `https://mappletv.uk/watch/movie/${tmdbId}`,
             name: 'MappleTV',
             language: 'multi'
@@ -669,14 +717,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
-            name: 'VidSrc WTF',
+            url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
+            name: 'VidFast',
             language: 'multi'
           },
           {
             type: 'iframe',
-            url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
-            name: 'VidFast',
+            url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
+            name: 'VidSrc WTF',
             language: 'multi'
           },
           {
@@ -704,6 +752,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         fallbackSources.push(
           {
             type: 'iframe',
+            url: `https://player.vidzee.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'VidZee',
+            language: 'multi'
+          },
+          {
+            type: 'iframe',
             url: `https://mappletv.uk/watch/tv/${tmdbId}-${seasonNum}-${episodeNum}`,
             name: 'MappleTV',
             language: 'multi'
@@ -716,14 +770,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
-            name: 'VidSrc WTF',
+            url: `https://vidfast.pro/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoPlay=true`,
+            name: 'VidFast',
             language: 'multi'
           },
           {
             type: 'iframe',
-            url: `https://vidfast.pro/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoPlay=true`,
-            name: 'VidFast',
+            url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
+            name: 'VidSrc WTF',
             language: 'multi'
           },
           {
