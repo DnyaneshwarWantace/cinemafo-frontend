@@ -842,7 +842,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setError(null);
       setLoading(true);
       setIframeContentDetected(false); // Reset content detection for new source
-      setShowSwitchSourceButton(false); // Hide switch button when switching
+      // Don't hide switch button - keep it visible for manual control
       
       // Show notification for source switch
       setShowSourceSwitchNotification(true);
@@ -945,30 +945,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         return; // Ignore these common third-party player errors
       }
 
-      // Only detect very specific server errors that indicate content unavailability
-      if (message.includes('404') && 
-          message.includes('player.vidzee.wtf') && 
-          message.includes('api/server') && 
-          currentSource?.type === 'iframe') {
-        
-        const currentTime = Date.now();
-        
-        // Only count VidZee API server errors that happen within 60 seconds of each other
-        if (currentTime - lastErrorTime < 60000) {
-          errorCount++;
-        } else {
-          errorCount = 1;
-        }
-        lastErrorTime = currentTime;
-        
-        console.log(`🚨 VidZee API server 404 detected (count: ${errorCount})`);
-        
-        // Show manual switch button after 5 VidZee API server errors
-        if (errorCount >= 5) {
-          errorCount = 0;
-          console.log('🔄 VidZee API server failures detected - showing manual switch button');
-          setShowSwitchSourceButton(true);
-        }
+      // Detect ANY 404 errors from iframe sources - show button immediately
+      if (message.includes('404') && currentSource?.type === 'iframe') {
+        console.log(`🚨 404 Error detected from iframe source: ${message}`);
+        console.log('🔄 Showing manual switch button due to 404 error');
+        setShowSwitchSourceButton(true);
+      }
+
+      // Also detect network errors and show button
+      if ((message.includes('Failed to fetch') || message.includes('NetworkError') || message.includes('ERR_')) && currentSource?.type === 'iframe') {
+        console.log(`🚨 Network Error detected: ${message}`);
+        console.log('🔄 Showing manual switch button due to network error');
+        setShowSwitchSourceButton(true);
       }
 
       originalError.apply(console, args);
@@ -1000,11 +988,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(globalFallbackTimeoutRef.current);
       }
       
-      // Set a global timeout that will show manual switch button after 30 seconds
-      globalFallbackTimeoutRef.current = setTimeout(() => {
-        console.log('🚨 Global fallback timeout reached - showing manual switch button');
-        setShowSwitchSourceButton(true);
-      }, 30000);
+      // No global timeout - only show button on errors or manual trigger
       
       return () => {
         if (globalFallbackTimeoutRef.current) {
@@ -1032,8 +1016,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             if (globalFallbackTimeoutRef.current) {
               clearTimeout(globalFallbackTimeoutRef.current);
             }
-            // Hide switch button since content is working
-            setShowSwitchSourceButton(false);
+            // Don't hide switch button - let user decide when to switch
           }
         }
       }
@@ -1052,8 +1035,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (globalFallbackTimeoutRef.current) {
           clearTimeout(globalFallbackTimeoutRef.current);
         }
-        // Hide switch button since user can interact with content
-        setShowSwitchSourceButton(false);
+        // Don't hide switch button - let user decide when to switch
       }
     };
 
@@ -1559,11 +1541,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
-      // Set timeout for iframe loading - show manual switch button instead
-      iframeLoadTimeoutRef.current = setTimeout(() => {
-        console.log('⏰ Iframe load timeout reached, showing manual switch button');
-        setShowSwitchSourceButton(true);
-      }, 5000); // 5 second timeout to show manual switch button
+      // No automatic timeout - only show button on errors or manual trigger
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
@@ -2357,16 +2335,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               
               console.log('✅ Iframe loaded successfully');
               
-              // Set a secondary timeout to check if content is actually working
-              if (currentSource?.type === 'iframe') {
-                iframeLoadTimeoutRef.current = setTimeout(() => {
-                  // Only show switch button if we haven't detected content working
-                  if (!iframeContentDetected) {
-                    console.log('⏰ Iframe loaded but no content detected - showing manual switch button');
-                    setShowSwitchSourceButton(true);
-                  }
-                }, 8000); // 8 second timeout after iframe loads to show manual switch button
-              }
+              // No automatic button showing - only on errors or manual trigger
             }}
             onError={() => {
               // Clear any pending timeout
@@ -2420,32 +2389,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
         )}
 
-        {/* Manual Switch Source Button */}
-        {showSwitchSourceButton && streamingSources.length > 1 && (
+        {/* Manual Switch Source Button - Always visible when multiple sources */}
+        {streamingSources.length > 1 && (
           <div className="absolute top-4 right-4 z-50">
             <Button
               onClick={() => {
-                setShowSwitchSourceButton(false);
                 switchToNextSource();
               }}
               className="bg-red-600/90 hover:bg-red-700/90 text-white px-4 py-2 rounded-lg backdrop-blur-sm border border-red-400/50 shadow-lg shadow-red-500/30 hover:shadow-red-400/50 hover:border-red-300/70 transition-all duration-300"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Switch Source ({currentSourceIndex + 1}/{streamingSources.length})
-            </Button>
-          </div>
-        )}
-
-        {/* Debug: Always show button for testing */}
-        {streamingSources.length > 1 && (
-          <div className="absolute top-4 left-4 z-50">
-            <Button
-              onClick={() => {
-                setShowSwitchSourceButton(true);
-              }}
-              className="bg-blue-600/90 hover:bg-blue-700/90 text-white px-3 py-1 rounded text-xs"
-            >
-              Show Switch Button
             </Button>
           </div>
         )}
