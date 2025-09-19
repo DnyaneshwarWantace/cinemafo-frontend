@@ -831,6 +831,46 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [currentSourceIndex, streamingSources]);
 
+  // Function to test if iframe source is working
+  const testIframeSource = useCallback(async (url: string): Promise<boolean> => {
+    try {
+      // Try to fetch the iframe URL with a short timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      
+      const response = await fetch(url, {
+        method: 'HEAD',
+        mode: 'no-cors',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }, []);
+
+  // Test iframe source when it changes
+  useEffect(() => {
+    if (currentSource?.type === 'iframe') {
+      const testSource = async () => {
+        const isWorking = await testIframeSource(currentSource.url);
+        if (!isWorking) {
+          // If source doesn't work, switch to next one
+          switchToNextSource();
+        }
+      };
+      
+      // Test the source after a short delay
+      const testTimeout = setTimeout(testSource, 1000);
+      
+      return () => {
+        clearTimeout(testTimeout);
+      };
+    }
+  }, [currentSource, testIframeSource, switchToNextSource]);
+
   // Enhanced error handling for iframe fallback and TCF suppression
   useEffect(() => {
     const originalError = console.error;
@@ -857,8 +897,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
         lastErrorTime = currentTime;
         
-        // Switch source after 5 consecutive errors within 5 seconds
-        if (errorCount >= 5) {
+        // Switch source after 3 consecutive errors within 5 seconds
+        if (errorCount >= 3) {
           errorCount = 0;
           switchToNextSource();
         }
@@ -1368,17 +1408,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       clearTimeout(bufferStallTimeoutRef.current);
     }
     
-    // Set timeout for iframe loading - only if it's a VidZee source
-    if (currentSource?.type === 'iframe' && currentSource?.name?.includes('VidZee')) {
+    // Set timeout for iframe loading
+    if (currentSource?.type === 'iframe') {
       // Clear any existing iframe timeout
       if (iframeLoadTimeoutRef.current) {
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
-      // Set timeout for VidZee iframe loading
+      // Set timeout for iframe loading
       iframeLoadTimeoutRef.current = setTimeout(() => {
         switchToNextSource();
-      }, 10000); // 10 second timeout for VidZee only
+      }, 8000); // 8 second timeout for all iframe sources
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
