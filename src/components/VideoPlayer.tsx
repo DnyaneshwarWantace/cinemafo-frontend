@@ -880,32 +880,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, []);
 
-  // Test iframe source when it changes
-  useEffect(() => {
-    if (currentSource?.type === 'iframe') {
-      const testSource = async () => {
-        console.log('🧪 Testing iframe source:', currentSource.url);
-        const isWorking = await testIframeSource(currentSource.url);
-        if (!isWorking) {
-          // If source doesn't work, switch to next one immediately
-          console.log('❌ Iframe source test failed, switching immediately');
-          switchToNextSource();
-        } else {
-          console.log('✅ Iframe source test passed');
-        }
-      };
+  // Test iframe source when it changes - disabled to prevent false switches
+  // useEffect(() => {
+  //   if (currentSource?.type === 'iframe') {
+  //     const testSource = async () => {
+  //       console.log('🧪 Testing iframe source:', currentSource.url);
+  //       const isWorking = await testIframeSource(currentSource.url);
+  //       if (!isWorking) {
+  //         // If source doesn't work, switch to next one immediately
+  //         console.log('❌ Iframe source test failed, switching immediately');
+  //         switchToNextSource();
+  //       } else {
+  //         console.log('✅ Iframe source test passed');
+  //       }
+  //     };
       
-      // Test the source immediately and also after a delay
-      testSource(); // Immediate test
-      const testTimeout = setTimeout(testSource, 5000); // Backup test after 5 seconds
+  //     // Test the source immediately and also after a delay
+  //     testSource(); // Immediate test
+  //     const testTimeout = setTimeout(testSource, 5000); // Backup test after 5 seconds
       
-      return () => {
-        clearTimeout(testTimeout);
-      };
-    }
-  }, [currentSource, testIframeSource, switchToNextSource]);
+  //     return () => {
+  //       clearTimeout(testTimeout);
+  //     };
+  //   }
+  // }, [currentSource, testIframeSource, switchToNextSource]);
 
-  // Enhanced error handling for iframe fallback and TCF suppression
+  // Enhanced error handling for iframe fallback - only detect real failures
   useEffect(() => {
     const originalError = console.error;
     let errorCount = 0;
@@ -914,74 +914,58 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     console.error = (...args) => {
       const message = args[0]?.toString() || '';
 
-      // Suppress LT.JS TCF errors
-      if (message.includes('TCF IFRAME LOCATOR API') || message.includes('__tcfapiLocator')) {
-        return;
+      // Suppress common third-party player errors that are not real failures
+      if (
+        message.includes('TCF IFRAME LOCATOR API') || 
+        message.includes('__tcfapiLocator') ||
+        message.includes('CORS') ||
+        message.includes('Cross-Origin') ||
+        message.includes('Mixed Content') ||
+        message.includes('SecurityError') ||
+        message.includes('Permission denied') ||
+        message.includes('Blocked a frame') ||
+        message.includes('Refused to display') ||
+        message.includes('Content Security Policy') ||
+        message.includes('iframe') && message.includes('sandbox') ||
+        message.includes('postMessage') ||
+        message.includes('ResizeObserver') ||
+        message.includes('Non-passive event listener') ||
+        message.includes('passive event listener') ||
+        message.includes('webkit') ||
+        message.includes('moz') ||
+        message.includes('ms') ||
+        message.includes('vendor') ||
+        message.includes('deprecated') ||
+        message.includes('warning') ||
+        message.includes('info') ||
+        message.includes('debug')
+      ) {
+        return; // Ignore these common third-party player errors
       }
 
-      // Detect 404 errors from iframe sources - very conservative
-      if (message.includes('404') && currentSource?.type === 'iframe') {
+      // Only detect very specific server errors that indicate content unavailability
+      if (message.includes('404') && 
+          message.includes('player.vidzee.wtf') && 
+          message.includes('api/server') && 
+          currentSource?.type === 'iframe') {
+        
         const currentTime = Date.now();
         
-        // Only count errors that happen within 10 seconds of each other
-        if (currentTime - lastErrorTime < 10000) {
+        // Only count VidZee API server errors that happen within 20 seconds of each other
+        if (currentTime - lastErrorTime < 20000) {
           errorCount++;
         } else {
           errorCount = 1;
         }
         lastErrorTime = currentTime;
         
-        console.log(`🚨 404 Error detected (count: ${errorCount}) for iframe source`);
+        console.log(`🚨 VidZee API server 404 detected (count: ${errorCount})`);
         
-        // Switch source after 5 consecutive errors within 10 seconds
-        if (errorCount >= 5) {
+        // Switch only after 10 VidZee API server errors within 20 seconds
+        if (errorCount >= 10) {
           errorCount = 0;
-          console.log('🔄 Switching source due to multiple 404 errors');
-          setTimeout(() => switchToNextSource(), 1000);
-        }
-      }
-
-      // Detect specific VidZee server errors - very conservative
-      if (message.includes('player.vidzee.wtf') && message.includes('404') && currentSource?.type === 'iframe') {
-        const currentTime = Date.now();
-        
-        // Only count VidZee errors that happen within 15 seconds of each other
-        if (currentTime - lastErrorTime < 15000) {
-          errorCount++;
-        } else {
-          errorCount = 1;
-        }
-        lastErrorTime = currentTime;
-        
-        console.log(`🚨 VidZee 404 Error detected (count: ${errorCount})`);
-        
-        // Switch only after 8 VidZee 404 errors within 15 seconds
-        if (errorCount >= 8) {
-          errorCount = 0;
-          console.log('🔄 Switching source due to multiple VidZee 404 errors');
-          setTimeout(() => switchToNextSource(), 1000);
-        }
-      }
-
-      // Also detect any fetch errors from iframe sources - very conservative
-      if ((message.includes('Failed to fetch') || message.includes('NetworkError')) && currentSource?.type === 'iframe') {
-        const currentTime = Date.now();
-        
-        // Only count network errors that happen within 10 seconds of each other
-        if (currentTime - lastErrorTime < 10000) {
-          errorCount++;
-        } else {
-          errorCount = 1;
-        }
-        lastErrorTime = currentTime;
-        
-        console.log(`🚨 Network Error detected (count: ${errorCount})`);
-        
-        // Switch only after 4 network errors within 10 seconds
-        if (errorCount >= 4) {
-          errorCount = 0;
-          console.log('🔄 Switching source due to network errors');
-          setTimeout(() => switchToNextSource(), 1000);
+          console.log('🔄 Switching source due to VidZee API server failures');
+          setTimeout(() => switchToNextSource(), 2000);
         }
       }
 
@@ -2385,8 +2369,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 clearTimeout(iframeLoadTimeoutRef.current);
               }
               
-              // Switch to next source immediately
-              switchToNextSource();
+              // Don't switch immediately - let other mechanisms handle it
+              console.log('⚠️ Iframe onError triggered - letting other mechanisms handle fallback');
             }}
           />
         )}
