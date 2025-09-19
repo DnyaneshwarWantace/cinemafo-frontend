@@ -304,6 +304,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
   const iframeLoadTimeoutRef = useRef<NodeJS.Timeout>();
+  const globalFallbackTimeoutRef = useRef<NodeJS.Timeout>();
   
   // Timestamp preview state
   const [previewTime, setPreviewTime] = useState<number | null>(null);
@@ -820,12 +821,37 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const switchToNextSource = useCallback(() => {
     const nextIndex = currentSourceIndex + 1;
     
+
+    console.log(`🔄 Attempting to switch from source ${currentSourceIndex} to ${nextIndex} (total sources: ${streamingSources.length})`);
+    
     if (nextIndex < streamingSources.length) {
+      console.log(`✅ Switching to source ${nextIndex}: ${streamingSources[nextIndex].name}`);
+      
+      // Clear any existing timeouts
+      if (globalFallbackTimeoutRef.current) {
+        clearTimeout(globalFallbackTimeoutRef.current);
+      }
+      if (iframeLoadTimeoutRef.current) {
+        clearTimeout(iframeLoadTimeoutRef.current);
+      }
+      
       setCurrentSourceIndex(nextIndex);
       setCurrentSource(streamingSources[nextIndex]);
       setError(null);
       setLoading(true);
+      
+      // Show notification for source switch
+      setShowSourceSwitchNotification(true);
+      
+      // Auto-hide notification after 3 seconds
+      if (sourceSwitchTimeoutRef.current) {
+        clearTimeout(sourceSwitchTimeoutRef.current);
+      }
+      sourceSwitchTimeoutRef.current = setTimeout(() => {
+        setShowSourceSwitchNotification(false);
+      }, 3000);
     } else {
+      console.log('❌ No more sources available, showing error');
       setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
       setLoading(false);
     }
@@ -834,9 +860,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Function to test if iframe source is working
   const testIframeSource = useCallback(async (url: string): Promise<boolean> => {
     try {
-      // Try to fetch the iframe URL with a short timeout
+      // Try to fetch the iframe URL with a reasonable timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
       
       const response = await fetch(url, {
         method: 'HEAD',
@@ -847,6 +873,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       clearTimeout(timeoutId);
       return true;
     } catch (error) {
+      console.log('❌ Iframe source test failed:', url);
       return false;
     }
   }, []);
@@ -855,16 +882,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     if (currentSource?.type === 'iframe') {
       const testSource = async () => {
+        console.log('🧪 Testing iframe source:', currentSource.url);
         const isWorking = await testIframeSource(currentSource.url);
         if (!isWorking) {
           // If source doesn't work, switch to next one immediately
+          console.log('❌ Iframe source test failed, switching immediately');
           switchToNextSource();
+        } else {
+          console.log('✅ Iframe source test passed');
         }
       };
       
       // Test the source immediately and also after a delay
       testSource(); // Immediate test
-      const testTimeout = setTimeout(testSource, 2000); // Backup test
+      const testTimeout = setTimeout(testSource, 3000); // Backup test after 3 seconds
       
       return () => {
         clearTimeout(testTimeout);
@@ -886,28 +917,43 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         return;
       }
 
-      // Detect 404 errors from iframe sources - more aggressive
+      // Detect 404 errors from iframe sources - more conservative
       if (message.includes('404') && currentSource?.type === 'iframe') {
         const currentTime = Date.now();
         
-        // Only count errors that happen within 3 seconds of each other
-        if (currentTime - lastErrorTime < 3000) {
+        // Only count errors that happen within 5 seconds of each other
+        if (currentTime - lastErrorTime < 5000) {
           errorCount++;
         } else {
           errorCount = 1;
         }
         lastErrorTime = currentTime;
         
-        // Switch source after 2 consecutive errors within 3 seconds
-        if (errorCount >= 2) {
+        console.log(`🚨 404 Error detected (count: ${errorCount}) for iframe source`);
+        
+        // Switch source after 3 consecutive errors within 5 seconds
+        if (errorCount >= 3) {
           errorCount = 0;
-          switchToNextSource();
+          console.log('🔄 Switching source due to multiple 404 errors');
+          setTimeout(() => switchToNextSource(), 500);
         }
       }
 
-      // Also detect any fetch errors from iframe sources
+      // Also detect any fetch errors from iframe sources - but be more selective
       if ((message.includes('Failed to fetch') || message.includes('NetworkError')) && currentSource?.type === 'iframe') {
-        switchToNextSource();
+        // Only switch if we get multiple network errors
+        const currentTime = Date.now();
+        if (currentTime - lastErrorTime < 5000) {
+          errorCount++;
+        } else {
+          errorCount = 1;
+        }
+        lastErrorTime = currentTime;
+        
+        if (errorCount >= 2) {
+          console.log('🔄 Switching source due to network errors');
+          switchToNextSource();
+        }
       }
 
       originalError.apply(console, args);
@@ -930,6 +976,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       initializedRef.current = false;
     };
   }, [tmdbId, type, season, episode]); // Re-run when these props change
+
+  // Global fallback timeout - force switch if nothing else works
+  useEffect(() => {
+    if (currentSource?.type === 'iframe' && streamingSources.length > 1) {
+      // Clear any existing global timeout
+      if (globalFallbackTimeoutRef.current) {
+        clearTimeout(globalFallbackTimeoutRef.current);
+      }
+      
+      // Set a global timeout that will force a switch after 15 seconds
+      globalFallbackTimeoutRef.current = setTimeout(() => {
+        console.log('🚨 Global fallback timeout reached - forcing source switch');
+        switchToNextSource();
+      }, 15000);
+      
+      return () => {
+        if (globalFallbackTimeoutRef.current) {
+          clearTimeout(globalFallbackTimeoutRef.current);
+        }
+      };
+    }
+  }, [currentSource, streamingSources.length, switchToNextSource]);
 
   // Cleanup source switch notification timeout on unmount
   useEffect(() => {
@@ -1421,10 +1489,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
-      // Set timeout for iframe loading - more aggressive
+      // Set timeout for iframe loading - more reasonable
       iframeLoadTimeoutRef.current = setTimeout(() => {
+        console.log('⏰ Iframe load timeout reached, switching source');
         switchToNextSource();
-      }, 5000); // 5 second timeout for all iframe sources
+      }, 8000); // 8 second timeout for all iframe sources
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
@@ -2232,14 +2301,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 clearTimeout(iframeLoadTimeoutRef.current);
               }
 
-              // For iframe sources, set a timeout to check if content is actually working
-              if (currentSource?.type === 'iframe') {
-                iframeLoadTimeoutRef.current = setTimeout(() => {
-                  // If we reach here, the iframe loaded but content might not be working
-                  // Switch to next source
-                  switchToNextSource();
-                }, 3000); // 3 second timeout after iframe loads
+              // Clear global fallback timeout since iframe loaded successfully
+              if (globalFallbackTimeoutRef.current) {
+                clearTimeout(globalFallbackTimeoutRef.current);
               }
+              
+              console.log('✅ Iframe loaded successfully');
             }}
             onError={() => {
               // Clear any pending timeout
