@@ -306,6 +306,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const iframeLoadTimeoutRef = useRef<NodeJS.Timeout>();
   const globalFallbackTimeoutRef = useRef<NodeJS.Timeout>();
   const [iframeContentDetected, setIframeContentDetected] = useState(false);
+  const [showSwitchSourceButton, setShowSwitchSourceButton] = useState(false);
   
   // Timestamp preview state
   const [previewTime, setPreviewTime] = useState<number | null>(null);
@@ -841,6 +842,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setError(null);
       setLoading(true);
       setIframeContentDetected(false); // Reset content detection for new source
+      setShowSwitchSourceButton(false); // Hide switch button when switching
       
       // Show notification for source switch
       setShowSourceSwitchNotification(true);
@@ -961,11 +963,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         console.log(`🚨 VidZee API server 404 detected (count: ${errorCount})`);
         
-        // Switch only after 20 VidZee API server errors within 60 seconds
-        if (errorCount >= 20) {
+        // Show manual switch button after 5 VidZee API server errors
+        if (errorCount >= 5) {
           errorCount = 0;
-          console.log('🔄 Switching source due to VidZee API server failures');
-          setTimeout(() => switchToNextSource(), 5000);
+          console.log('🔄 VidZee API server failures detected - showing manual switch button');
+          setShowSwitchSourceButton(true);
         }
       }
 
@@ -998,11 +1000,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(globalFallbackTimeoutRef.current);
       }
       
-      // Set a global timeout that will force a switch after 120 seconds
+      // Set a global timeout that will show manual switch button after 30 seconds
       globalFallbackTimeoutRef.current = setTimeout(() => {
-        console.log('🚨 Global fallback timeout reached - forcing source switch');
-        switchToNextSource();
-      }, 120000);
+        console.log('🚨 Global fallback timeout reached - showing manual switch button');
+        setShowSwitchSourceButton(true);
+      }, 30000);
       
       return () => {
         if (globalFallbackTimeoutRef.current) {
@@ -1030,6 +1032,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             if (globalFallbackTimeoutRef.current) {
               clearTimeout(globalFallbackTimeoutRef.current);
             }
+            // Hide switch button since content is working
+            setShowSwitchSourceButton(false);
           }
         }
       }
@@ -1048,6 +1052,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (globalFallbackTimeoutRef.current) {
           clearTimeout(globalFallbackTimeoutRef.current);
         }
+        // Hide switch button since user can interact with content
+        setShowSwitchSourceButton(false);
       }
     };
 
@@ -1553,11 +1559,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
-      // Set timeout for iframe loading - extremely conservative
+      // Set timeout for iframe loading - show manual switch button instead
       iframeLoadTimeoutRef.current = setTimeout(() => {
-        console.log('⏰ Iframe load timeout reached, switching source');
-        switchToNextSource();
-      }, 60000); // 60 second timeout for all iframe sources
+        console.log('⏰ Iframe load timeout reached, showing manual switch button');
+        setShowSwitchSourceButton(true);
+      }, 10000); // 10 second timeout to show manual switch button
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
@@ -2375,12 +2381,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               // Set a secondary timeout to check if content is actually working
               if (currentSource?.type === 'iframe') {
                 iframeLoadTimeoutRef.current = setTimeout(() => {
-                  // Only switch if we haven't detected content working
+                  // Only show switch button if we haven't detected content working
                   if (!iframeContentDetected) {
-                    console.log('⏰ Iframe loaded but no content detected - switching source');
-                    switchToNextSource();
+                    console.log('⏰ Iframe loaded but no content detected - showing manual switch button');
+                    setShowSwitchSourceButton(true);
                   }
-                }, 90000); // 90 second timeout after iframe loads to check content
+                }, 15000); // 15 second timeout after iframe loads to show manual switch button
               }
             }}
             onError={() => {
@@ -2389,8 +2395,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 clearTimeout(iframeLoadTimeoutRef.current);
               }
               
-              // Don't switch immediately - let other mechanisms handle it
-              console.log('⚠️ Iframe onError triggered - letting other mechanisms handle fallback');
+              // Show manual switch button on error
+              console.log('⚠️ Iframe onError triggered - showing manual switch button');
+              setShowSwitchSourceButton(true);
             }}
           />
         )}
@@ -2431,6 +2438,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Manual Switch Source Button */}
+        {showSwitchSourceButton && streamingSources.length > 1 && (
+          <div className="absolute top-4 right-4 z-50">
+            <Button
+              onClick={() => {
+                setShowSwitchSourceButton(false);
+                switchToNextSource();
+              }}
+              className="bg-red-600/90 hover:bg-red-700/90 text-white px-4 py-2 rounded-lg backdrop-blur-sm border border-red-400/50 shadow-lg shadow-red-500/30 hover:shadow-red-400/50 hover:border-red-300/70 transition-all duration-300"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Switch Source
+            </Button>
           </div>
         )}
         
