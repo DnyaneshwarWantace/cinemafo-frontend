@@ -2339,16 +2339,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Simple Arrow Button for Source Switching - Always visible when multiple sources */}
         {streamingSources.length > 1 && (
-          <div className="absolute top-4 right-4 z-50">
+          <div className="fixed top-4 right-4 z-[9999] pointer-events-auto">
             <Button
               onClick={() => {
                 switchToNextSource();
               }}
-              className="bg-black/70 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-200"
+              className="bg-black/80 hover:bg-black/95 text-white p-3 rounded-full backdrop-blur-md border border-white/30 shadow-2xl hover:shadow-white/20 transition-all duration-200 hover:scale-105"
               size="sm"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
               </svg>
             </Button>
           </div>
