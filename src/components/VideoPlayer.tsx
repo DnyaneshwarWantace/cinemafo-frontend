@@ -816,39 +816,65 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [tmdbId, type, season, episode]);
 
+  // Function to test iframe URL before loading
+  const testIframeUrl = useCallback(async (url: string): Promise<boolean> => {
+    try {
+      const response = await fetch(url, { 
+        method: 'HEAD',
+        mode: 'no-cors',
+        signal: AbortSignal.timeout(3000)
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }, []);
+
   // Function to switch to next fallback source
-  const switchToNextSource = useCallback(() => {
+  const switchToNextSource = useCallback(async () => {
     const nextIndex = currentSourceIndex + 1;
+    
     if (nextIndex < streamingSources.length) {
-      console.log(`🔄 Switching from source ${currentSourceIndex} to ${nextIndex}: ${streamingSources[nextIndex].name}`);
+      const nextSource = streamingSources[nextIndex];
       
-      // Show notification for source switch
-      setShowSourceSwitchNotification(true);
-      
-      // Auto-hide notification after 3 seconds
-      if (sourceSwitchTimeoutRef.current) {
-        clearTimeout(sourceSwitchTimeoutRef.current);
+      // If it's an iframe source, test it first
+      if (nextSource.type === 'iframe') {
+        const isWorking = await testIframeUrl(nextSource.url);
+        if (!isWorking) {
+          // If this source doesn't work, try the next one
+          setCurrentSourceIndex(nextIndex + 1);
+          if (nextIndex + 1 < streamingSources.length) {
+            setCurrentSource(streamingSources[nextIndex + 1]);
+          } else {
+            setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
+            setLoading(false);
+            return;
+          }
+        } else {
+          setCurrentSourceIndex(nextIndex);
+          setCurrentSource(nextSource);
+        }
+      } else {
+        setCurrentSourceIndex(nextIndex);
+        setCurrentSource(nextSource);
       }
-      sourceSwitchTimeoutRef.current = setTimeout(() => {
-        setShowSourceSwitchNotification(false);
-      }, 3000);
       
-      setCurrentSourceIndex(nextIndex);
-      setCurrentSource(streamingSources[nextIndex]);
       setError(null);
       setLoading(true);
     } else {
-      console.log('❌ No more fallback sources available');
       setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
       setLoading(false);
     }
-  }, [currentSourceIndex, streamingSources]);
+  }, [currentSourceIndex, streamingSources, testIframeUrl]);
 
   // Enhanced error handling for iframe fallback and TCF suppression
   useEffect(() => {
     const originalError = console.error;
+    const originalWarn = console.warn;
     let serverErrorCount = 0;
     let lastErrorTime = 0;
+    let vidzeeErrorCount = 0;
+    let vidzeeNetworkErrorCount = 0;
 
     console.error = (...args) => {
       const message = args[0]?.toString() || '';
@@ -856,6 +882,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       // Suppress LT.JS TCF errors
       if (message.includes('TCF IFRAME LOCATOR API') || message.includes('__tcfapiLocator')) {
         return;
+      }
+
+      // Detect VidZee 404 errors specifically - more aggressive
+      if (message.includes('player.vidzee.wtf') && message.includes('404')) {
+        vidzeeErrorCount++;
+        console.log(`🚨 VidZee 404 error detected (${vidzeeErrorCount}/3)`);
+        
+        // If we get 3+ VidZee 404 errors, switch source immediately
+        if (vidzeeErrorCount >= 3 && currentSource?.type === 'iframe') {
+          console.log('🔄 Too many VidZee 404 errors, switching source immediately...');
+          vidzeeErrorCount = 0; // Reset counter
+          switchToNextSource(); // Remove setTimeout for immediate switching
+        }
+      }
+
+      // Detect any VidZee network errors
+      if (message.includes('player.vidzee.wtf') && (message.includes('Failed to fetch') || message.includes('NetworkError') || message.includes('TypeError'))) {
+        vidzeeNetworkErrorCount++;
+        console.log(`🚨 VidZee network error detected (${vidzeeNetworkErrorCount}/2)`);
+        
+        // If we get 2+ VidZee network errors, switch source immediately
+        if (vidzeeNetworkErrorCount >= 2 && currentSource?.type === 'iframe') {
+          console.log('🔄 Too many VidZee network errors, switching source immediately...');
+          vidzeeNetworkErrorCount = 0; // Reset counter
+          switchToNextSource();
+        }
       }
 
       // Detect repeated server 404 errors from iframe sources
@@ -881,8 +933,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       originalError.apply(console, args);
     };
 
+    // Also intercept console.warn for additional error detection
+    console.warn = (...args) => {
+      const message = args[0]?.toString() || '';
+
+      // Detect VidZee warnings that might indicate failures
+      if (message.includes('player.vidzee.wtf') && (message.includes('timeout') || message.includes('failed') || message.includes('error'))) {
+        console.log('🚨 VidZee warning detected, may indicate failure');
+        // Don't switch immediately on warnings, but log for debugging
+      }
+
+      originalWarn.apply(console, args);
+    };
+
     return () => {
       console.error = originalError;
+      console.warn = originalWarn;
     };
   }, [currentSource, switchToNextSource]);
 
@@ -1391,11 +1457,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
-      // Set new timeout (reduced to 5 seconds for faster fallback)
+      // Set new timeout (reduced to 2 seconds for faster fallback)
       iframeLoadTimeoutRef.current = setTimeout(() => {
         console.log('⏰ Iframe load timeout reached for:', currentSource.name);
         switchToNextSource();
-      }, 5000); // 5 second timeout for faster fallback
+      }, 2000); // 2 second timeout for faster fallback
+
+      // For VidZee sources, add additional monitoring
+      if (currentSource.name?.includes('VidZee')) {
+        console.log('🔍 Setting up VidZee monitoring...');
+        
+        // Set up a more aggressive monitoring for VidZee
+        const vidzeeMonitor = setTimeout(() => {
+          console.log('🚨 VidZee monitoring timeout - switching source');
+          switchToNextSource();
+        }, 5000); // 5 second aggressive timeout for VidZee
+
+        // Clean up the VidZee monitor when source changes
+        return () => {
+          clearTimeout(vidzeeMonitor);
+        };
+      }
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
@@ -2155,8 +2237,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               // If we still see server errors after iframe loads, switch source
               iframeLoadTimeoutRef.current = setTimeout(() => {
                 console.log('⏰ Iframe loaded but may not be working, checking for fallback...');
-                // This will be caught by the error detection above if server errors persist
-              }, 8000); // Wait 8 seconds after iframe loads
+                // If this is a VidZee source and we haven't switched yet, force switch
+                if (currentSource?.name?.includes('VidZee')) {
+                  console.log('🔄 VidZee iframe loaded but content may be failing, switching source...');
+                  switchToNextSource();
+                }
+              }, 2000); // Wait 2 seconds after iframe loads
+
+              // For VidZee sources, add immediate error detection
+              if (currentSource?.name?.includes('VidZee')) {
+                console.log('🔍 VidZee iframe loaded, setting up immediate error detection...');
+                
+                // Set up immediate error detection for VidZee
+                const immediateCheck = setTimeout(() => {
+                  console.log('🚨 VidZee immediate check - switching source');
+                  switchToNextSource();
+                }, 1000); // 1 second immediate check for VidZee
+
+                // Clean up the immediate check
+                return () => {
+                  clearTimeout(immediateCheck);
+                };
+              }
             }}
             onError={() => {
               console.error('❌ Iframe failed to load:', currentSource?.name);
@@ -2166,10 +2268,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 clearTimeout(iframeLoadTimeoutRef.current);
               }
               
-              // Switch to next source after a short delay
-              setTimeout(() => {
-                switchToNextSource();
-              }, 1000);
+              // Switch to next source immediately
+              console.log('🔄 Iframe onError triggered, switching source immediately...');
+              switchToNextSource();
             }}
           />
         )}
