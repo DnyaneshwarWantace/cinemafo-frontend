@@ -2339,7 +2339,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Simple Arrow Button for Source Switching - Always visible when multiple sources */}
         {streamingSources.length > 1 && (
-          <div className="fixed top-4 right-4 z-[9999] pointer-events-auto">
+          <div className="fixed top-4 right-16 z-[9999] pointer-events-auto">
             <Button
               onClick={() => {
                 switchToNextSource();
