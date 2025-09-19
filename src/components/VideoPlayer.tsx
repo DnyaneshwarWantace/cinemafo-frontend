@@ -1563,7 +1563,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       iframeLoadTimeoutRef.current = setTimeout(() => {
         console.log('⏰ Iframe load timeout reached, showing manual switch button');
         setShowSwitchSourceButton(true);
-      }, 10000); // 10 second timeout to show manual switch button
+      }, 5000); // 5 second timeout to show manual switch button
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
@@ -1756,37 +1756,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           return;
         }
         
-        // Handle fatal errors
-        console.log('Fatal HLS error, attempting fallback');
+        // Handle fatal errors - show manual switch button instead of automatic fallback
+        console.log('Fatal HLS error, showing manual switch button');
         
-        // Try to switch to iframe fallback
-        const iframeSource = streamingSources.find(s => s.type === 'iframe');
-        if (iframeSource) {
-          console.log('Switching to iframe fallback:', iframeSource.url);
-          
-          // Show notification for source switch
-          setShowSourceSwitchNotification(true);
-          
-          // Auto-hide notification after 3 seconds
-          if (sourceSwitchTimeoutRef.current) {
-            clearTimeout(sourceSwitchTimeoutRef.current);
-          }
-          sourceSwitchTimeoutRef.current = setTimeout(() => {
-            setShowSourceSwitchNotification(false);
-          }, 3000);
-          
-          setCurrentSource(iframeSource);
-          setError(null);
-          setLoading(true);
+        // Show manual switch button instead of automatic fallback
+        setShowSwitchSourceButton(true);
         
-          // Cleanup HLS instance
-          if (hlsRef.current) {
-            hlsRef.current.destroy();
-            hlsRef.current = null;
-          }
-        } else {
-          setError('Video source unavailable. Please try again later.');
-          setLoading(false);
+        // Cleanup HLS instance
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+          hlsRef.current = null;
         }
       });
 
@@ -2386,7 +2365,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     console.log('⏰ Iframe loaded but no content detected - showing manual switch button');
                     setShowSwitchSourceButton(true);
                   }
-                }, 15000); // 15 second timeout after iframe loads to show manual switch button
+                }, 8000); // 8 second timeout after iframe loads to show manual switch button
               }
             }}
             onError={() => {
@@ -2452,7 +2431,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               className="bg-red-600/90 hover:bg-red-700/90 text-white px-4 py-2 rounded-lg backdrop-blur-sm border border-red-400/50 shadow-lg shadow-red-500/30 hover:shadow-red-400/50 hover:border-red-300/70 transition-all duration-300"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Switch Source
+              Switch Source ({currentSourceIndex + 1}/{streamingSources.length})
+            </Button>
+          </div>
+        )}
+
+        {/* Debug: Always show button for testing */}
+        {streamingSources.length > 1 && (
+          <div className="absolute top-4 left-4 z-50">
+            <Button
+              onClick={() => {
+                setShowSwitchSourceButton(true);
+              }}
+              className="bg-blue-600/90 hover:bg-blue-700/90 text-white px-3 py-1 rounded text-xs"
+            >
+              Show Switch Button
             </Button>
           </div>
         )}
