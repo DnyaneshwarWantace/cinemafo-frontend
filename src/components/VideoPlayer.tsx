@@ -128,21 +128,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       initialTime: propInitialTime
     });
   }
-  // Suppress LT.JS TCF errors from iframe content
-  useEffect(() => {
-    const originalError = console.error;
-    console.error = (...args) => {
-      const message = args[0]?.toString() || '';
-      if (message.includes('TCF IFRAME LOCATOR API') || message.includes('__tcfapiLocator')) {
-        return; // Suppress LT.JS TCF errors
-      }
-      originalError.apply(console, args);
-    };
-
-    return () => {
-      console.error = originalError;
-    };
-  }, []);
 
   // Detect mobile/touch devices
   useEffect(() => {
@@ -325,34 +310,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   
   // Skip intro functionality removed
-
-  // Function to switch to next fallback source
-  const switchToNextSource = useCallback(() => {
-    const nextIndex = currentSourceIndex + 1;
-    if (nextIndex < streamingSources.length) {
-      console.log(`🔄 Switching from source ${currentSourceIndex} to ${nextIndex}: ${streamingSources[nextIndex].name}`);
-      
-      // Show notification for source switch
-      setShowSourceSwitchNotification(true);
-      
-      // Auto-hide notification after 3 seconds
-      if (sourceSwitchTimeoutRef.current) {
-        clearTimeout(sourceSwitchTimeoutRef.current);
-      }
-      sourceSwitchTimeoutRef.current = setTimeout(() => {
-        setShowSourceSwitchNotification(false);
-      }, 3000);
-      
-      setCurrentSourceIndex(nextIndex);
-      setCurrentSource(streamingSources[nextIndex]);
-      setError(null);
-      setLoading(true);
-    } else {
-      console.log('❌ No more fallback sources available');
-      setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
-      setLoading(false);
-    }
-  }, [currentSourceIndex, streamingSources]);
 
   // Fetch stream URLs from backend with encrypted niggaflix URLs
   const fetchStreamUrls = useCallback(async () => {
@@ -859,12 +816,82 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [tmdbId, type, season, episode]);
 
+  // Function to switch to next fallback source
+  const switchToNextSource = useCallback(() => {
+    const nextIndex = currentSourceIndex + 1;
+    if (nextIndex < streamingSources.length) {
+      console.log(`🔄 Switching from source ${currentSourceIndex} to ${nextIndex}: ${streamingSources[nextIndex].name}`);
+      
+      // Show notification for source switch
+      setShowSourceSwitchNotification(true);
+      
+      // Auto-hide notification after 3 seconds
+      if (sourceSwitchTimeoutRef.current) {
+        clearTimeout(sourceSwitchTimeoutRef.current);
+      }
+      sourceSwitchTimeoutRef.current = setTimeout(() => {
+        setShowSourceSwitchNotification(false);
+      }, 3000);
+      
+      setCurrentSourceIndex(nextIndex);
+      setCurrentSource(streamingSources[nextIndex]);
+      setError(null);
+      setLoading(true);
+    } else {
+      console.log('❌ No more fallback sources available');
+      setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
+      setLoading(false);
+    }
+  }, [currentSourceIndex, streamingSources]);
+
+  // Enhanced error handling for iframe fallback and TCF suppression
+  useEffect(() => {
+    const originalError = console.error;
+    let serverErrorCount = 0;
+    let lastErrorTime = 0;
+
+    console.error = (...args) => {
+      const message = args[0]?.toString() || '';
+
+      // Suppress LT.JS TCF errors
+      if (message.includes('TCF IFRAME LOCATOR API') || message.includes('__tcfapiLocator')) {
+        return;
+      }
+
+      // Detect repeated server 404 errors from iframe sources
+      if (message.includes('Fetch Error') && message.includes('Server') && message.includes('404')) {
+        const currentTime = Date.now();
+
+        // If multiple server errors occur within 3 seconds, switch source
+        if (currentTime - lastErrorTime < 3000) {
+          serverErrorCount++;
+        } else {
+          serverErrorCount = 1;
+        }
+        lastErrorTime = currentTime;
+
+        // If we get 3+ server errors quickly, switch to next source
+        if (serverErrorCount >= 3 && currentSource?.type === 'iframe') {
+          console.log('🔄 Multiple server errors detected, switching source...');
+          setTimeout(() => switchToNextSource(), 500);
+          serverErrorCount = 0; // Reset counter
+        }
+      }
+
+      originalError.apply(console, args);
+    };
+
+    return () => {
+      console.error = originalError;
+    };
+  }, [currentSource, switchToNextSource]);
+
   // Initialize sources on mount and when episode/season changes
   useEffect(() => {
     // Reset initialization flag when episode/season changes
     initializedRef.current = false;
     setCurrentSourceIndex(0);
-    fetchStreamUrls();
+      fetchStreamUrls();
     
     // Cleanup function to reset initialization when component unmounts
     return () => {
@@ -1145,10 +1172,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
 
       // Try standard document fullscreen exit
-      const exitFullscreen = document.exitFullscreen ||
-                            (document as any).webkitExitFullscreen ||
-                            (document as any).webkitCancelFullScreen ||
-                            (document as any).mozCancelFullScreen ||
+      const exitFullscreen = document.exitFullscreen || 
+                            (document as any).webkitExitFullscreen || 
+                            (document as any).webkitCancelFullScreen || 
+                            (document as any).mozCancelFullScreen || 
                             (document as any).msExitFullscreen;
 
       if (exitFullscreen) {
@@ -1236,13 +1263,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     const handleFullscreenChange = () => {
       const isFullscreenNow = !!(
-        document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement ||
+        document.fullscreenElement || 
+        (document as any).webkitFullscreenElement || 
+        (document as any).mozFullScreenElement || 
         (document as any).msFullscreenElement
       );
       setIsFullscreen(isFullscreenNow);
-
+      
       // If exiting fullscreen, unlock orientation
       if (!isFullscreenNow) {
         if (screen.orientation && 'unlock' in screen.orientation) {
@@ -1301,7 +1328,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       video.addEventListener('webkitbeginfullscreen', handleVideoFullscreenChange);
       video.addEventListener('webkitendfullscreen', handleVideoFullscreenChange);
     }
-
+    
     // Add mobile-specific fullscreen detection
     if (isMobile) {
       window.addEventListener('resize', handleMobileFullscreenChange);
@@ -1327,7 +1354,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         video.removeEventListener('webkitbeginfullscreen', handleVideoFullscreenChange);
         video.removeEventListener('webkitendfullscreen', handleVideoFullscreenChange);
       }
-
+      
       // Remove mobile-specific listeners
       if (isMobile) {
         window.removeEventListener('resize', handleMobileFullscreenChange);
@@ -1364,11 +1391,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
-      // Set new timeout
+      // Set new timeout (reduced to 5 seconds for faster fallback)
       iframeLoadTimeoutRef.current = setTimeout(() => {
         console.log('⏰ Iframe load timeout reached for:', currentSource.name);
         switchToNextSource();
-      }, 15000); // 15 second timeout
+      }, 5000); // 5 second timeout for faster fallback
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
@@ -1412,7 +1439,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
     
     // Only focus the container for keyboard events - no play/pause toggle
-    playerContainerRef.current?.focus();
+      playerContainerRef.current?.focus();
   };
 
   // Initialize HLS player with quality levels
@@ -2118,11 +2145,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               console.log('✅ Iframe loaded successfully:', currentSource?.name);
               setLoading(false);
               setError(null);
-              
+
               // Clear any pending timeout
               if (iframeLoadTimeoutRef.current) {
                 clearTimeout(iframeLoadTimeoutRef.current);
               }
+
+              // Set a secondary timeout to check if iframe content is working
+              // If we still see server errors after iframe loads, switch source
+              iframeLoadTimeoutRef.current = setTimeout(() => {
+                console.log('⏰ Iframe loaded but may not be working, checking for fallback...');
+                // This will be caught by the error detection above if server errors persist
+              }, 8000); // Wait 8 seconds after iframe loads
             }}
             onError={() => {
               console.error('❌ Iframe failed to load:', currentSource?.name);
