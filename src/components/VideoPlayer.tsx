@@ -862,9 +862,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Function to test if iframe source is working
   const testIframeSource = useCallback(async (url: string): Promise<boolean> => {
     try {
-      // Try to fetch the iframe URL with a shorter timeout
+      // Try to fetch the iframe URL with a longer timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       
       const response = await fetch(url, {
         method: 'HEAD',
@@ -897,7 +897,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       
       // Test the source immediately and also after a delay
       testSource(); // Immediate test
-      const testTimeout = setTimeout(testSource, 2000); // Backup test after 2 seconds
+      const testTimeout = setTimeout(testSource, 5000); // Backup test after 5 seconds
       
       return () => {
         clearTimeout(testTimeout);
@@ -919,12 +919,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         return;
       }
 
-      // Detect 404 errors from iframe sources - balanced approach
+      // Detect 404 errors from iframe sources - very conservative
       if (message.includes('404') && currentSource?.type === 'iframe') {
         const currentTime = Date.now();
         
-        // Only count errors that happen within 3 seconds of each other
-        if (currentTime - lastErrorTime < 3000) {
+        // Only count errors that happen within 10 seconds of each other
+        if (currentTime - lastErrorTime < 10000) {
           errorCount++;
         } else {
           errorCount = 1;
@@ -933,20 +933,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         console.log(`🚨 404 Error detected (count: ${errorCount}) for iframe source`);
         
-        // Switch source after 2 consecutive errors within 3 seconds
-        if (errorCount >= 2) {
+        // Switch source after 5 consecutive errors within 10 seconds
+        if (errorCount >= 5) {
           errorCount = 0;
-          console.log('🔄 Switching source due to 404 errors');
-          setTimeout(() => switchToNextSource(), 200);
+          console.log('🔄 Switching source due to multiple 404 errors');
+          setTimeout(() => switchToNextSource(), 1000);
         }
       }
 
-      // Detect specific VidZee server errors - but only after multiple failures
+      // Detect specific VidZee server errors - very conservative
       if (message.includes('player.vidzee.wtf') && message.includes('404') && currentSource?.type === 'iframe') {
         const currentTime = Date.now();
         
-        // Only count VidZee errors that happen within 5 seconds of each other
-        if (currentTime - lastErrorTime < 5000) {
+        // Only count VidZee errors that happen within 15 seconds of each other
+        if (currentTime - lastErrorTime < 15000) {
           errorCount++;
         } else {
           errorCount = 1;
@@ -955,20 +955,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         console.log(`🚨 VidZee 404 Error detected (count: ${errorCount})`);
         
-        // Switch only after 3 VidZee 404 errors within 5 seconds
-        if (errorCount >= 3) {
+        // Switch only after 8 VidZee 404 errors within 15 seconds
+        if (errorCount >= 8) {
           errorCount = 0;
           console.log('🔄 Switching source due to multiple VidZee 404 errors');
-          setTimeout(() => switchToNextSource(), 500);
+          setTimeout(() => switchToNextSource(), 1000);
         }
       }
 
-      // Also detect any fetch errors from iframe sources - but be more conservative
+      // Also detect any fetch errors from iframe sources - very conservative
       if ((message.includes('Failed to fetch') || message.includes('NetworkError')) && currentSource?.type === 'iframe') {
         const currentTime = Date.now();
         
-        // Only count network errors that happen within 5 seconds of each other
-        if (currentTime - lastErrorTime < 5000) {
+        // Only count network errors that happen within 10 seconds of each other
+        if (currentTime - lastErrorTime < 10000) {
           errorCount++;
         } else {
           errorCount = 1;
@@ -977,11 +977,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         console.log(`🚨 Network Error detected (count: ${errorCount})`);
         
-        // Switch only after 2 network errors within 5 seconds
-        if (errorCount >= 2) {
+        // Switch only after 4 network errors within 10 seconds
+        if (errorCount >= 4) {
           errorCount = 0;
           console.log('🔄 Switching source due to network errors');
-          setTimeout(() => switchToNextSource(), 500);
+          setTimeout(() => switchToNextSource(), 1000);
         }
       }
 
@@ -1014,11 +1014,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(globalFallbackTimeoutRef.current);
       }
       
-      // Set a global timeout that will force a switch after 15 seconds
+      // Set a global timeout that will force a switch after 30 seconds
       globalFallbackTimeoutRef.current = setTimeout(() => {
         console.log('🚨 Global fallback timeout reached - forcing source switch');
         switchToNextSource();
-      }, 15000);
+      }, 30000);
       
       return () => {
         if (globalFallbackTimeoutRef.current) {
@@ -1549,11 +1549,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
-      // Set timeout for iframe loading - balanced approach
+      // Set timeout for iframe loading - very conservative
       iframeLoadTimeoutRef.current = setTimeout(() => {
         console.log('⏰ Iframe load timeout reached, switching source');
         switchToNextSource();
-      }, 8000); // 8 second timeout for all iframe sources
+      }, 20000); // 20 second timeout for all iframe sources
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
@@ -2376,7 +2376,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     console.log('⏰ Iframe loaded but no content detected - switching source');
                     switchToNextSource();
                   }
-                }, 10000); // 10 second timeout after iframe loads to check content
+                }, 25000); // 25 second timeout after iframe loads to check content
               }
             }}
             onError={() => {
