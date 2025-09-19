@@ -317,12 +317,42 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showSourceSwitchNotification, setShowSourceSwitchNotification] = useState(false);
   const sourceSwitchTimeoutRef = useRef<NodeJS.Timeout>();
   const [isMobile, setIsMobile] = useState(false);
+  const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
+  const iframeLoadTimeoutRef = useRef<NodeJS.Timeout>();
   
   // Timestamp preview state
   const [previewTime, setPreviewTime] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   
   // Skip intro functionality removed
+
+  // Function to switch to next fallback source
+  const switchToNextSource = useCallback(() => {
+    const nextIndex = currentSourceIndex + 1;
+    if (nextIndex < streamingSources.length) {
+      console.log(`🔄 Switching from source ${currentSourceIndex} to ${nextIndex}: ${streamingSources[nextIndex].name}`);
+      
+      // Show notification for source switch
+      setShowSourceSwitchNotification(true);
+      
+      // Auto-hide notification after 3 seconds
+      if (sourceSwitchTimeoutRef.current) {
+        clearTimeout(sourceSwitchTimeoutRef.current);
+      }
+      sourceSwitchTimeoutRef.current = setTimeout(() => {
+        setShowSourceSwitchNotification(false);
+      }, 3000);
+      
+      setCurrentSourceIndex(nextIndex);
+      setCurrentSource(streamingSources[nextIndex]);
+      setError(null);
+      setLoading(true);
+    } else {
+      console.log('❌ No more fallback sources available');
+      setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
+      setLoading(false);
+    }
+  }, [currentSourceIndex, streamingSources]);
 
   // Fetch stream URLs from backend with encrypted niggaflix URLs
   const fetchStreamUrls = useCallback(async () => {
@@ -538,6 +568,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         setStreamingSources(sources);
         setCurrentSource(sources[0]);
+        setCurrentSourceIndex(0);
         return;
       } else {
         console.log('⚠️ No stream URL found from backend after retries, using iframe fallback');
@@ -681,6 +712,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         setStreamingSources(fallbackSources);
         setCurrentSource(fallbackSources[0]);
+        setCurrentSourceIndex(0);
       } else {
         setError('Backend servers are experiencing high load. Video streaming may be temporarily unavailable. Please try again in a few minutes.');
       }
@@ -818,6 +850,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         console.log('🔄 Using fallback iframe:', fallbackSources[0]?.url);
         setStreamingSources(fallbackSources);
         setCurrentSource(fallbackSources[0]);
+        setCurrentSourceIndex(0);
       } else {
         setError('This movie/show is not available on any streaming service at the moment. Please try again later or check back soon.');
       }
@@ -830,7 +863,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     // Reset initialization flag when episode/season changes
     initializedRef.current = false;
-      fetchStreamUrls();
+    setCurrentSourceIndex(0);
+    fetchStreamUrls();
     
     // Cleanup function to reset initialization when component unmounts
     return () => {
@@ -843,6 +877,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return () => {
       if (sourceSwitchTimeoutRef.current) {
         clearTimeout(sourceSwitchTimeoutRef.current);
+      }
+      if (iframeLoadTimeoutRef.current) {
+        clearTimeout(iframeLoadTimeoutRef.current);
       }
     };
   }, []);
@@ -1317,7 +1354,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (bufferStallTimeoutRef.current) {
       clearTimeout(bufferStallTimeoutRef.current);
     }
-  }, [currentSource?.url]);
+    
+    // Set timeout for iframe loading (15 seconds)
+    if (currentSource?.type === 'iframe') {
+      console.log('⏱️ Setting iframe load timeout for:', currentSource.name);
+      
+      // Clear any existing iframe timeout
+      if (iframeLoadTimeoutRef.current) {
+        clearTimeout(iframeLoadTimeoutRef.current);
+      }
+      
+      // Set new timeout
+      iframeLoadTimeoutRef.current = setTimeout(() => {
+        console.log('⏰ Iframe load timeout reached for:', currentSource.name);
+        switchToNextSource();
+      }, 15000); // 15 second timeout
+    }
+  }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
   // Handle double click on screen areas
   const handleScreenDoubleClick = (e: React.MouseEvent) => {
@@ -2062,24 +2115,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             allowFullScreen
             allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
             onLoad={() => {
+              console.log('✅ Iframe loaded successfully:', currentSource?.name);
               setLoading(false);
               setError(null);
+              
+              // Clear any pending timeout
+              if (iframeLoadTimeoutRef.current) {
+                clearTimeout(iframeLoadTimeoutRef.current);
+              }
             }}
             onError={() => {
-              console.error('Iframe failed to load');
-              // Try next fallback iframe source automatically
-              const currentIndex = streamingSources.findIndex(s => s.url === currentSource?.url);
-              const next = streamingSources.slice(currentIndex + 1).find(s => s.type === 'iframe');
-              if (next) {
-                setShowSourceSwitchNotification(true);
-                setTimeout(() => setShowSourceSwitchNotification(false), 3000);
-                setCurrentSource(next);
-                setLoading(true);
-                setError(null);
-              } else {
-                setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
-                setLoading(false);
+              console.error('❌ Iframe failed to load:', currentSource?.name);
+              
+              // Clear any pending timeout
+              if (iframeLoadTimeoutRef.current) {
+                clearTimeout(iframeLoadTimeoutRef.current);
               }
+              
+              // Switch to next source after a short delay
+              setTimeout(() => {
+                switchToNextSource();
+              }, 1000);
             }}
           />
         )}
