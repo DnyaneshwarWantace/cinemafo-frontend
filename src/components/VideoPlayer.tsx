@@ -2191,14 +2191,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onMouseLeave={() => isPlaying && setShowControls(false)}
         onTouchStart={(e) => {
           if (isMobile) {
-            e.preventDefault();
             setShowControls(true);
             // Only show controls on touch - no play/pause toggle
           }
         }}
         onTouchEnd={(e) => {
           if (isMobile) {
-            e.preventDefault();
+            // Touch end handler
           }
         }}
       >
@@ -2305,11 +2304,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }}
                 onTouchStart={(e) => {
                   e.stopPropagation();
-                  e.preventDefault();
                 }}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
-                  e.preventDefault();
                   // Create a synthetic mouse event for compatibility
                   const syntheticEvent = {
                     preventDefault: () => {},
@@ -2333,11 +2330,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }}
                 onTouchStart={(e) => {
                   e.stopPropagation();
-                  e.preventDefault();
                 }}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
-                  e.preventDefault();
                   // Create a synthetic mouse event for compatibility
                   const syntheticEvent = {
                     preventDefault: () => {},
