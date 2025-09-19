@@ -1855,10 +1855,44 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowPreview(true);
   }, [duration]);
 
+  const handleProgressBarMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+    const previewTimeValue = percentage * duration;
+    
+    setPreviewTime(previewTimeValue);
+    setShowPreview(true);
+  }, [duration]);
+
   const handleProgressBarLeave = useCallback(() => {
     setShowPreview(false);
     setPreviewTime(null);
   }, []);
+
+  // Global mouse leave handler to ensure tooltip disappears
+  useEffect(() => {
+    const handleGlobalMouseLeave = () => {
+      setShowPreview(false);
+      setPreviewTime(null);
+    };
+
+    const handleGlobalTouchEnd = () => {
+      setShowPreview(false);
+      setPreviewTime(null);
+    };
+
+    if (showPreview) {
+      document.addEventListener('mouseleave', handleGlobalMouseLeave);
+      document.addEventListener('touchend', handleGlobalTouchEnd, { passive: true });
+      return () => {
+        document.removeEventListener('mouseleave', handleGlobalMouseLeave);
+        document.removeEventListener('touchend', handleGlobalTouchEnd);
+      };
+    }
+  }, [showPreview]);
 
   // Enhanced mouse move handler for the range input
   const handleRangeInputMouseMove = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
@@ -1879,6 +1913,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, []);
 
   // Touch event handlers for mobile
+  const handleProgressBarTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (!duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touchX = e.touches[0].clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, touchX / rect.width));
+    const previewTimeValue = percentage * duration;
+    
+    setPreviewTime(previewTimeValue);
+    setShowPreview(true);
+    
+    // Auto-hide tooltip after 3 seconds on mobile to prevent it from getting stuck
+    setTimeout(() => {
+      setShowPreview(false);
+      setPreviewTime(null);
+    }, 3000);
+    
+    // Prevent default to avoid scrolling
+    e.preventDefault();
+  }, [duration]);
+
   const handleProgressBarTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     if (!duration) return;
     
@@ -1895,12 +1950,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [duration]);
 
   const handleProgressBarTouchEnd = useCallback(() => {
-    // Keep preview visible for a moment on mobile
-    setTimeout(() => {
-      setShowPreview(false);
-      setPreviewTime(null);
-    }, 1000);
+    // Hide preview immediately on touch end for mobile
+    setShowPreview(false);
+    setPreviewTime(null);
   }, []);
+
+  const handleRangeInputTouchStart = useCallback((e: React.TouchEvent<HTMLInputElement>) => {
+    if (!duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touchX = e.touches[0].clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, touchX / rect.width));
+    const previewTimeValue = percentage * duration;
+    
+    setPreviewTime(previewTimeValue);
+    setShowPreview(true);
+    
+    // Prevent default to avoid scrolling
+    e.preventDefault();
+  }, [duration]);
 
   const handleRangeInputTouchMove = useCallback((e: React.TouchEvent<HTMLInputElement>) => {
     if (!duration) return;
@@ -1918,11 +1986,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }, [duration]);
 
   const handleRangeInputTouchEnd = useCallback(() => {
-    // Keep preview visible for a moment on mobile
-    setTimeout(() => {
-      setShowPreview(false);
-      setPreviewTime(null);
-    }, 1000);
+    // Hide preview immediately on touch end for mobile
+    setShowPreview(false);
+    setPreviewTime(null);
   }, []);
 
   // Auto-hide controls
@@ -2438,8 +2504,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <div className="mb-4">
                                  <div 
                    className={`progress-bar-container relative w-full h-2 bg-gray-600 rounded-lg overflow-hidden cursor-pointer ${isFullscreen ? 'fullscreen-progress-bar' : ''}`}
-                   onMouseMove={handleProgressBarHover}
+                   onMouseEnter={handleProgressBarHover}
+                   onMouseMove={handleProgressBarMove}
                    onMouseLeave={handleProgressBarLeave}
+                   onTouchStart={handleProgressBarTouchStart}
                    onTouchMove={handleProgressBarTouchMove}
                    onTouchEnd={handleProgressBarTouchEnd}
                  >
@@ -2476,6 +2544,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   onClick={(e) => e.stopPropagation()}
                      onMouseMove={handleRangeInputMouseMove}
                      onMouseLeave={handleRangeInputMouseLeave}
+                     onTouchStart={handleRangeInputTouchStart}
                      onTouchMove={handleRangeInputTouchMove}
                      onTouchEnd={handleRangeInputTouchEnd}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -2489,11 +2558,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 {/* Timestamp preview tooltip - positioned outside progress bar */}
                 {showPreview && previewTime !== null && (
                   <div 
-                    className={`absolute bottom-full left-0 transform -translate-y-2 bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-400/50 shadow-2xl transition-all duration-150 ease-out ${isFullscreen ? 'fullscreen-tooltip' : ''}`}
+                    className={`absolute bottom-full left-0 transform -translate-y-2 bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-400/50 shadow-2xl transition-all duration-75 ease-out ${isFullscreen ? 'fullscreen-tooltip' : ''}`}
                     style={{ 
-                      left: `${(previewTime / (duration || 1)) * 100}%`,
+                      left: `${Math.max(0, Math.min(100, (previewTime / (duration || 1)) * 100))}%`,
                       transform: 'translateX(-50%) translateY(-8px)',
-                      position: 'absolute'
+                      position: 'absolute',
+                      willChange: 'transform, left'
                     }}
                   >
                     <div className="flex flex-col items-center">
