@@ -1935,9 +1935,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setShowPreview(false);
       setPreviewTime(null);
     }, 3000);
-    
-    // Prevent default to avoid scrolling
-    e.preventDefault();
   }, [duration]);
 
   const handleProgressBarTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
@@ -1950,9 +1947,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     
     setPreviewTime(previewTimeValue);
     setShowPreview(true);
-    
-    // Prevent default to avoid scrolling
-    e.preventDefault();
   }, [duration]);
 
   const handleProgressBarTouchEnd = useCallback(() => {
@@ -1971,9 +1965,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     
     setPreviewTime(previewTimeValue);
     setShowPreview(true);
-    
-    // Prevent default to avoid scrolling
-    e.preventDefault();
   }, [duration]);
 
   const handleRangeInputTouchMove = useCallback((e: React.TouchEvent<HTMLInputElement>) => {
@@ -1986,9 +1977,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     
     setPreviewTime(previewTimeValue);
     setShowPreview(true);
-    
-    // Prevent default to avoid scrolling
-    e.preventDefault();
   }, [duration]);
 
   const handleRangeInputTouchEnd = useCallback(() => {
