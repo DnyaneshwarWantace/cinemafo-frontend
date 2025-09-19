@@ -299,8 +299,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [isPlayPausePending, setIsPlayPausePending] = useState(false);
   const [bufferStallCount, setBufferStallCount] = useState(0);
   const bufferStallTimeoutRef = useRef<NodeJS.Timeout>();
-  const [showSourceSwitchNotification, setShowSourceSwitchNotification] = useState(false);
-  const sourceSwitchTimeoutRef = useRef<NodeJS.Timeout>();
+  // Removed showSourceSwitchNotification and sourceSwitchTimeoutRef - no more auto-switch notifications
   const [isMobile, setIsMobile] = useState(false);
   const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
   const iframeLoadTimeoutRef = useRef<NodeJS.Timeout>();
@@ -659,16 +658,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       if (fallbackSources.length > 0) {
         console.log('🔄 Using fallback sources after API timeout:', fallbackSources);
         
-        // Show notification for automatic fallback to secondary source
-        setShowSourceSwitchNotification(true);
-        
-        // Auto-hide notification after 5 seconds (increased from 3)
-        if (sourceSwitchTimeoutRef.current) {
-          clearTimeout(sourceSwitchTimeoutRef.current);
-        }
-        sourceSwitchTimeoutRef.current = setTimeout(() => {
-          setShowSourceSwitchNotification(false);
-        }, 5000);
+        // No notification - silent fallback
         
         setStreamingSources(fallbackSources);
         setCurrentSource(fallbackSources[0]);
@@ -796,16 +786,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       if (fallbackSources.length > 0) {
         console.log('🔄 Using fallback sources:', fallbackSources);
         
-        // Show notification for automatic fallback to secondary source
-        setShowSourceSwitchNotification(true);
-        
-        // Auto-hide notification after 3 seconds
-        if (sourceSwitchTimeoutRef.current) {
-          clearTimeout(sourceSwitchTimeoutRef.current);
-        }
-        sourceSwitchTimeoutRef.current = setTimeout(() => {
-          setShowSourceSwitchNotification(false);
-        }, 3000);
+        // No notification - silent fallback
         
         console.log('🔄 Using fallback iframe:', fallbackSources[0]?.url);
         setStreamingSources(fallbackSources);
@@ -844,16 +825,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setIframeContentDetected(false); // Reset content detection for new source
       // Don't hide switch button - keep it visible for manual control
       
-      // Show notification for source switch
-      setShowSourceSwitchNotification(true);
-      
-      // Auto-hide notification after 3 seconds
-      if (sourceSwitchTimeoutRef.current) {
-        clearTimeout(sourceSwitchTimeoutRef.current);
-      }
-      sourceSwitchTimeoutRef.current = setTimeout(() => {
-        setShowSourceSwitchNotification(false);
-      }, 3000);
+      // Silent switching - no notifications
     } else {
       console.log('❌ No more sources available, showing error');
       setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
@@ -1054,9 +1026,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Cleanup source switch notification timeout on unmount
   useEffect(() => {
     return () => {
-      if (sourceSwitchTimeoutRef.current) {
-        clearTimeout(sourceSwitchTimeoutRef.current);
-      }
+      // Removed sourceSwitchTimeoutRef cleanup
       if (iframeLoadTimeoutRef.current) {
         clearTimeout(iframeLoadTimeoutRef.current);
       }
@@ -1897,16 +1867,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     const index = parseInt(sourceIndex);
     const source = streamingSources[index];
     if (source) {
-      // Show notification for manual source switch
-      setShowSourceSwitchNotification(true);
-      
-      // Auto-hide notification after 3 seconds
-      if (sourceSwitchTimeoutRef.current) {
-        clearTimeout(sourceSwitchTimeoutRef.current);
-      }
-      sourceSwitchTimeoutRef.current = setTimeout(() => {
-        setShowSourceSwitchNotification(false);
-      }, 3000);
+      // No notification - silent switch
       
       setCurrentSource(source);
       setError(null);
@@ -2374,32 +2335,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
         )}
         
-        {/* Source Switch Notification */}
-        {showSourceSwitchNotification && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
-            <div className="animate-pulse">
-              <div className="flex items-center gap-3 bg-black/90 backdrop-blur-sm text-white px-6 py-4 rounded-xl border border-blue-400/50 shadow-lg shadow-blue-500/30 max-w-md text-center">
-                <RefreshCw className="w-5 h-5 text-blue-400 animate-spin flex-shrink-0" />
-                <div>
-                  <span className="text-sm font-medium block">Switching source</span>
-                  <span className="text-xs text-gray-300">Loading alternative player...</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Removed auto-switch notification - using simple arrow button instead */}
 
-        {/* Manual Switch Source Button - Always visible when multiple sources */}
+        {/* Simple Arrow Button for Source Switching - Always visible when multiple sources */}
         {streamingSources.length > 1 && (
           <div className="absolute top-4 right-4 z-50">
             <Button
               onClick={() => {
                 switchToNextSource();
               }}
-              className="bg-red-600/90 hover:bg-red-700/90 text-white px-4 py-2 rounded-lg backdrop-blur-sm border border-red-400/50 shadow-lg shadow-red-500/30 hover:shadow-red-400/50 hover:border-red-300/70 transition-all duration-300"
+              className="bg-black/70 hover:bg-black/90 text-white p-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-all duration-200"
+              size="sm"
             >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Switch Source ({currentSourceIndex + 1}/{streamingSources.length})
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </Button>
           </div>
         )}
