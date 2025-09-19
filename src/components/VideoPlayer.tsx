@@ -857,13 +857,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       const testSource = async () => {
         const isWorking = await testIframeSource(currentSource.url);
         if (!isWorking) {
-          // If source doesn't work, switch to next one
+          // If source doesn't work, switch to next one immediately
           switchToNextSource();
         }
       };
       
-      // Test the source after a short delay
-      const testTimeout = setTimeout(testSource, 1000);
+      // Test the source immediately and also after a delay
+      testSource(); // Immediate test
+      const testTimeout = setTimeout(testSource, 2000); // Backup test
       
       return () => {
         clearTimeout(testTimeout);
@@ -885,23 +886,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         return;
       }
 
-      // Detect 404 errors from iframe sources - only if they're recent and repeated
+      // Detect 404 errors from iframe sources - more aggressive
       if (message.includes('404') && currentSource?.type === 'iframe') {
         const currentTime = Date.now();
         
-        // Only count errors that happen within 5 seconds of each other
-        if (currentTime - lastErrorTime < 5000) {
+        // Only count errors that happen within 3 seconds of each other
+        if (currentTime - lastErrorTime < 3000) {
           errorCount++;
         } else {
           errorCount = 1;
         }
         lastErrorTime = currentTime;
         
-        // Switch source after 3 consecutive errors within 5 seconds
-        if (errorCount >= 3) {
+        // Switch source after 2 consecutive errors within 3 seconds
+        if (errorCount >= 2) {
           errorCount = 0;
           switchToNextSource();
         }
+      }
+
+      // Also detect any fetch errors from iframe sources
+      if ((message.includes('Failed to fetch') || message.includes('NetworkError')) && currentSource?.type === 'iframe') {
+        switchToNextSource();
       }
 
       originalError.apply(console, args);
@@ -1415,10 +1421,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
-      // Set timeout for iframe loading
+      // Set timeout for iframe loading - more aggressive
       iframeLoadTimeoutRef.current = setTimeout(() => {
         switchToNextSource();
-      }, 8000); // 8 second timeout for all iframe sources
+      }, 5000); // 5 second timeout for all iframe sources
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
@@ -2237,6 +2243,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               // Clear any pending timeout
               if (iframeLoadTimeoutRef.current) {
                 clearTimeout(iframeLoadTimeoutRef.current);
+              }
+
+              // For iframe sources, set a timeout to check if content is actually working
+              if (currentSource?.type === 'iframe') {
+                iframeLoadTimeoutRef.current = setTimeout(() => {
+                  // If we reach here, the iframe loaded but content might not be working
+                  // Switch to next source
+                  switchToNextSource();
+                }, 3000); // 3 second timeout after iframe loads
               }
             }}
             onError={() => {
