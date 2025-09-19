@@ -951,8 +951,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         const currentTime = Date.now();
         
-        // Only count VidZee API server errors that happen within 20 seconds of each other
-        if (currentTime - lastErrorTime < 20000) {
+        // Only count VidZee API server errors that happen within 60 seconds of each other
+        if (currentTime - lastErrorTime < 60000) {
           errorCount++;
         } else {
           errorCount = 1;
@@ -961,11 +961,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         console.log(`🚨 VidZee API server 404 detected (count: ${errorCount})`);
         
-        // Switch only after 10 VidZee API server errors within 20 seconds
-        if (errorCount >= 10) {
+        // Switch only after 20 VidZee API server errors within 60 seconds
+        if (errorCount >= 20) {
           errorCount = 0;
           console.log('🔄 Switching source due to VidZee API server failures');
-          setTimeout(() => switchToNextSource(), 2000);
+          setTimeout(() => switchToNextSource(), 5000);
         }
       }
 
@@ -998,11 +998,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(globalFallbackTimeoutRef.current);
       }
       
-      // Set a global timeout that will force a switch after 30 seconds
+      // Set a global timeout that will force a switch after 120 seconds
       globalFallbackTimeoutRef.current = setTimeout(() => {
         console.log('🚨 Global fallback timeout reached - forcing source switch');
         switchToNextSource();
-      }, 30000);
+      }, 120000);
       
       return () => {
         if (globalFallbackTimeoutRef.current) {
@@ -1012,7 +1012,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [currentSource, streamingSources.length, switchToNextSource]);
 
-  // Listen for iframe content detection
+  // Listen for iframe content detection and user interaction
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       // Check if message is from our iframe and indicates content is working
@@ -1035,10 +1035,30 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }
     };
 
+    // Also detect user interaction with the iframe (clicking, etc.)
+    const handleUserInteraction = () => {
+      if (!iframeContentDetected && currentSource?.type === 'iframe') {
+        console.log('✅ User interaction detected - iframe is working');
+        setIframeContentDetected(true);
+        
+        // Clear timeouts since user can interact with content
+        if (iframeLoadTimeoutRef.current) {
+          clearTimeout(iframeLoadTimeoutRef.current);
+        }
+        if (globalFallbackTimeoutRef.current) {
+          clearTimeout(globalFallbackTimeoutRef.current);
+        }
+      }
+    };
+
     if (currentSource?.type === 'iframe') {
       window.addEventListener('message', handleMessage);
+      document.addEventListener('click', handleUserInteraction);
+      document.addEventListener('touchstart', handleUserInteraction);
       return () => {
         window.removeEventListener('message', handleMessage);
+        document.removeEventListener('click', handleUserInteraction);
+        document.removeEventListener('touchstart', handleUserInteraction);
       };
     }
   }, [currentSource, iframeContentDetected]);
@@ -1533,11 +1553,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
-      // Set timeout for iframe loading - very conservative
+      // Set timeout for iframe loading - extremely conservative
       iframeLoadTimeoutRef.current = setTimeout(() => {
         console.log('⏰ Iframe load timeout reached, switching source');
         switchToNextSource();
-      }, 20000); // 20 second timeout for all iframe sources
+      }, 60000); // 60 second timeout for all iframe sources
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
@@ -2360,7 +2380,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     console.log('⏰ Iframe loaded but no content detected - switching source');
                     switchToNextSource();
                   }
-                }, 25000); // 25 second timeout after iframe loads to check content
+                }, 90000); // 90 second timeout after iframe loads to check content
               }
             }}
             onError={() => {
