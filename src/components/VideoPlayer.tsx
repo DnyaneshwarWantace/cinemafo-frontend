@@ -816,61 +816,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [tmdbId, type, season, episode]);
 
-  // Function to test iframe URL before loading
-  const testIframeUrl = useCallback(async (url: string): Promise<boolean> => {
-    try {
-      const response = await fetch(url, { 
-        method: 'HEAD',
-        mode: 'no-cors',
-        signal: AbortSignal.timeout(3000)
-      });
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }, []);
-
   // Function to switch to next fallback source
-  const switchToNextSource = useCallback(async () => {
+  const switchToNextSource = useCallback(() => {
     const nextIndex = currentSourceIndex + 1;
     
     if (nextIndex < streamingSources.length) {
-      const nextSource = streamingSources[nextIndex];
-      
-      // If it's an iframe source, test it first
-      if (nextSource.type === 'iframe') {
-        const isWorking = await testIframeUrl(nextSource.url);
-        if (!isWorking) {
-          // If this source doesn't work, try the next one
-          setCurrentSourceIndex(nextIndex + 1);
-          if (nextIndex + 1 < streamingSources.length) {
-            setCurrentSource(streamingSources[nextIndex + 1]);
-          } else {
-            setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
-            setLoading(false);
-            return;
-          }
-        } else {
-          setCurrentSourceIndex(nextIndex);
-          setCurrentSource(nextSource);
-        }
-      } else {
-        setCurrentSourceIndex(nextIndex);
-        setCurrentSource(nextSource);
-      }
-      
+      setCurrentSourceIndex(nextIndex);
+      setCurrentSource(streamingSources[nextIndex]);
       setError(null);
       setLoading(true);
     } else {
       setError('This content is not available on any streaming service at the moment. Please try again later or check back soon.');
       setLoading(false);
     }
-  }, [currentSourceIndex, streamingSources, testIframeUrl]);
+  }, [currentSourceIndex, streamingSources]);
 
   // Enhanced error handling for iframe fallback and TCF suppression
   useEffect(() => {
     const originalError = console.error;
     let errorCount = 0;
+    let lastErrorTime = 0;
 
     console.error = (...args) => {
       const message = args[0]?.toString() || '';
@@ -880,12 +845,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         return;
       }
 
-      // Detect any 404 errors from iframe sources
+      // Detect 404 errors from iframe sources - only if they're recent and repeated
       if (message.includes('404') && currentSource?.type === 'iframe') {
-        errorCount++;
+        const currentTime = Date.now();
         
-        // Switch source after 2 errors
-        if (errorCount >= 2) {
+        // Only count errors that happen within 5 seconds of each other
+        if (currentTime - lastErrorTime < 5000) {
+          errorCount++;
+        } else {
+          errorCount = 1;
+        }
+        lastErrorTime = currentTime;
+        
+        // Switch source after 5 consecutive errors within 5 seconds
+        if (errorCount >= 5) {
           errorCount = 0;
           switchToNextSource();
         }
@@ -1395,17 +1368,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       clearTimeout(bufferStallTimeoutRef.current);
     }
     
-    // Set timeout for iframe loading
-    if (currentSource?.type === 'iframe') {
+    // Set timeout for iframe loading - only if it's a VidZee source
+    if (currentSource?.type === 'iframe' && currentSource?.name?.includes('VidZee')) {
       // Clear any existing iframe timeout
       if (iframeLoadTimeoutRef.current) {
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
-      // Set timeout for iframe loading
+      // Set timeout for VidZee iframe loading
       iframeLoadTimeoutRef.current = setTimeout(() => {
         switchToNextSource();
-      }, 3000); // 3 second timeout
+      }, 10000); // 10 second timeout for VidZee only
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
 
@@ -2159,11 +2132,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               if (iframeLoadTimeoutRef.current) {
                 clearTimeout(iframeLoadTimeoutRef.current);
               }
-
-              // Set a timeout to check if iframe content is working
-              iframeLoadTimeoutRef.current = setTimeout(() => {
-                switchToNextSource();
-              }, 2000); // Wait 2 seconds after iframe loads
             }}
             onError={() => {
               // Clear any pending timeout
