@@ -1564,8 +1564,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     if (!isPipEnabled) return;
 
-    const handleVisibilityChange = async () => {
+    const handleVisibilityChange = async (event?: Event) => {
+      const eventType = event?.type || 'unknown';
+      const isAppBackgrounding = eventType === 'pagehide' || eventType === 'beforeunload' || eventType === 'blur';
+
       console.log('PiP visibility change:', {
+        eventType,
         hidden: document.hidden,
         visibilityState: document.visibilityState,
         currentSource: currentSource?.type,
@@ -1577,7 +1581,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         isInPip,
         isFullscreen,
         isMobile,
-        userAgent: navigator.userAgent
+        isAppBackgrounding,
+        userAgent: navigator.userAgent.substring(0, 50)
       });
 
       // Only handle PiP for HLS videos
@@ -1589,7 +1594,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         return;
       }
 
-      if (document.hidden || document.visibilityState === 'hidden') {
+      // Check if page/app is being backgrounded
+      const isBackgrounded = document.hidden ||
+                             document.visibilityState === 'hidden' ||
+                             (isMobile && isAppBackgrounding);
+
+      if (isBackgrounded) {
         // Tab is hidden or minimized, enter PiP if video has been played
         const actuallyInPip = !!(document as any).pictureInPictureElement;
         if (!actuallyInPip && isPipEnabled) {
@@ -1626,12 +1636,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     videoRef.current?.addEventListener('enterpictureinpicture', handlePipEnter);
     videoRef.current?.addEventListener('leavepictureinpicture', handlePipExit);
 
+    // Mobile-specific event listeners for app backgrounding
+    if (isMobile) {
+      // These events fire when mobile app goes to background (home button)
+      window.addEventListener('pagehide', handleVisibilityChange);
+      window.addEventListener('beforeunload', handleVisibilityChange);
+      // Blur event can also indicate app backgrounding on mobile
+      window.addEventListener('blur', handleVisibilityChange);
+
+      console.log('Added mobile-specific backgrounding listeners');
+    }
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       videoRef.current?.removeEventListener('enterpictureinpicture', handlePipEnter);
       videoRef.current?.removeEventListener('leavepictureinpicture', handlePipExit);
+
+      if (isMobile) {
+        window.removeEventListener('pagehide', handleVisibilityChange);
+        window.removeEventListener('beforeunload', handleVisibilityChange);
+        window.removeEventListener('blur', handleVisibilityChange);
+      }
     };
-  }, [isPipEnabled, currentSource, isInPip, isPlaying, isFullscreen, enterPip, exitPip]);
+  }, [isPipEnabled, currentSource, isInPip, isPlaying, isFullscreen, isMobile, enterPip, exitPip]);
 
   // Sync PiP state with actual document state periodically
   useEffect(() => {
