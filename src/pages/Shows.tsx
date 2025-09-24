@@ -535,22 +535,8 @@ const Shows = () => {
                       key={show.id}
                       className="cursor-pointer group/item"
                       onClick={() => {
-                        // Handle both mobile and desktop clicks
-                        if (isMobile && showMovieName === show.id) {
-                          setShowMovieName(null);
-                        }
                         handleShowClick(show);
                       }}
-                      onTouchStart={isMobile ? (e) => {
-                        // Don't prevent default to allow normal click behavior
-                        handleLongPressStart(show);
-                      } : undefined}
-                      onTouchEnd={isMobile ? (e) => {
-                        // Don't prevent default - let onClick handle it
-                        handleLongPressEnd(show);
-                      } : undefined}
-                      onTouchMove={isMobile ? handleLongPressCancel : undefined}
-                      onTouchCancel={isMobile ? handleLongPressCancel : undefined}
                     >
                       <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                         <img
@@ -592,9 +578,9 @@ const Shows = () => {
                       </div>
                         )}
                         
-                        <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 ${
+                        <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 search-result-title ${
                           isMobile
-                            ? (showMovieName === show.id ? 'opacity-100' : 'opacity-0')
+                            ? 'opacity-100' // Always show title on mobile for search results
                             : 'opacity-0 group-hover/item:opacity-100'
                         }`}>
                           <div>
@@ -784,26 +770,11 @@ const Shows = () => {
                           }
                           setTooltipItem(null);
 
-                          // On mobile, if name is showing, hide it and open show
-                          if (isMobile && showMovieName === show.id) {
-                            setShowMovieName(null);
-                          }
-
                           handleShowClick(show);
                         }}
                         onMouseEnter={isMobile ? undefined : (e) => handleMouseEnter(e, show)}
                         onMouseMove={isMobile ? undefined : (e) => handleMouseMove(e, show)}
                         onMouseLeave={isMobile ? undefined : handleTooltipMouseLeave}
-                        onTouchStart={isMobile ? (e) => {
-                          // Don't prevent default to allow normal click behavior
-                          handleLongPressStart(show);
-                        } : undefined}
-                        onTouchEnd={isMobile ? (e) => {
-                          // Don't prevent default - let onClick handle it
-                          handleLongPressEnd(show);
-                        } : undefined}
-                        onTouchMove={isMobile ? handleLongPressCancel : undefined}
-                        onTouchCancel={isMobile ? handleLongPressCancel : undefined}
                         onMouseOut={handleTooltipMouseLeave}
                       >
                         <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
@@ -846,9 +817,9 @@ const Shows = () => {
                         </div>
                           )}
                           
-                          <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 ${
+                          <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 search-result-title ${
                             isMobile
-                              ? (showMovieName === show.id ? 'opacity-100' : 'opacity-0')
+                              ? 'opacity-100' // Always show title on mobile for search results
                               : 'opacity-0 group-hover/item:opacity-100'
                           }`}>
                             <div>
@@ -1002,6 +973,10 @@ const Shows = () => {
             }
             .group\\/item:hover .group-hover\\/item\\:opacity-100 {
               opacity: 0 !important;
+            }
+            /* Always show search result titles on mobile */
+            .search-result-title {
+              opacity: 1 !important;
             }
           }
         `

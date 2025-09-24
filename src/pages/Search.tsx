@@ -501,7 +501,7 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-black pt-32 sm:pt-32 md:pt-32 search-container" style={{ position: 'relative' }}>
-      <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 py-8">
+      <div className="w-full px-2 sm:px-6 lg:px-8 space-y-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Search</h1>
@@ -689,7 +689,7 @@ const Search = () => {
                 <p className="text-gray-500 mt-2">Try adjusting your search terms or filters</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2 sm:gap-4">
                 {results
                   .filter((item) => {
                     // Filter out items with no poster or unknown release date
@@ -710,26 +710,11 @@ const Search = () => {
                       }
                       setTooltipItem(null);
 
-                      // On mobile, if name is showing, hide it and open movie
-                      if (isMobile && showMovieName === item.id) {
-                        setShowMovieName(null);
-                      }
-
                       handleItemClick(item);
                     }}
                     onMouseEnter={isMobile ? undefined : (e) => handleMouseEnter(e, item)}
                     onMouseMove={isMobile ? undefined : (e) => handleMouseMove(e, item)}
                     onMouseLeave={isMobile ? undefined : handleTooltipMouseLeave}
-                    onTouchStart={isMobile ? (e) => {
-                      // Don't prevent default to allow normal click behavior
-                      handleLongPressStart(item);
-                    } : undefined}
-                    onTouchEnd={isMobile ? (e) => {
-                      // Don't prevent default - let onClick handle it
-                      handleLongPressEnd(item);
-                    } : undefined}
-                    onTouchMove={isMobile ? handleLongPressCancel : undefined}
-                    onTouchCancel={isMobile ? handleLongPressCancel : undefined}
                   >
                     <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
                       <img
@@ -771,9 +756,9 @@ const Search = () => {
                         </div>
                       )}
                       
-                      <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 ${
+                      <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 search-result-title ${
                         isMobile
-                          ? (showMovieName === item.id ? 'opacity-100' : 'opacity-0')
+                          ? 'opacity-100' // Always show title on mobile for search results
                           : 'opacity-0 group-hover/item:opacity-100'
                       }`}>
                         <div>
@@ -906,6 +891,10 @@ const Search = () => {
             }
             .group\\/item:hover .group-hover\\/item\\:opacity-100 {
               opacity: 0 !important;
+            }
+            /* Always show search result titles on mobile */
+            .search-result-title {
+              opacity: 1 !important;
             }
           }
         `

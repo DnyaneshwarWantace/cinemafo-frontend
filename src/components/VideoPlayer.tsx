@@ -312,6 +312,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const globalFallbackTimeoutRef = useRef<NodeJS.Timeout>();
   const [iframeContentDetected, setIframeContentDetected] = useState(false);
   const [showSwitchSourceButton, setShowSwitchSourceButton] = useState(false);
+  const [showServerDropdown, setShowServerDropdown] = useState(false);
   
   // Timestamp preview state
   const [previewTime, setPreviewTime] = useState<number | null>(null);
@@ -437,12 +438,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             },
             {
               type: 'iframe',
-              url: `https://mappletv.uk/watch/movie/${tmdbId}`,
-              name: 'MappleTV (Fallback)',
-              language: 'multi'
-            },
-            {
-              type: 'iframe',
               url: `https://player.videasy.net/movie/${tmdbId}`,
               name: 'Videasy (Fallback)',
               language: 'multi'
@@ -471,12 +466,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               name: 'VidSrc XYZ (Fallback)',
               language: 'multi'
             },
-            {
-              type: 'iframe',
-              url: `https://vidora.su/movie/${tmdbId}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
-              name: 'Vidora (Last Fallback)',
-              language: 'multi'
-            }
           );
         } else if (type === 'tv' && season && episode) {
           sources.push(
@@ -484,12 +473,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               type: 'iframe',
               url: `https://player.vidzee.wtf/embed/tv/${tmdbId}/${season}/${episode}`,
               name: 'VidZee (Primary Fallback)',
-              language: 'multi'
-            },
-            {
-              type: 'iframe',
-              url: `https://mappletv.uk/watch/tv/${tmdbId}-${season}-${episode}`,
-              name: 'MappleTV (Fallback)',
               language: 'multi'
             },
             {
@@ -522,12 +505,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               name: 'VidSrc XYZ (Fallback)',
               language: 'multi'
             },
-            {
-              type: 'iframe',
-              url: `https://vidora.su/tv/${tmdbId}/${season}/${episode}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
-              name: 'Vidora (Last Fallback)',
-              language: 'multi'
-            }
           );
         }
 
@@ -565,12 +542,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://mappletv.uk/watch/movie/${tmdbId}`,
-            name: 'MappleTV - Fallback',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
             url: `https://player.videasy.net/movie/${tmdbId}`,
             name: 'Videasy - Fallback',
             language: 'multi'
@@ -599,12 +570,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             name: 'VidSrc XYZ - Fallback',
             language: 'multi'
           },
-          {
-            type: 'iframe',
-            url: `https://vidora.su/movie/${tmdbId}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
-            name: 'Vidora - Last Fallback',
-            language: 'multi'
-          }
         );
       } else if (type === 'tv') {
         const seasonNum = season && season > 0 ? season : 1;
@@ -614,12 +579,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             type: 'iframe',
             url: `https://player.vidzee.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
             name: 'VidZee - Primary Fallback',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://mappletv.uk/watch/tv/${tmdbId}-${seasonNum}-${episodeNum}`,
-            name: 'MappleTV - Fallback',
             language: 'multi'
           },
           {
@@ -652,12 +611,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             name: 'VidSrc XYZ - Fallback',
             language: 'multi'
           },
-          {
-            type: 'iframe',
-            url: `https://vidora.su/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
-            name: 'Vidora - Last Fallback',
-            language: 'multi'
-          }
         );
       }
 
@@ -693,12 +646,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://mappletv.uk/watch/movie/${tmdbId}`,
-            name: 'MappleTV',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
             url: `https://player.videasy.net/movie/${tmdbId}`,
             name: 'Videasy',
             language: 'multi'
@@ -727,12 +674,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             name: 'VidSrc XYZ',
             language: 'multi'
           },
-          {
-            type: 'iframe',
-            url: `https://vidora.su/movie/${tmdbId}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
-            name: 'Vidora',
-            language: 'multi'
-          }
         );
       } else if (type === 'tv') {
         const seasonNum = season && season > 0 ? season : 1;
@@ -742,12 +683,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             type: 'iframe',
             url: `https://player.vidzee.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
             name: 'VidZee',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://mappletv.uk/watch/tv/${tmdbId}-${seasonNum}-${episodeNum}`,
-            name: 'MappleTV',
             language: 'multi'
           },
           {
@@ -780,12 +715,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             name: 'VidSrc XYZ',
             language: 'multi'
           },
-          {
-            type: 'iframe',
-            url: `https://vidora.su/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoplay=true&colour=00ff9d&backbutton=https://vidora.su/&logo=https://vidora.su/logo.png`,
-            name: 'Vidora',
-            language: 'multi'
-          }
         );
       }
 
@@ -1806,7 +1735,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       
       // No automatic timeout - only show button on errors or manual trigger
     }
-  }, [currentSource?.url, currentSource?.type, currentSource?.name, switchToNextSource]);
+  }, [currentSource?.url, currentSource?.type, currentSource?.name]);
 
   // Handle double click on screen areas
   const handleScreenDoubleClick = (e: React.MouseEvent) => {
@@ -1847,8 +1776,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return;
     }
     
-    // Only focus the container for keyboard events - no play/pause toggle
-      playerContainerRef.current?.focus();
+    // Only toggle play/pause on PC (not mobile)
+    if (!isMobile) {
+      togglePlayPause();
+    }
+    
+    // Focus the container for keyboard events
+    playerContainerRef.current?.focus();
   };
 
   // Initialize HLS player with quality levels
@@ -1861,16 +1795,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return;
     }
     
+    console.log('🔄 HLS initialization starting for URL:', currentSource.url);
     currentSourceUrlRef.current = currentSource.url;
     
-    // Prevent multiple HLS instances
+    // Add a flag to track if this effect is still active
+    let isActive = true;
+    
+    // Prevent multiple HLS instances - ensure complete cleanup
     if (hlsRef.current) {
-      console.log('HLS instance already exists, destroying previous instance');
-      hlsRef.current.destroy();
+      console.log('🧹 HLS instance already exists, destroying previous instance');
+      try {
+        hlsRef.current.destroy();
+      } catch (error) {
+        console.warn('Error destroying HLS instance:', error);
+      }
       hlsRef.current = null;
     }
-
+    
+    // Also clear the video source to prevent conflicts
     const video = videoRef.current;
+    if (video) {
+      video.src = '';
+      video.load();
+    }
     setIsHLSSupported(Hls.isSupported());
         
         if (Hls.isSupported()) {
@@ -1916,6 +1863,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       hls.attachMedia(video);
       
       hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+        if (!isActive) return; // Don't proceed if effect is no longer active
         console.log('HLS manifest parsed successfully');
         setLoading(false);
         setError(null);
@@ -1957,6 +1905,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       
       hls.on(Hls.Events.ERROR, (event, data) => {
+        if (!isActive) return; // Don't proceed if effect is no longer active
         console.error('HLS error event:', event, data);
         
         // Handle buffer stalling errors specifically
@@ -1997,11 +1946,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           return;
         }
         
-        // Handle fatal errors - show manual switch button instead of automatic fallback
-        console.log('Fatal HLS error, showing manual switch button');
+        // Handle fatal errors - auto-switch for 404 errors, manual switch for others
+        console.log('Fatal HLS error:', data);
         
-        // Show manual switch button instead of automatic fallback
-        setShowSwitchSourceButton(true);
+        // Check if it's a 404 error (movie not found) - auto-switch to next source
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && 
+            (data.details === 'manifestLoadError' || data.details === 'levelLoadError') &&
+            data.response && data.response.code === 404) {
+          console.log('🚨 404 Error from Niggaflix - auto-switching to next source');
+          setError('Movie not found on Niggaflix, switching to alternative source...');
+          // Auto-switch will be handled by the useEffect that monitors the error state
+        } else {
+          // For other fatal errors, show manual switch button
+          console.log('Fatal HLS error, showing manual switch button');
+          setShowSwitchSourceButton(true);
+        }
         
         // Cleanup HLS instance
         if (hlsRef.current) {
@@ -2140,10 +2099,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     
     // Cleanup function
       return () => {
+      console.log('🧹 HLS cleanup function called');
+      isActive = false; // Mark as inactive
       if (hlsRef.current) {
-        hlsRef.current.destroy();
+        try {
+          hlsRef.current.destroy();
+          console.log('✅ HLS instance destroyed successfully');
+        } catch (error) {
+          console.warn('Error destroying HLS instance in cleanup:', error);
+        }
         hlsRef.current = null;
-    }
+      }
       currentSourceUrlRef.current = '';
       setIsPlayPausePending(false);
     };
@@ -2189,7 +2155,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
+  // Enhanced click handler that uses the same calculation as hover
+  const handleProgressBarClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+    const newTime = percentage * duration;
+    
+    setCurrentTime(newTime);
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+    }
+    
+    // Hide preview after click
+    setShowPreview(false);
+    setPreviewTime(null);
+  }, [duration]);
+
   const formatTime = (time: number) => {
+    // Check for NaN or invalid time values
+    if (isNaN(time) || !isFinite(time) || time < 0) {
+      return '0:00';
+    }
+    
     const hours = Math.floor(time / 3600);
     const minutes = Math.floor((time % 3600) / 60);
     const seconds = Math.floor(time % 60);
@@ -2199,6 +2189,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
+
+  // Auto-switch logic only for actual API failures (404 errors), not timeline issues
+  useEffect(() => {
+    // Only auto-switch if we're on Niggaflix (HLS) and there's an actual error
+    if (currentSource?.type === 'hls' && streamingSources.length > 1 && error) {
+      console.log('🚨 Niggaflix API failed, auto-switching to next source');
+      // Add a small delay to prevent rapid switching
+      const switchTimeout = setTimeout(() => {
+        switchToNextSource();
+      }, 2000); // 2 second delay
+      
+      return () => clearTimeout(switchTimeout);
+    }
+  }, [error, currentSource, streamingSources.length, switchToNextSource]);
 
 
 
@@ -2254,8 +2258,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [showPreview]);
 
-  // Enhanced mouse move handler for the range input
-  const handleRangeInputMouseMove = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
+  // Enhanced mouse move handler for the progress bar
+  const handleRangeInputMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!duration) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
@@ -2309,7 +2313,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setPreviewTime(null);
   }, []);
 
-  const handleRangeInputTouchStart = useCallback((e: React.TouchEvent<HTMLInputElement>) => {
+  const handleRangeInputTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     if (!duration) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
@@ -2321,7 +2325,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowPreview(true);
   }, [duration]);
 
-  const handleRangeInputTouchMove = useCallback((e: React.TouchEvent<HTMLInputElement>) => {
+  const handleRangeInputTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     if (!duration) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
@@ -2333,11 +2337,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowPreview(true);
   }, [duration]);
 
-  const handleRangeInputTouchEnd = useCallback(() => {
+  const handleRangeInputTouchEnd = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (!duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touchX = e.changedTouches[0].clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, touchX / rect.width));
+    const newTime = percentage * duration;
+    
+    setCurrentTime(newTime);
+    if (videoRef.current) {
+      videoRef.current.currentTime = newTime;
+    }
+    
     // Hide preview immediately on touch end for mobile
     setShowPreview(false);
     setPreviewTime(null);
-  }, []);
+  }, [duration]);
 
   // Auto-hide controls
   useEffect(() => {
@@ -2398,6 +2414,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       };
     }
   }, [showSettingsMenu]);
+
+  // Handle click outside server dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const serverDropdown = document.querySelector('[data-server-dropdown]');
+      
+      if (serverDropdown && !serverDropdown.contains(event.target as Node)) {
+        setShowServerDropdown(false);
+      }
+    };
+
+    if (showServerDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
+    }
+  }, [showServerDropdown]);
 
   // Settings menu hover timeout
   const settingsTimeoutRef = useRef<NodeJS.Timeout>();
@@ -2546,12 +2582,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onTouchStart={(e) => {
           if (isMobile) {
             setShowControls(true);
+            // Prevent default touch behavior to avoid conflicts
+            e.preventDefault();
             // Only show controls on touch - no play/pause toggle
           }
         }}
         onTouchEnd={(e) => {
           if (isMobile) {
-            // Touch end handler
+            // Prevent default touch behavior
+            e.preventDefault();
+            // Touch end handler - no play/pause toggle on mobile
+          }
+        }}
+        onTouchMove={(e) => {
+          if (isMobile) {
+            // Prevent scrolling during touch interactions
+            e.preventDefault();
           }
         }}
       >
@@ -2634,20 +2680,51 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         {/* Removed auto-switch notification - using simple arrow button instead */}
 
-        {/* Simple Arrow Button for Source Switching - Always visible when multiple sources */}
+        {/* Server Selector - Always visible when multiple sources */}
         {streamingSources.length > 1 && (
-          <div className="fixed top-4 right-16 z-[9999] pointer-events-auto">
-            <Button
-              onClick={() => {
-                switchToNextSource();
-              }}
-              className="bg-black/80 hover:bg-black/95 text-white p-3 rounded-full backdrop-blur-md border border-white/30 shadow-2xl hover:shadow-white/20 transition-all duration-200 hover:scale-105"
-              size="sm"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-              </svg>
-            </Button>
+          <div className="fixed top-4 right-4 z-[9999] pointer-events-auto">
+            <div className="relative" data-server-dropdown>
+              <button
+                onClick={() => setShowServerDropdown(!showServerDropdown)}
+                className="bg-black/80 hover:bg-black/95 text-white px-3 py-2 rounded-lg backdrop-blur-md border border-blue-400/50 shadow-2xl hover:shadow-blue-400/20 transition-all duration-200 hover:scale-105 min-w-[140px] flex items-center gap-2"
+              >
+                <span className="text-lg">☁️</span>
+                <span className="text-sm font-medium">
+                  Server: {currentSourceIndex + 1}
+                </span>
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {showServerDropdown && (
+                <div className="absolute top-full right-0 mt-1 bg-black/90 border border-blue-400/50 backdrop-blur-md rounded-lg shadow-2xl min-w-[140px]">
+                  {streamingSources.slice(0, 5).map((source, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        if (index !== currentSourceIndex && index < streamingSources.length) {
+                          setCurrentSourceIndex(index);
+                          setCurrentSource(streamingSources[index]);
+                          setError(null);
+                          setLoading(true);
+                          setIframeContentDetected(false);
+                        }
+                        setShowServerDropdown(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 flex items-center gap-2 text-sm transition-colors ${
+                        index === currentSourceIndex 
+                          ? 'bg-blue-600/20 text-blue-300' 
+                          : 'text-white hover:bg-blue-600/20 hover:text-blue-300'
+                      } ${index === 0 ? 'rounded-t-lg' : ''} ${index === Math.min(streamingSources.length, 5) - 1 ? 'rounded-b-lg' : ''}`}
+                    >
+                      <span className="text-lg">☁️</span>
+                      <span>Server {index + 1}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
         
@@ -2874,7 +2951,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   {/* Gradient progress fill */}
                   <div 
                     className="absolute left-0 top-0 h-full gradient-progress-bar rounded-lg transition-all duration-200"
-                    style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                    style={{ width: `${duration > 0 && currentTime >= 0 ? Math.min((currentTime / duration) * 100, 100) : 0}%` }}
                   ></div>
                   
                   {/* Hover indicator */}
@@ -2888,28 +2965,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     ></div>
                   )}
                   
-                  {/* Invisible range input for interaction */}
-                <input
-                  type="range"
-                  min="0"
-                  max={duration || 0}
-                  value={currentTime}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    handleSeek(e);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                     onMouseMove={handleRangeInputMouseMove}
-                     onMouseLeave={handleRangeInputMouseLeave}
-                     onTouchStart={handleRangeInputTouchStart}
-                     onTouchMove={handleRangeInputTouchMove}
-                     onTouchEnd={handleRangeInputTouchEnd}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
+                  {/* Clickable overlay for precise seeking */}
+                  <div
+                    className="absolute inset-0 w-full h-full cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleProgressBarClick(e);
+                    }}
+                    onMouseMove={handleRangeInputMouseMove}
+                    onMouseLeave={handleRangeInputMouseLeave}
+                    onTouchStart={handleRangeInputTouchStart}
+                    onTouchMove={handleRangeInputTouchMove}
+                    onTouchEnd={handleRangeInputTouchEnd}
+                  />
                 </div>
                 <div className="flex justify-between text-sm text-gray-300 mt-1">
-                  <span>{formatTime(currentTime)}</span>
-                  <span>{formatTime(duration)}</span>
+                  <span>{formatTime(currentTime || 0)}</span>
+                  <span>{formatTime(duration || 0)}</span>
                 </div>
                 
                 {/* Timestamp preview tooltip - positioned outside progress bar */}
@@ -3133,27 +3205,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               </div>
             )}
         
-        {/* Iframe Close Button */}
+        {/* Iframe Back Button */}
         {currentSource?.type === 'iframe' && (
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('🎬 Iframe close button clicked');
+              console.log('🎬 Iframe back button clicked');
               onClose();
             }}
             onTouchEnd={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('🎬 Iframe close button touched (mobile)');
+              console.log('🎬 Iframe back button touched (mobile)');
               onClose();
             }}
-            className="absolute top-4 right-4 z-10 text-white bg-black/60 hover:bg-black/80 touch-manipulation min-h-[44px] min-w-[44px]"
+            className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 touch-manipulation min-h-[44px] min-w-[44px]"
           >
-            <X className="w-6 h-6" />
-          </Button>
+            <ArrowLeft size={20} />
+          </button>
         )}
 
         {/* Settings Menu - Outside controls overlay */}

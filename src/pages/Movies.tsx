@@ -564,18 +564,15 @@ const Movies = () => {
                       </div>
                         )}
                         
-                        <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 ${
+                        <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 search-result-title ${
                           isMobile
-                            ? (showMovieName === movie.id ? 'opacity-100' : 'opacity-0')
+                            ? 'opacity-100' // Always show title on mobile for search results
                             : 'opacity-0 group-hover/item:opacity-100'
                         }`}>
                           <div>
                             <h3 className="text-white font-semibold text-sm line-clamp-2">
                               {getItemTitle(movie)}
                         </h3>
-                            <p className="text-gray-300 text-xs mt-1">
-                              {formatReleaseDate(getItemReleaseDate(movie))}
-                        </p>
                           </div>
                         </div>
                       </div>
@@ -820,9 +817,9 @@ const Movies = () => {
                         </div>
                           )}
                           
-                          <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 ${
+                          <div className={`absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent transition-opacity duration-300 flex items-end p-4 search-result-title ${
                             isMobile
-                              ? (showMovieName === movie.id ? 'opacity-100' : 'opacity-0')
+                              ? 'opacity-100' // Always show title on mobile for search results
                               : 'opacity-0 group-hover/item:opacity-100'
                           }`}>
                             <div>
@@ -968,6 +965,10 @@ const Movies = () => {
             }
             .group\\/item:hover .group-hover\\/item\\:opacity-100 {
               opacity: 0 !important;
+            }
+            /* Always show search result titles on mobile */
+            .search-result-title {
+              opacity: 1 !important;
             }
           }
         `
