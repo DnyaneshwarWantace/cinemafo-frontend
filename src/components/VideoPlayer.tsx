@@ -1187,12 +1187,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return;
     }
 
-    // Check if we have a recent user gesture (within last 5 seconds)
+    // Check if we have a recent user gesture (within last 2 minutes)
     const timeSinceGesture = Date.now() - lastUserGesture;
-    const hasRecentGesture = timeSinceGesture < 5000;
+    const hasRecentGesture = timeSinceGesture < 120000;
 
     if (!hasRecentGesture) {
-      console.log('No recent user gesture for PiP, skipping automatic PiP');
+      const minutes = Math.floor(timeSinceGesture / 60000);
+      const seconds = Math.floor((timeSinceGesture % 60000) / 1000);
+      console.log(`No recent user gesture for PiP (${minutes}m ${seconds}s ago), skipping automatic PiP. Click anywhere to enable PiP.`);
       return;
     }
 
@@ -1282,6 +1284,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }, 100);
     } else {
       console.log('Playing video');
+
+      // Record user gesture when playing video (since play is usually user-initiated)
+      const now = Date.now();
+      setLastUserGesture(now);
+      localStorage.setItem('lastUserGesture', now.toString());
+      console.log('User gesture recorded from video play');
 
       // Request PiP permission when playing HLS videos
       if (currentSource?.type === 'hls') {
@@ -1491,14 +1499,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Track user interactions for PiP gesture requirement
   useEffect(() => {
+    // Initialize from localStorage if available
+    const storedGesture = localStorage.getItem('lastUserGesture');
+    if (storedGesture) {
+      const gestureTime = parseInt(storedGesture, 10);
+      // Only use stored gesture if it's within the last 2 minutes
+      if (Date.now() - gestureTime < 120000) {
+        setLastUserGesture(gestureTime);
+        console.log('Restored user gesture from storage');
+      }
+    }
+
     const trackUserGesture = () => {
-      setLastUserGesture(Date.now());
+      const now = Date.now();
+      setLastUserGesture(now);
+      // Store in localStorage to persist across navigation
+      localStorage.setItem('lastUserGesture', now.toString());
+      console.log('User gesture tracked');
     };
 
     // Listen for user interactions
-    const events = ['click', 'keydown', 'touchstart', 'mousedown'];
+    const events = ['click', 'keydown', 'touchstart', 'mousedown', 'pointerdown'];
     events.forEach(event => {
-      document.addEventListener(event, trackUserGesture);
+      document.addEventListener(event, trackUserGesture, { passive: true });
     });
 
     return () => {
