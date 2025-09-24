@@ -432,12 +432,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             },
             {
               type: 'iframe',
-              url: `https://player.vidzee.wtf/embed/movie/4k/${tmdbId}`,
-              name: 'VidZee 4K (Fallback)',
-              language: 'multi'
-            },
-            {
-              type: 'iframe',
               url: `https://player.videasy.net/movie/${tmdbId}`,
               name: 'Videasy (Fallback)',
               language: 'multi'
@@ -447,25 +441,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
               name: 'VidFast (Fallback)',
               language: 'multi'
-            },
-            {
-              type: 'iframe',
-              url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
-              name: 'VidSrc WTF (Fallback)',
-              language: 'multi'
-            },
-            {
-              type: 'iframe',
-              url: `https://vidjoy.pro/embed/movie/${tmdbId}`,
-              name: 'VidJoy (Fallback)',
-              language: 'multi'
-            },
-            {
-              type: 'iframe',
-              url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
-              name: 'VidSrc XYZ (Fallback)',
-              language: 'multi'
-            },
+            }
           );
         } else if (type === 'tv' && season && episode) {
           sources.push(
@@ -486,25 +462,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               url: `https://vidfast.pro/tv/${tmdbId}/${season}/${episode}?autoPlay=true`,
               name: 'VidFast (Fallback)',
               language: 'multi'
-            },
-            {
-              type: 'iframe',
-              url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${season}/${episode}`,
-              name: 'VidSrc WTF (Fallback)',
-              language: 'multi'
-            },
-            {
-              type: 'iframe',
-              url: `https://vidjoy.pro/embed/tv/${tmdbId}/${season}/${episode}`,
-              name: 'VidJoy (Fallback)',
-              language: 'multi'
-            },
-            {
-              type: 'iframe',
-              url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`,
-              name: 'VidSrc XYZ (Fallback)',
-              language: 'multi'
-            },
+            }
           );
         }
 
@@ -536,12 +494,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://player.vidzee.wtf/embed/movie/4k/${tmdbId}`,
-            name: 'VidZee 4K - Fallback',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
             url: `https://player.videasy.net/movie/${tmdbId}`,
             name: 'Videasy - Fallback',
             language: 'multi'
@@ -551,25 +503,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
             name: 'VidFast - Fallback',
             language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
-            name: 'VidSrc WTF - Fallback',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidjoy.pro/embed/movie/${tmdbId}`,
-            name: 'VidJoy - Fallback',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
-            name: 'VidSrc XYZ - Fallback',
-            language: 'multi'
-          },
+          }
         );
       } else if (type === 'tv') {
         const seasonNum = season && season > 0 ? season : 1;
@@ -592,25 +526,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             url: `https://vidfast.pro/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoPlay=true`,
             name: 'VidFast - Fallback',
             language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
-            name: 'VidSrc WTF - Fallback',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidjoy.pro/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
-            name: 'VidJoy - Fallback',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${episodeNum}`,
-            name: 'VidSrc XYZ - Fallback',
-            language: 'multi'
-          },
+          }
         );
       }
 
@@ -640,12 +556,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           },
           {
             type: 'iframe',
-            url: `https://player.vidzee.wtf/embed/movie/4k/${tmdbId}`,
-            name: 'VidZee 4K',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
             url: `https://player.videasy.net/movie/${tmdbId}`,
             name: 'Videasy',
             language: 'multi'
@@ -655,25 +565,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
             name: 'VidFast',
             language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidsrc.wtf/embed/movie/${tmdbId}`,
-            name: 'VidSrc WTF',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidjoy.pro/embed/movie/${tmdbId}`,
-            name: 'VidJoy',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`,
-            name: 'VidSrc XYZ',
-            language: 'multi'
-          },
+          }
         );
       } else if (type === 'tv') {
         const seasonNum = season && season > 0 ? season : 1;
@@ -696,25 +588,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             url: `https://vidfast.pro/tv/${tmdbId}/${seasonNum}/${episodeNum}?autoPlay=true`,
             name: 'VidFast',
             language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidsrc.wtf/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
-            name: 'VidSrc WTF',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidjoy.pro/embed/tv/${tmdbId}/${seasonNum}/${episodeNum}`,
-            name: 'VidJoy',
-            language: 'multi'
-          },
-          {
-            type: 'iframe',
-            url: `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${seasonNum}&episode=${episodeNum}`,
-            name: 'VidSrc XYZ',
-            language: 'multi'
-          },
+          }
         );
       }
 
@@ -852,17 +726,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         return; // Ignore these common third-party player errors
       }
 
-      // Detect ANY 404 errors from iframe sources - show button immediately
+      // Detect ANY 404 errors from iframe sources - show proper error message
       if (message.includes('404') && currentSource?.type === 'iframe') {
         console.log(`🚨 404 Error detected from iframe source: ${message}`);
-        console.log('🔄 Showing manual switch button due to 404 error');
+        console.log('🔄 Showing error message and switch button for 404 error');
+        setError(`Movie not found on ${currentSource.name}. Please try a different server.`);
+        setLoading(false);
         setShowSwitchSourceButton(true);
       }
 
-      // Also detect network errors and show button
+      // Also detect network errors and show proper error message
       if ((message.includes('Failed to fetch') || message.includes('NetworkError') || message.includes('ERR_')) && currentSource?.type === 'iframe') {
         console.log(`🚨 Network Error detected: ${message}`);
-        console.log('🔄 Showing manual switch button due to network error');
+        console.log('🔄 Showing error message and switch button for network error');
+        setError(`Network error on ${currentSource.name}. Please try a different server.`);
+        setLoading(false);
         setShowSwitchSourceButton(true);
       }
 
@@ -1733,7 +1611,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
-      // No automatic timeout - only show button on errors or manual trigger
+      // Set a timeout to show error message if iframe takes too long to load
+      iframeLoadTimeoutRef.current = setTimeout(() => {
+        if (!iframeContentDetected) {
+          console.log('⏰ Iframe loading timeout - showing error message');
+          setError(`Loading timeout on ${currentSource.name}. Please try a different server.`);
+          setLoading(false);
+          setShowSwitchSourceButton(true);
+        }
+      }, 15000); // 15 second timeout
     }
   }, [currentSource?.url, currentSource?.type, currentSource?.name]);
 
@@ -1805,13 +1691,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (hlsRef.current) {
       console.log('🧹 HLS instance already exists, destroying previous instance');
       try {
-        hlsRef.current.destroy();
+      hlsRef.current.destroy();
       } catch (error) {
         console.warn('Error destroying HLS instance:', error);
       }
       hlsRef.current = null;
     }
-    
+
     // Also clear the video source to prevent conflicts
     const video = videoRef.current;
     if (video) {
@@ -2103,13 +1989,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       isActive = false; // Mark as inactive
       if (hlsRef.current) {
         try {
-          hlsRef.current.destroy();
+        hlsRef.current.destroy();
           console.log('✅ HLS instance destroyed successfully');
         } catch (error) {
           console.warn('Error destroying HLS instance in cleanup:', error);
         }
         hlsRef.current = null;
-      }
+    }
       currentSourceUrlRef.current = '';
       setIsPlayPausePending(false);
     };
@@ -2647,8 +2533,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 clearTimeout(iframeLoadTimeoutRef.current);
               }
               
-              // Show manual switch button on error
-              console.log('⚠️ Iframe onError triggered - showing manual switch button');
+              // Show proper error message and manual switch button on error
+              console.log('⚠️ Iframe onError triggered - showing error message and switch button');
+              setError(`Failed to load ${currentSource?.name}. Please try a different server.`);
+              setLoading(false);
               setShowSwitchSourceButton(true);
             }}
           />
@@ -2699,9 +2587,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               
               {showServerDropdown && (
                 <div className="absolute top-full right-0 mt-1 bg-black/90 border border-blue-400/50 backdrop-blur-md rounded-lg shadow-2xl min-w-[140px]">
-                  {streamingSources.slice(0, 5).map((source, index) => (
-                    <button
-                      key={index}
+                  {streamingSources.map((source, index) => (
+                      <button
+                        key={index}
                       onClick={() => {
                         if (index !== currentSourceIndex && index < streamingSources.length) {
                           setCurrentSourceIndex(index);
@@ -2713,15 +2601,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                         setShowServerDropdown(false);
                       }}
                       className={`w-full text-left px-3 py-2 flex items-center gap-2 text-sm transition-colors ${
-                        index === currentSourceIndex 
+                          index === currentSourceIndex
                           ? 'bg-blue-600/20 text-blue-300' 
                           : 'text-white hover:bg-blue-600/20 hover:text-blue-300'
                       } ${index === 0 ? 'rounded-t-lg' : ''} ${index === Math.min(streamingSources.length, 5) - 1 ? 'rounded-b-lg' : ''}`}
                     >
                       <span className="text-lg">☁️</span>
                       <span>Server {index + 1}</span>
-                    </button>
-                  ))}
+                      </button>
+                    ))}
                 </div>
               )}
             </div>
@@ -2969,15 +2857,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   <div
                     className="absolute inset-0 w-full h-full cursor-pointer"
                     onClick={(e) => {
-                      e.stopPropagation();
+                    e.stopPropagation();
                       handleProgressBarClick(e);
-                    }}
-                    onMouseMove={handleRangeInputMouseMove}
-                    onMouseLeave={handleRangeInputMouseLeave}
-                    onTouchStart={handleRangeInputTouchStart}
-                    onTouchMove={handleRangeInputTouchMove}
-                    onTouchEnd={handleRangeInputTouchEnd}
-                  />
+                  }}
+                     onMouseMove={handleRangeInputMouseMove}
+                     onMouseLeave={handleRangeInputMouseLeave}
+                     onTouchStart={handleRangeInputTouchStart}
+                     onTouchMove={handleRangeInputTouchMove}
+                     onTouchEnd={handleRangeInputTouchEnd}
+                />
                 </div>
                 <div className="flex justify-between text-sm text-gray-300 mt-1">
                   <span>{formatTime(currentTime || 0)}</span>
