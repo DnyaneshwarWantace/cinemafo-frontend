@@ -1160,11 +1160,37 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Picture-in-Picture functionality
   const checkPipSupport = useCallback(() => {
-    return !!(document as any).pictureInPictureEnabled &&
-           videoRef.current &&
-           (videoRef.current as any).requestPictureInPicture &&
-           currentSource?.type === 'hls';
-  }, [currentSource]);
+    // Check basic PiP support
+    const hasBasicPipSupport = !!(document as any).pictureInPictureEnabled &&
+                               videoRef.current &&
+                               (videoRef.current as any).requestPictureInPicture &&
+                               currentSource?.type === 'hls';
+
+    if (!hasBasicPipSupport) return false;
+
+    // Mobile-specific checks
+    if (isMobile) {
+      // iOS Safari doesn't support PiP API, uses native video controls instead
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        console.log('iOS detected - PiP handled by native video controls');
+        return false; // Let iOS handle PiP natively
+      }
+
+      // Android Chrome supports PiP from version 70+
+      const isAndroidChrome = /Android.*Chrome/.test(navigator.userAgent);
+      if (isAndroidChrome) {
+        console.log('Android Chrome detected - PiP supported');
+        return true;
+      }
+
+      // Other mobile browsers might not support PiP
+      console.log('Mobile device detected - checking PiP API availability');
+      return hasBasicPipSupport;
+    }
+
+    return hasBasicPipSupport;
+  }, [currentSource, isMobile]);
 
   const requestPipPermission = useCallback(async () => {
     if (!checkPipSupport()) return false;
@@ -1519,7 +1545,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     };
 
     // Listen for user interactions
-    const events = ['click', 'keydown', 'touchstart', 'mousedown', 'pointerdown'];
+    const events = isMobile
+      ? ['touchstart', 'touchend', 'click', 'pointerdown'] // Mobile-focused events
+      : ['click', 'keydown', 'touchstart', 'mousedown', 'pointerdown']; // Desktop events
+
     events.forEach(event => {
       document.addEventListener(event, trackUserGesture, { passive: true });
     });
@@ -1546,21 +1575,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         isPipEnabled,
         pipPermissionGranted,
         isInPip,
-        isFullscreen
+        isFullscreen,
+        isMobile,
+        userAgent: navigator.userAgent
       });
 
       // Only handle PiP for HLS videos
       if (currentSource?.type !== 'hls' || !videoRef.current) return;
+
+      // Skip PiP on iOS - it has native PiP in video controls
+      if (isMobile && /iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        console.log('iOS device - skipping automatic PiP (use native video controls)');
+        return;
+      }
 
       if (document.hidden || document.visibilityState === 'hidden') {
         // Tab is hidden or minimized, enter PiP if video has been played
         const actuallyInPip = !!(document as any).pictureInPictureElement;
         if (!actuallyInPip && isPipEnabled) {
           console.log('Tab hidden - attempting to enter PiP...');
-          // Small delay to ensure tab switch is complete
+
+          // Mobile devices may need a longer delay
+          const delay = isMobile ? 300 : 100;
           setTimeout(async () => {
             await enterPip();
-          }, 100);
+          }, delay);
         }
       } else {
         // Tab is visible again, exit PiP
