@@ -297,6 +297,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showSkipIntro, setShowSkipIntro] = useState(false);
   const [skipIntroTimeRemaining, setSkipIntroTimeRemaining] = useState(90);
   const [isPlayPausePending, setIsPlayPausePending] = useState(false);
+
+  // Picture-in-Picture states
+  const [isPipEnabled, setIsPipEnabled] = useState(false);
+  const [pipPermissionGranted, setPipPermissionGranted] = useState(false);
+  const [isInPip, setIsInPip] = useState(false);
+  const [lastUserGesture, setLastUserGesture] = useState<number>(0);
   const [bufferStallCount, setBufferStallCount] = useState(0);
   const bufferStallTimeoutRef = useRef<NodeJS.Timeout>();
   // Removed showSourceSwitchNotification and sourceSwitchTimeoutRef - no more auto-switch notifications
@@ -319,7 +325,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
       
       // Test backend connectivity first (optional)
       try {
@@ -1152,25 +1158,120 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [onNextEpisode]);
 
+  // Picture-in-Picture functionality
+  const checkPipSupport = useCallback(() => {
+    return !!(document as any).pictureInPictureEnabled &&
+           videoRef.current &&
+           (videoRef.current as any).requestPictureInPicture &&
+           currentSource?.type === 'hls';
+  }, [currentSource]);
+
+  const requestPipPermission = useCallback(async () => {
+    if (!checkPipSupport()) return false;
+
+    // Always enable PiP optimistically - user gestures will be checked when needed
+    setPipPermissionGranted(true);
+    setIsPipEnabled(true);
+    console.log('PiP enabled optimistically - will require user gesture for activation');
+    return true;
+  }, [checkPipSupport]);
+
+  const enterPip = useCallback(async () => {
+    if (!checkPipSupport()) return;
+
+    // Check if already in PiP using the actual document state
+    const actuallyInPip = !!(document as any).pictureInPictureElement;
+    if (actuallyInPip) {
+      console.log('Already in PiP according to document state');
+      setIsInPip(true);
+      return;
+    }
+
+    // Check if we have a recent user gesture (within last 5 seconds)
+    const timeSinceGesture = Date.now() - lastUserGesture;
+    const hasRecentGesture = timeSinceGesture < 5000;
+
+    if (!hasRecentGesture) {
+      console.log('No recent user gesture for PiP, skipping automatic PiP');
+      return;
+    }
+
+    try {
+      const video = videoRef.current!;
+      console.log('Attempting to enter PiP...', {
+        readyState: video.readyState,
+        paused: video.paused,
+        videoWidth: video.videoWidth,
+        videoHeight: video.videoHeight,
+        currentTime: video.currentTime,
+        timeSinceGesture: timeSinceGesture
+      });
+
+      // Ensure video is in a state where PiP can be requested
+      if (video.readyState < 2 || video.paused) {
+        console.log('Video not ready for PiP, attempting to play first');
+        if (video.paused) {
+          await video.play();
+          // Wait a moment for video to start
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+
+      await video.requestPictureInPicture();
+      // Don't set state here - let the event handler do it
+      console.log('PiP request successful');
+    } catch (error) {
+      console.error('Failed to enter PiP:', error);
+      // Reset state to ensure we can try again
+      setIsInPip(false);
+
+      // If still getting user gesture errors, log helpful message
+      if (error.name === 'NotAllowedError' && error.message.includes('user gesture')) {
+        console.log('PiP requires user gesture - user needs to interact with the page before switching tabs');
+      }
+    }
+  }, [checkPipSupport, lastUserGesture]);
+
+  const exitPip = useCallback(async () => {
+    // Check actual document state rather than just our state
+    const actuallyInPip = !!(document as any).pictureInPictureElement;
+    if (!actuallyInPip) {
+      console.log('Not in PiP according to document state');
+      setIsInPip(false);
+      return;
+    }
+
+    try {
+      console.log('Exiting PiP...');
+      await (document as any).exitPictureInPicture();
+      // Don't set state here - let the event handler do it
+      console.log('PiP exit successful');
+    } catch (error) {
+      console.error('Failed to exit PiP:', error);
+      // Force state sync
+      setIsInPip(false);
+    }
+  }, []);
+
   // Video controls with debounce to prevent rapid play/pause errors
   // This prevents the "AbortError: The play() request was interrupted by a call to pause()" error
   // that occurs when users click the play/pause button too rapidly
-  const togglePlayPause = useCallback(() => {
+  const togglePlayPause = useCallback(async () => {
     console.log('togglePlayPause called, current isPlaying:', isPlaying);
     console.log('videoRef.current:', videoRef.current);
-    
+
     if (!videoRef.current || isPlayPausePending) {
       console.log('No video element found or operation pending');
       return;
     }
-    
+
     setIsPlayPausePending(true);
-    
+
     // Safety timeout to reset pending state if something goes wrong
     const safetyTimeout = setTimeout(() => {
       setIsPlayPausePending(false);
     }, 2000);
-    
+
     if (isPlaying) {
       console.log('Pausing video');
       videoRef.current.pause();
@@ -1181,6 +1282,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       }, 100);
     } else {
       console.log('Playing video');
+
+      // Request PiP permission when playing HLS videos
+      if (currentSource?.type === 'hls') {
+        await requestPipPermission();
+      }
+
       videoRef.current.play()
         .then(() => {
           console.log('Video play successful');
@@ -1197,14 +1304,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           setIsPlayPausePending(false);
         });
     }
-  }, [isPlaying, isPlayPausePending]);
+  }, [isPlaying, isPlayPausePending, pipPermissionGranted, currentSource, requestPipPermission]);
 
   const toggleMute = useCallback(() => {
     if (!videoRef.current) return;
-    
+
     videoRef.current.muted = !isMuted;
     setIsMuted(!isMuted);
   }, [isMuted]);
+
 
   // Skip forward 30 seconds
   const skipForward = useCallback(() => {
@@ -1375,11 +1483,107 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Prevent body scroll when video player is open
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, []);
+
+  // Track user interactions for PiP gesture requirement
+  useEffect(() => {
+    const trackUserGesture = () => {
+      setLastUserGesture(Date.now());
+    };
+
+    // Listen for user interactions
+    const events = ['click', 'keydown', 'touchstart', 'mousedown'];
+    events.forEach(event => {
+      document.addEventListener(event, trackUserGesture);
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, trackUserGesture);
+      });
+    };
+  }, []);
+
+  // Picture-in-Picture auto-enter/exit on tab switch
+  useEffect(() => {
+    if (!isPipEnabled) return;
+
+    const handleVisibilityChange = async () => {
+      console.log('PiP visibility change:', {
+        hidden: document.hidden,
+        visibilityState: document.visibilityState,
+        currentSource: currentSource?.type,
+        videoExists: !!videoRef.current,
+        videoPaused: videoRef.current?.paused,
+        isPlaying,
+        isPipEnabled,
+        pipPermissionGranted,
+        isInPip,
+        isFullscreen
+      });
+
+      // Only handle PiP for HLS videos
+      if (currentSource?.type !== 'hls' || !videoRef.current) return;
+
+      if (document.hidden || document.visibilityState === 'hidden') {
+        // Tab is hidden or minimized, enter PiP if video has been played
+        const actuallyInPip = !!(document as any).pictureInPictureElement;
+        if (!actuallyInPip && isPipEnabled) {
+          console.log('Tab hidden - attempting to enter PiP...');
+          // Small delay to ensure tab switch is complete
+          setTimeout(async () => {
+            await enterPip();
+          }, 100);
+        }
+      } else {
+        // Tab is visible again, exit PiP
+        const actuallyInPip = !!(document as any).pictureInPictureElement;
+        if (actuallyInPip) {
+          console.log('Tab visible - attempting to exit PiP...');
+          await exitPip();
+        }
+      }
+    };
+
+    const handlePipEnter = () => {
+      console.log('PiP entered via event');
+      setIsInPip(true);
+    };
+
+    const handlePipExit = () => {
+      console.log('PiP exited via event');
+      setIsInPip(false);
+    };
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    videoRef.current?.addEventListener('enterpictureinpicture', handlePipEnter);
+    videoRef.current?.addEventListener('leavepictureinpicture', handlePipExit);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      videoRef.current?.removeEventListener('enterpictureinpicture', handlePipEnter);
+      videoRef.current?.removeEventListener('leavepictureinpicture', handlePipExit);
+    };
+  }, [isPipEnabled, currentSource, isInPip, isPlaying, isFullscreen, enterPip, exitPip]);
+
+  // Sync PiP state with actual document state periodically
+  useEffect(() => {
+    const syncPipState = () => {
+      const actuallyInPip = !!(document as any).pictureInPictureElement;
+      if (actuallyInPip !== isInPip) {
+        console.log(`Syncing PiP state: ${isInPip} -> ${actuallyInPip}`);
+        setIsInPip(actuallyInPip);
+      }
+    };
+
+    const interval = setInterval(syncPipState, 1000);
+    return () => clearInterval(interval);
+  }, [isInPip]);
 
   // Fullscreen detection and orientation handling
   useEffect(() => {
@@ -1720,6 +1924,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       // Video event listeners
       video.addEventListener('loadedmetadata', () => {
         setDuration(video.duration);
+        // Try to enable PiP once metadata is loaded
+        if (currentSource?.type === 'hls') {
+          requestPipPermission();
+        }
       });
       
       video.addEventListener('timeupdate', () => {
