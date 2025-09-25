@@ -228,7 +228,7 @@ const Admin: React.FC = () => {
           <Button 
             onClick={() => setIsAuthenticated(false)}
             variant="outline"
-            className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+            className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
           >
             Logout
           </Button>

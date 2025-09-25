@@ -2312,11 +2312,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     };
 
     if (showServerDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
+      // Use a small delay for touch events to prevent immediate closing
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchend', handleClickOutside);
+      }, 100);
+      
       return () => {
+        clearTimeout(timeoutId);
         document.removeEventListener('mousedown', handleClickOutside);
-        document.removeEventListener('touchstart', handleClickOutside);
+        document.removeEventListener('touchend', handleClickOutside);
       };
     }
   }, [showServerDropdown]);
@@ -2413,7 +2418,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 className={`w-full text-left px-1 sm:px-3 py-0.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center justify-between touch-manipulation min-h-[28px] sm:min-h-[40px] ${playbackSpeed === speed ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
               >
                 <span>{speed === 1 ? 'Normal' : `${speed}x`}</span>
-                {playbackSpeed === speed && <span className="text-blue-400">✓</span>}
+                {playbackSpeed === speed && <span className="text-blue-500">✓</span>}
               </button>
             ))}
           </div>
@@ -2441,7 +2446,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 className={`w-full text-left px-1 sm:px-3 py-0.5 sm:py-2 rounded-lg text-xs sm:text-sm flex items-center justify-between touch-manipulation min-h-[28px] sm:min-h-[40px] ${selectedAudioTrack === track.id ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
               >
                 <span className="truncate">{track.name} ({track.language})</span>
-                {selectedAudioTrack === track.id && <span className="text-blue-400 flex-shrink-0">✓</span>}
+                {selectedAudioTrack === track.id && <span className="text-blue-500 flex-shrink-0">✓</span>}
               </button>
             ))}
           </div>
@@ -2570,27 +2575,40 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Server Selector - Always visible when multiple sources */}
         {streamingSources.length > 1 && (
-          <div className="fixed top-4 right-4 z-[9999] pointer-events-auto">
+          <div className="fixed top-4 right-2 sm:right-4 z-[9999] pointer-events-auto">
             <div className="relative" data-server-dropdown>
               <button
-                onClick={() => setShowServerDropdown(!showServerDropdown)}
-                className="bg-black/80 hover:bg-black/95 text-white px-3 py-2 rounded-lg backdrop-blur-md border border-blue-400/50 shadow-2xl hover:shadow-blue-400/20 transition-all duration-200 hover:scale-105 min-w-[140px] flex items-center gap-2"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Server dropdown button clicked, current state:', showServerDropdown);
+                  setShowServerDropdown(!showServerDropdown);
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Server dropdown button touched, current state:', showServerDropdown);
+                  setShowServerDropdown(!showServerDropdown);
+                }}
+                className="bg-black/80 hover:bg-black/95 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg backdrop-blur-md border border-blue-500 shadow-2xl hover:shadow-blue-500/20 transition-all duration-200 hover:scale-105 min-w-[100px] sm:min-w-[140px] flex items-center justify-center gap-1 sm:gap-2 touch-manipulation"
               >
-                <span className="text-lg">☁️</span>
-                <span className="text-sm font-medium">
-                  Server: {currentSourceIndex + 1}
+                <span className="text-sm sm:text-lg filter drop-shadow-[0_0_2px_rgba(59,130,246,0.8)]">☁️</span>
+                <span className="text-xs sm:text-sm font-medium">
+                  <span className="hidden sm:inline">Server: </span>{currentSourceIndex + 1}
                 </span>
-                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               
               {showServerDropdown && (
-                <div className="absolute top-full right-0 mt-1 bg-black/90 border border-blue-400/50 backdrop-blur-md rounded-lg shadow-2xl min-w-[140px]">
+                <div className="absolute top-full right-0 mt-1 bg-black/90 border border-blue-500 backdrop-blur-md rounded-lg shadow-2xl min-w-[100px] sm:min-w-[140px] max-h-[200px] overflow-y-auto">
                   {streamingSources.map((source, index) => (
                       <button
                         key={index}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         if (index !== currentSourceIndex && index < streamingSources.length) {
                           setCurrentSourceIndex(index);
                           setCurrentSource(streamingSources[index]);
@@ -2600,13 +2618,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                         }
                         setShowServerDropdown(false);
                       }}
-                      className={`w-full text-left px-3 py-2 flex items-center gap-2 text-sm transition-colors ${
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (index !== currentSourceIndex && index < streamingSources.length) {
+                          setCurrentSourceIndex(index);
+                          setCurrentSource(streamingSources[index]);
+                          setError(null);
+                          setLoading(true);
+                          setIframeContentDetected(false);
+                        }
+                        setShowServerDropdown(false);
+                      }}
+                      className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm transition-colors touch-manipulation ${
                           index === currentSourceIndex
                           ? 'bg-blue-600/20 text-blue-300' 
                           : 'text-white hover:bg-blue-600/20 hover:text-blue-300'
                       } ${index === 0 ? 'rounded-t-lg' : ''} ${index === Math.min(streamingSources.length, 5) - 1 ? 'rounded-b-lg' : ''}`}
                     >
-                      <span className="text-lg">☁️</span>
+                      <span className="text-sm sm:text-lg filter drop-shadow-[0_0_2px_rgba(59,130,246,0.8)]">☁️</span>
                       <span>Server {index + 1}</span>
                       </button>
                     ))}
@@ -2638,9 +2668,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   } as React.MouseEvent;
                   handleSkipIntro(syntheticEvent);
                 }}
-                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-blue-400/50 shadow-lg shadow-blue-500/30 hover:shadow-blue-400/50 hover:border-blue-300/70 touch-manipulation min-h-[44px]"
+                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-blue-500 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:border-blue-500 touch-manipulation min-h-[44px]"
               >
-                <SkipIntro className="w-4 h-4 text-blue-400" />
+                <SkipIntro className="w-4 h-4 text-blue-500" />
                 <span className="text-sm font-medium">Skip Intro ({Math.ceil(skipIntroTimeRemaining)}s)</span>
               </Button>
             )}
@@ -2706,7 +2736,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {error && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <div className="text-center max-w-md">
-                              <p className="text-blue-400 mb-4">{error}</p>
+                              <p className="text-blue-500 mb-4">{error}</p>
               <div className="flex gap-4 justify-center">
               <Button 
                 onClick={() => {
@@ -2791,7 +2821,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }
                 onClose();
               }}
-              className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 touch-manipulation min-h-[44px] min-w-[44px]"
+              className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation min-h-[44px] min-w-[44px]"
             >
               <ArrowLeft size={20} />
             </button>
@@ -2845,7 +2875,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   {/* Hover indicator */}
                   {showPreview && previewTime !== null && (
                     <div 
-                      className="absolute top-0 h-full w-1 bg-blue-400 rounded-full shadow-lg pointer-events-none z-10 transition-all duration-150 ease-out"
+                      className="absolute top-0 h-full w-1 bg-blue-500 rounded-full shadow-lg pointer-events-none z-10 transition-all duration-150 ease-out"
                       style={{ 
                         left: `${(previewTime / (duration || 1)) * 100}%`,
                         transform: 'translateX(-50%)'
@@ -2875,7 +2905,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 {/* Timestamp preview tooltip - positioned outside progress bar */}
                 {showPreview && previewTime !== null && (
                   <div 
-                    className={`absolute bottom-full left-0 transform -translate-y-2 bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-400/50 shadow-2xl transition-all duration-75 ease-out ${isFullscreen ? 'fullscreen-tooltip' : ''}`}
+                    className={`absolute bottom-full left-0 transform -translate-y-2 bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-500 shadow-2xl transition-all duration-75 ease-out ${isFullscreen ? 'fullscreen-tooltip' : ''}`}
                     style={{ 
                       left: `${Math.max(0, Math.min(100, (previewTime / (duration || 1)) * 100))}%`,
                       transform: 'translateX(-50%) translateY(-8px)',
@@ -3108,7 +3138,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               console.log('🎬 Iframe back button touched (mobile)');
               onClose();
             }}
-            className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 touch-manipulation min-h-[44px] min-w-[44px]"
+            className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation min-h-[44px] min-w-[44px]"
           >
             <ArrowLeft size={20} />
           </button>

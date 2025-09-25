@@ -50,7 +50,7 @@ const NotFound = () => {
         <div className="space-y-4">
           <button 
             onClick={handleGoBack}
-            className="w-full px-6 py-3 border-2 border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg font-medium transition-all duration-300 cursor-pointer"
+            className="w-full px-6 py-3 border-2 border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white rounded-lg font-medium transition-all duration-300 cursor-pointer"
           >
             Go Back
           </button>

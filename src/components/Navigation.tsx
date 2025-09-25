@@ -447,7 +447,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                             }}
                             className={`p-3 text-center cursor-pointer border-t border-gray-700/50 ${
                               selectedSearchIndex === 4 
-                                ? 'bg-blue-600/20 text-blue-300 border-blue-500/50' 
+                                ? 'bg-blue-600/20 text-blue-300 border-blue-500' 
                                 : 'text-blue-400 hover:text-blue-300'
                             }`}
                           >

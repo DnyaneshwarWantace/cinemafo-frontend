@@ -256,7 +256,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
         <div className="absolute top-0 left-0 right-0 z-20 h-20 bg-gradient-to-b from-black/50 to-transparent">
           <button
             onClick={handleClose}
-            className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm border border-blue-500/50 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            className="absolute top-4 left-4 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all duration-200 backdrop-blur-sm border border-blue-500 shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Close modal"
           >
             <ArrowLeft className="w-6 h-6" />

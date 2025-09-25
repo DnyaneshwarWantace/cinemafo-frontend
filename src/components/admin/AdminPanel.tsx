@@ -1031,7 +1031,7 @@ const AdminPanel: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => window.open('/', '_blank')}
-                className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white"
+                className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
               >
                 <Home className="w-4 h-4 mr-2" />
                 View Site
@@ -1611,7 +1611,7 @@ const AdminPanel: React.FC = () => {
                             <Input
                               value={adConfig.cloudinaryUrl}
                               readOnly
-                              className={adConfig.cloudinaryUrl.startsWith('http') ? "bg-blue-900/20 border-blue-600 text-blue-300" : "bg-yellow-900/20 border-yellow-600 text-yellow-300"}
+                              className={adConfig.cloudinaryUrl.startsWith('http') ? "bg-blue-900/20 border-blue-500 text-blue-300" : "bg-yellow-900/20 border-yellow-600 text-yellow-300"}
                             />
                             <div className="flex items-center gap-2 mt-1">
                               <p className={`text-xs ${adConfig.cloudinaryUrl.startsWith('http') ? 'text-blue-400' : 'text-yellow-400'}`}>
@@ -1703,7 +1703,7 @@ const AdminPanel: React.FC = () => {
                     { name: 'Travel Ad', imageUrl: 'https://picsum.photos/400/200?random=travel', clickUrl: 'https://travel-site.com', category: 'Travel' },
                     { name: 'Education Ad', imageUrl: 'https://picsum.photos/400/200?random=education', clickUrl: 'https://edu-site.com', category: 'Education' }
                   ].map((template) => (
-                    <div key={template.name} className="bg-gray-700/50 rounded-lg p-4 border border-gray-600 hover:border-blue-400 transition-colors">
+                    <div key={template.name} className="bg-gray-700/50 rounded-lg p-4 border border-gray-600 hover:border-blue-500 transition-colors">
                       <img 
                         src={template.imageUrl} 
                         alt={template.name} 
