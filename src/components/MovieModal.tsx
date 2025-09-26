@@ -126,12 +126,26 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
       onClose();
       setShowTVShowPlayer(true);
     } else {
+      // Check for existing watch history to resume from where left off
+      const historyItem = getHistoryItem(movie.id, 'movie');
+      
       // Navigate to video player page for movies
       const params = new URLSearchParams({
         id: movie.id.toString(),
         type: 'movie',
         title: movie.title || movie.name || 'Movie'
       });
+      
+      // Add time parameter if there's existing watch history
+      if (historyItem && historyItem.currentTime > 10 && historyItem.progress < 90) {
+        params.append('time', historyItem.currentTime.toString());
+        console.log('🎬 Resuming movie from watch history:', {
+          id: movie.id,
+          currentTime: historyItem.currentTime,
+          progress: historyItem.progress
+        });
+      }
+      
       navigate(`/watch?${params.toString()}`);
     }
   };

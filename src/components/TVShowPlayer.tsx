@@ -143,6 +143,9 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
   }, [show.id, selectedSeason]);
 
   const handlePlayEpisode = (episodeNumber: number) => {
+    // Check for existing watch history to resume from where left off
+    const historyItem = getHistoryItem(show.id, 'tv', selectedSeason, episodeNumber);
+    
     // Navigate to video player page for TV shows
     const params = new URLSearchParams({
       id: show.id.toString(),
@@ -151,6 +154,19 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
       episode: episodeNumber.toString(),
       title: show.name || 'TV Show'
     });
+    
+    // Add time parameter if there's existing watch history
+    if (historyItem && historyItem.currentTime > 10 && historyItem.progress < 90) {
+      params.append('time', historyItem.currentTime.toString());
+      console.log('🎬 Resuming TV episode from watch history:', {
+        id: show.id,
+        season: selectedSeason,
+        episode: episodeNumber,
+        currentTime: historyItem.currentTime,
+        progress: historyItem.progress
+      });
+    }
+    
     navigate(`/watch?${params.toString()}`);
   };
 
