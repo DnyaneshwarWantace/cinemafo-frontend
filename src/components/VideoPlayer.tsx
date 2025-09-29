@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Hls from 'hls.js';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
-import { X, Play, Pause, Volume2, VolumeX, Settings, Maximize, Minimize, Languages, SkipForward, SkipBack, ArrowLeft, Zap, RefreshCw, SkipForward as NextEpisode, Zap as SkipIntro } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX, Settings, Maximize, Minimize, Languages, SkipForward, SkipBack, ArrowLeft, Zap, RefreshCw, SkipForward as NextEpisode, Zap as SkipIntro, Info } from 'lucide-react';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import api, { Movie, TVShow } from '@/services/api';
 
@@ -153,7 +153,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   console.log('🎬 VideoPlayer props:', { tmdbId, type, season, episode, title, propTmdbId, propType });
 
   // Use prop callbacks if provided, otherwise use navigation
-  const onClose = propOnClose || (() => navigate(-1));
+  const onClose = propOnClose || (() => {
+    // For TV shows, go back to home page instead of previous page in history
+    // This prevents going back to previous episodes
+    if (type === 'tv') {
+      navigate('/');
+    } else {
+      navigate(-1);
+    }
+  });
 
   // If no valid tmdbId, don't render the player
   if (!tmdbId || tmdbId === 0) {
@@ -223,6 +231,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           try {
             const response = await api.getMovieDetails(tmdbId);
             content = response.data;
+            // Set actual duration from movie runtime (in minutes, convert to seconds)
+            if (content.runtime) {
+              setActualDuration(content.runtime * 60);
+              console.log(`🎬 Movie duration set to: ${content.runtime} minutes (${content.runtime * 60} seconds)`);
+            }
           } catch (err) {
             console.error('Failed to fetch movie details for progress update:', err);
             return;
@@ -231,6 +244,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           try {
             const response = await api.getShowDetails(tmdbId);
             content = response.data;
+            // Set actual duration from TV show runtime (in minutes, convert to seconds)
+            if (content.runtime) {
+              setActualDuration(content.runtime * 60);
+              console.log(`🎬 TV show duration set to: ${content.runtime} minutes (${content.runtime * 60} seconds)`);
+            }
           } catch (err) {
             console.error('Failed to fetch show details for progress update:', err);
             return;
@@ -240,7 +258,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         if (content) {
           updateProgress(
             content,
-            currentTime,
+            getTotalWatchTime(),
             duration,
             type,
             type === 'tv' ? season : undefined,
@@ -313,6 +331,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [iframeContentDetected, setIframeContentDetected] = useState(false);
   const [showSwitchSourceButton, setShowSwitchSourceButton] = useState(false);
   const [showServerDropdown, setShowServerDropdown] = useState(false);
+  const [showServerInfo, setShowServerInfo] = useState(false);
+  const [preservedTime, setPreservedTime] = useState<number>(0);
+  const [hlsFailed, setHlsFailed] = useState(false);
+  const [totalWatchTime, setTotalWatchTime] = useState<number>(0); // Total time watched across all servers
+  const [lastServerSwitchTime, setLastServerSwitchTime] = useState<number>(0); // Time when last server switch happened
+  const [actualDuration, setActualDuration] = useState<number>(0); // Actual duration from API
+  const [playerCurrentTime, setPlayerCurrentTime] = useState<number>(0); // Current time from player
+  const [playerDuration, setPlayerDuration] = useState<number>(0); // Duration from player
+  const [playerProgress, setPlayerProgress] = useState<any>(null); // Full progress data from player
+  const [iframeStartTime, setIframeStartTime] = useState<number>(0); // When iframe started playing
+  const [iframeElapsedTime, setIframeElapsedTime] = useState<number>(0); // Manual elapsed time tracking
   
   // Timestamp preview state
   const [previewTime, setPreviewTime] = useState<number | null>(null);
@@ -627,6 +656,35 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         clearTimeout(iframeLoadTimeoutRef.current);
       }
       
+      // Preserve current playback time and pass it to the next server
+      const video = videoRef.current;
+      let currentPlaybackTime = 0;
+      
+      if (currentSource?.type === 'hls' && video && !isNaN(video.currentTime) && video.currentTime > 0) {
+        currentPlaybackTime = video.currentTime;
+      } else if (currentSource?.type === 'iframe' && playerCurrentTime > 0) {
+        currentPlaybackTime = playerCurrentTime;
+      }
+      
+      if (currentPlaybackTime > 0) {
+        setPreservedTime(currentPlaybackTime);
+        setTotalWatchTime(currentPlaybackTime);
+        console.log(`🔄 Auto-switch: Preserving timeline at ${currentPlaybackTime.toFixed(2)}s from ${currentSource?.type} server ${currentSourceIndex + 1}`);
+        
+        // Save current progress to continue watching before auto-switching servers
+        if (onProgressUpdate && currentSource?.type === 'iframe') {
+          const duration = playerDuration > 0 ? playerDuration : (actualDuration || (type === 'tv' ? 2700 : 7200));
+          console.log(`💾 Saving iframe progress before auto-switch: ${currentPlaybackTime.toFixed(2)}s / ${duration}s`);
+          onProgressUpdate(currentPlaybackTime, duration);
+        }
+      }
+      
+      // Reset player tracking for new server
+      setPlayerCurrentTime(0);
+      setPlayerDuration(0);
+      setPlayerProgress(null);
+      setLastServerSwitchTime(0);
+      
       setCurrentSourceIndex(nextIndex);
       setCurrentSource(streamingSources[nextIndex]);
       setError(null);
@@ -757,6 +815,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     // Reset initialization flag when episode/season changes
     initializedRef.current = false;
     setCurrentSourceIndex(0);
+    setHlsFailed(false); // Reset HLS failure flag
+    setTotalWatchTime(0); // Reset total watch time
+    setLastServerSwitchTime(0); // Reset server switch time
       fetchStreamUrls();
     
     // Cleanup function to reset initialization when component unmounts
@@ -783,12 +844,143 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [currentSource, streamingSources.length, switchToNextSource]);
 
+  // Real-time iframe progress updates using player events
+  useEffect(() => {
+    if (currentSource?.type === 'iframe' && playerCurrentTime > 0 && onProgressUpdate) {
+      // Trigger progress update when player time changes
+      const duration = playerDuration > 0 ? playerDuration : (actualDuration || videoRef.current?.duration || (type === 'tv' ? 2700 : 7200));
+      console.log(`📊 Iframe progress update: ${playerCurrentTime.toFixed(2)}s / ${duration}s (from player API)`);
+      onProgressUpdate(playerCurrentTime, duration);
+    }
+  }, [currentSource?.type, playerCurrentTime, playerDuration, onProgressUpdate, actualDuration, type]);
+
+  // Periodic iframe progress save to ensure continue watching is updated
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    if (currentSource?.type === 'iframe' && onProgressUpdate) {
+      // Save progress every 10 seconds for iframe content
+      intervalId = setInterval(() => {
+        const duration = playerDuration > 0 ? playerDuration : (actualDuration || videoRef.current?.duration || (type === 'tv' ? 2700 : 7200));
+        
+        // Use player time if available, otherwise use manual tracking
+        let currentTime = playerCurrentTime;
+        if (currentTime <= 0 && iframeStartTime > 0) {
+          // Manual time tracking: start time + elapsed time
+          const elapsedTime = (Date.now() - iframeStartTime) / 1000;
+          const startTime = preservedTime > 0 ? preservedTime : initialTime;
+          currentTime = startTime + elapsedTime;
+          setIframeElapsedTime(currentTime);
+          console.log(`🕐 Manual iframe tracking: start=${startTime}s, elapsed=${elapsedTime.toFixed(2)}s, current=${currentTime.toFixed(2)}s`);
+        }
+        
+        if (currentTime > 0) {
+          console.log(`💾 Periodic iframe save: ${currentTime.toFixed(2)}s / ${duration}s`);
+          onProgressUpdate(currentTime, duration);
+        }
+      }, 10000); // Every 10 seconds
+    }
+    
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [currentSource?.type, playerCurrentTime, playerDuration, onProgressUpdate, actualDuration, type, iframeStartTime, preservedTime, initialTime]);
+
   // Listen for iframe content detection and user interaction
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       // Check if message is from our iframe and indicates content is working
       if (event.origin.includes('vidzee') || event.origin.includes('player')) {
         if (event.data && typeof event.data === 'object') {
+          // Handle VidZee MEDIA_DATA messages for watch progress
+          if (event.data.type === 'MEDIA_DATA') {
+            console.log('📺 Received media data from VidZee:', event.data);
+            const mediaData = event.data.data;
+            
+            // Store progress in localStorage as per VidZee documentation
+            if (mediaData && mediaData.id) {
+              const progressData = {
+                [mediaData.id]: {
+                  id: mediaData.id,
+                  type: mediaData.type || 'movie',
+                  title: mediaData.title,
+                  poster_path: mediaData.poster_path,
+                  progress: {
+                    watched: mediaData.progress?.watched || 0,
+                    duration: mediaData.progress?.duration || 0
+                  },
+                  last_season_watched: mediaData.last_season_watched,
+                  last_episode_watched: mediaData.last_episode_watched,
+                  show_progress: mediaData.show_progress,
+                  last_updated: Date.now()
+                }
+              };
+              
+              // Get existing progress and merge
+              const existingProgress = JSON.parse(localStorage.getItem('vidZeeProgress') || '{}');
+              const updatedProgress = { ...existingProgress, ...progressData };
+              localStorage.setItem('vidZeeProgress', JSON.stringify(updatedProgress));
+              
+              console.log('💾 Updated VidZee progress in localStorage:', progressData);
+            }
+          }
+          
+          // Handle VidZee MEDIA_DATA for progress tracking (official API)
+          if (event.data.type === 'MEDIA_DATA') {
+            console.log('📺 VidZee MEDIA_DATA received:', event.data);
+            const mediaData = event.data.data;
+            if (mediaData && mediaData.progress) {
+              setPlayerCurrentTime(mediaData.progress.watched || 0);
+              setPlayerDuration(mediaData.progress.duration || 0);
+              setPlayerProgress(mediaData);
+              console.log(`📊 VidZee progress: ${mediaData.progress.watched}s / ${mediaData.progress.duration}s`);
+            }
+          }
+          
+          // Handle VidZee PLAYER_EVENT for real-time tracking (official API)
+          if (event.data.type === 'PLAYER_EVENT') {
+            console.log('📺 VidZee PLAYER_EVENT received:', event.data);
+            const { event: eventType, currentTime, duration, mtmdbId, mediaType, season, episode } = event.data.data;
+            setPlayerCurrentTime(currentTime || 0);
+            setPlayerDuration(duration || 0);
+            console.log(`📊 VidZee ${eventType}: ${currentTime}s / ${duration}s`);
+            
+            // Store full progress data for continue watching
+            if (mtmdbId && mediaType) {
+              const progressData = {
+                id: mtmdbId,
+                type: mediaType,
+                currentTime: currentTime || 0,
+                duration: duration || 0,
+                season: season,
+                episode: episode,
+                lastUpdated: Date.now()
+              };
+              setPlayerProgress(progressData);
+            }
+          }
+          
+          // Handle Videasy progress messages (official API)
+          if (event.data.type === 'progress' || event.data.type === 'timeupdate') {
+            console.log('📺 Videasy progress received:', event.data);
+            if (event.data.currentTime !== undefined) {
+              setPlayerCurrentTime(event.data.currentTime);
+              setPlayerDuration(event.data.duration || 0);
+              console.log(`📊 Videasy progress: ${event.data.currentTime}s / ${event.data.duration || 0}s`);
+            }
+          }
+          
+          // Handle VidFast progress messages (official API)
+          if (event.data.type === 'timeupdate' || event.data.type === 'seeked') {
+            console.log('📺 VidFast progress received:', event.data);
+            if (event.data.time !== undefined) {
+              setPlayerCurrentTime(event.data.time);
+              setPlayerDuration(event.data.duration || 0);
+              console.log(`📊 VidFast progress: ${event.data.time}s / ${event.data.duration || 0}s`);
+            }
+          }
+          
           // If we get any message from the iframe, content is likely working
           if (!iframeContentDetected) {
             console.log('✅ Iframe content detected - source is working');
@@ -877,11 +1069,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         // Generate thumbnail every 60 seconds (every 6th progress update)
         const shouldGenerateThumbnail = Math.floor(currentTime / 60) > Math.floor((currentTime - 10) / 60);
+        const totalWatchTimeNow = getTotalWatchTime();
         
         if (shouldGenerateThumbnail && video) {
-          onProgressUpdate(currentTime, duration, video);
+          onProgressUpdate(totalWatchTimeNow, duration, video);
         } else {
-          onProgressUpdate(currentTime, duration);
+          onProgressUpdate(totalWatchTimeNow, duration);
         }
       }
     }
@@ -945,6 +1138,116 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
     setShowSkipIntro(false);
   }, [skipIntroTimeRemaining]);
+
+  // Calculate total watch time across all servers
+  const getTotalWatchTime = useCallback(() => {
+    const video = videoRef.current;
+    
+    // If currently on HLS server
+    if (currentSource?.type === 'hls' && video && !isNaN(video.currentTime) && video.currentTime > 0) {
+      const timeWatchedOnCurrentServer = video.currentTime - lastServerSwitchTime;
+      return totalWatchTime + Math.max(0, timeWatchedOnCurrentServer);
+    }
+    
+    // If currently on iframe server - use player's current time
+    if (currentSource?.type === 'iframe' && playerCurrentTime > 0) {
+      console.log(`🎬 Iframe position (from player): ${playerCurrentTime.toFixed(2)}s`);
+      return playerCurrentTime;
+    }
+    
+    return totalWatchTime;
+  }, [totalWatchTime, lastServerSwitchTime, currentSource?.type, playerCurrentTime]);
+
+  // Build iframe URL with time parameter for timeline preservation
+  const buildIframeUrlWithTime = useCallback((url: string, timeInSeconds: number) => {
+    if (timeInSeconds <= 0) return url;
+    
+    const timeInMinutes = Math.floor(timeInSeconds / 60);
+    const remainingSeconds = Math.floor(timeInSeconds % 60);
+    
+    // Try different parameter formats based on the player
+    const separator = url.includes('?') ? '&' : '?';
+    
+    let urlWithTime = url;
+    
+    // Videasy player supports progress parameter
+    if (url.includes('player.videasy.net') || url.includes('videasy.net')) {
+      urlWithTime = `${url}${separator}progress=${Math.floor(timeInSeconds)}`;
+    }
+    // VidFast player - try different parameters
+    else if (url.includes('vidfast.pro')) {
+      urlWithTime = `${url}${separator}t=${Math.floor(timeInSeconds)}&time=${timeInMinutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    // VidZee player - try generic parameters
+    else if (url.includes('vidzee.wtf') || url.includes('player.vidzee.wtf')) {
+      urlWithTime = `${url}${separator}t=${Math.floor(timeInSeconds)}&progress=${Math.floor(timeInSeconds)}`;
+    }
+    // Generic fallback
+    else {
+      urlWithTime = `${url}${separator}t=${Math.floor(timeInSeconds)}&time=${timeInMinutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    
+    console.log(`🔄 Building iframe URL with time: ${timeInSeconds}s (${timeInMinutes}:${remainingSeconds.toString().padStart(2, '0')})`);
+    console.log(`🔄 Original URL: ${url}`);
+    console.log(`🔄 URL with time: ${urlWithTime}`);
+    return urlWithTime;
+  }, []);
+
+  // Memoize iframe URL to prevent repeated rebuilding
+  const iframeUrl = useMemo(() => {
+    if (!currentSource?.url) return '';
+    
+    // Use preservedTime (from server switch) or initialTime (from continue watching)
+    const timeToUse = preservedTime > 0 ? preservedTime : initialTime;
+    
+    if (timeToUse > 0) {
+      console.log(`🔄 Building iframe URL with time: ${timeToUse}s (preserved: ${preservedTime}s, initial: ${initialTime}s)`);
+      return buildIframeUrlWithTime(currentSource.url, timeToUse);
+    }
+    
+    return currentSource.url;
+  }, [currentSource?.url, preservedTime, initialTime, buildIframeUrlWithTime]);
+
+  // Server switching with timeline preservation and watch time accumulation
+  const switchServerWithTimeline = useCallback((newSourceIndex: number) => {
+    if (newSourceIndex !== currentSourceIndex && newSourceIndex < streamingSources.length) {
+      // Preserve current playback time and pass it to the next server
+      const video = videoRef.current;
+      let currentPlaybackTime = 0;
+      
+      if (currentSource?.type === 'hls' && video && !isNaN(video.currentTime) && video.currentTime > 0) {
+        currentPlaybackTime = video.currentTime;
+      } else if (currentSource?.type === 'iframe' && playerCurrentTime > 0) {
+        currentPlaybackTime = playerCurrentTime;
+      }
+      
+      if (currentPlaybackTime > 0) {
+        setPreservedTime(currentPlaybackTime);
+        setTotalWatchTime(currentPlaybackTime);
+        console.log(`🔄 Manual switch: Preserving timeline at ${currentPlaybackTime.toFixed(2)}s from ${currentSource?.type} server ${currentSourceIndex + 1} to server ${newSourceIndex + 1}`);
+        
+        // Save current progress to continue watching before switching servers
+        if (onProgressUpdate && currentSource?.type === 'iframe') {
+          const duration = playerDuration > 0 ? playerDuration : (actualDuration || (type === 'tv' ? 2700 : 7200));
+          console.log(`💾 Saving iframe progress before server switch: ${currentPlaybackTime.toFixed(2)}s / ${duration}s`);
+          onProgressUpdate(currentPlaybackTime, duration);
+        }
+      }
+      
+      // Reset player tracking for new server
+      setPlayerCurrentTime(0);
+      setPlayerDuration(0);
+      setPlayerProgress(null);
+      setLastServerSwitchTime(0);
+      
+      setCurrentSourceIndex(newSourceIndex);
+      setCurrentSource(streamingSources[newSourceIndex]);
+      setError(null);
+      setLoading(true);
+      setIframeContentDetected(false);
+      setHlsFailed(false); // Reset HLS failure flag when manually switching
+    }
+  }, [currentSourceIndex, streamingSources, lastServerSwitchTime, totalWatchTime]);
 
   // Next episode function
   const handleNextEpisode = useCallback((e: React.MouseEvent) => {
@@ -1304,12 +1607,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             toggleFullscreen();
           } else {
             // Capture final screenshot before closing
-            if (videoRef.current && onProgressUpdate) {
-              const currentTime = videoRef.current.currentTime;
-              const duration = videoRef.current.duration;
+            if (onProgressUpdate) {
+              // Use iframe time directly if currently on iframe (replace, don't add)
+              let finalTotalTime = totalWatchTime;
+              if (currentSource?.type === 'iframe' && playerCurrentTime > 0) {
+                finalTotalTime = playerCurrentTime;
+                console.log(`📊 Escape: Using player current time: ${finalTotalTime.toFixed(2)}s (${Math.floor(finalTotalTime/60)}:${Math.floor(finalTotalTime%60).toString().padStart(2, '0')})`);
+              } else {
+                finalTotalTime = getTotalWatchTime();
+              }
+              
+              const duration = actualDuration || videoRef.current?.duration || (type === 'tv' ? 2700 : 7200);
               console.log('🎬 Closing video - calling onProgressUpdate with video element');
-              console.log('🎬 Current time:', currentTime, 'Duration:', duration);
-              onProgressUpdate(currentTime, duration, videoRef.current);
+              console.log('🎬 Final total watch time:', finalTotalTime, 'Duration:', duration);
+              onProgressUpdate(finalTotalTime, duration, videoRef.current);
             }
             onClose();
           }
@@ -1832,16 +2143,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           return;
         }
         
-        // Handle fatal errors - auto-switch for 404 errors, manual switch for others
+        // Handle fatal errors - auto-switch only for CORS and 404 errors
         console.log('Fatal HLS error:', data);
         
-        // Check if it's a 404 error (movie not found) - auto-switch to next source
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && 
+        // Check if it's a CORS error (origin blocked) or 404 error - auto-switch to next source
+        const isCorsError = data.type === Hls.ErrorTypes.NETWORK_ERROR && 
             (data.details === 'manifestLoadError' || data.details === 'levelLoadError') &&
-            data.response && data.response.code === 404) {
-          console.log('🚨 404 Error from Niggaflix - auto-switching to next source');
-          setError('Movie not found on Niggaflix, switching to alternative source...');
-          // Auto-switch will be handled by the useEffect that monitors the error state
+                           (!data.response || data.response.code === 0); // CORS errors often have code 0 or no response
+        
+        const is404Error = data.type === Hls.ErrorTypes.NETWORK_ERROR && 
+                          (data.details === 'manifestLoadError' || data.details === 'levelLoadError') &&
+                          data.response && data.response.code === 404;
+        
+        if (isCorsError || is404Error) {
+          console.log('🚨 HLS server failed (CORS or 404 error), auto-switching to next source');
+          setHlsFailed(true); // Trigger auto-switch
+          // Auto-switch will be handled by the useEffect that monitors the hlsFailed state
+          // No error message - silent switch
         } else {
           // For other fatal errors, show manual switch button
           console.log('Fatal HLS error, showing manual switch button');
@@ -1858,6 +2176,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       // Video event listeners
       video.addEventListener('loadedmetadata', () => {
         setDuration(video.duration);
+        
+        // Set initial time if provided, or restore preserved time from server switch
+        if (preservedTime > 0) {
+          video.currentTime = preservedTime;
+          setCurrentTime(preservedTime);
+          setPreservedTime(0); // Reset preserved time
+          console.log('🔄 Restored timeline to:', preservedTime);
+        } else if (initialTime > 0) {
+          video.currentTime = initialTime;
+          setCurrentTime(initialTime);
+          setTotalWatchTime(initialTime); // Set total watch time to initial time for continue watching
+          setLastServerSwitchTime(initialTime); // Set server switch time to initial time
+          console.log('Set initial time to:', initialTime, 'Total watch time set to:', initialTime);
+        }
+        
         // Try to enable PiP once metadata is loaded
         if (currentSource?.type === 'hls') {
           requestPipPermission();
@@ -1890,7 +2223,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         // Initial progress update when video starts playing
         if (onProgressUpdate && video.duration > 0) {
           console.log('🎬 Initial progress update on play start');
-          onProgressUpdate(video.currentTime, video.duration);
+          onProgressUpdate(getTotalWatchTime(), video.duration);
         }
       });
       video.addEventListener('pause', () => setIsPlaying(false));
@@ -1965,6 +2298,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       // Safari native HLS support
       video.src = currentSource.url;
+      
+      // Handle initial time for continue watching
+      video.addEventListener('loadedmetadata', () => {
+        if (preservedTime > 0) {
+          video.currentTime = preservedTime;
+          setCurrentTime(preservedTime);
+          setPreservedTime(0); // Reset preserved time
+          console.log('🔄 Safari HLS: Restored timeline to:', preservedTime);
+        } else if (initialTime > 0) {
+          video.currentTime = initialTime;
+          setCurrentTime(initialTime);
+          setTotalWatchTime(initialTime); // Set total watch time to initial time for continue watching
+          setLastServerSwitchTime(initialTime); // Set server switch time to initial time
+          console.log('Safari HLS: Set initial time to:', initialTime, 'Total watch time set to:', initialTime);
+        }
+      });
       
       // Don't auto-play if we're resuming from a specific time (continue watching)
       if (initialTime === 0) {
@@ -2076,19 +2425,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Auto-switch logic only for actual API failures (404 errors), not timeline issues
+  // Auto-switch logic: Only from HLS to first iframe, not between iframe servers
   useEffect(() => {
-    // Only auto-switch if we're on Niggaflix (HLS) and there's an actual error
-    if (currentSource?.type === 'hls' && streamingSources.length > 1 && error) {
-      console.log('🚨 Niggaflix API failed, auto-switching to next source');
+    // Only auto-switch if we're on HLS (main server) and HLS failed (CORS or 404)
+    // Don't auto-switch between iframe servers - let user choose manually
+    if (currentSource?.type === 'hls' && streamingSources.length > 1 && hlsFailed) {
+      console.log('🚨 HLS server failed (CORS or 404), auto-switching to first iframe server');
       // Add a small delay to prevent rapid switching
       const switchTimeout = setTimeout(() => {
         switchToNextSource();
+        setHlsFailed(false); // Reset the flag after switching
       }, 2000); // 2 second delay
       
       return () => clearTimeout(switchTimeout);
     }
-  }, [error, currentSource, streamingSources.length, switchToNextSource]);
+  }, [hlsFailed, currentSource, streamingSources.length, switchToNextSource]);
 
 
 
@@ -2305,16 +2656,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const serverDropdown = document.querySelector('[data-server-dropdown]');
+      const serverInfo = document.querySelector('[data-server-info]');
       
       if (serverDropdown && !serverDropdown.contains(event.target as Node)) {
         setShowServerDropdown(false);
       }
+      
+      if (serverInfo && !serverInfo.contains(event.target as Node)) {
+        setShowServerInfo(false);
+      }
     };
 
-    if (showServerDropdown) {
+    if (showServerDropdown || showServerInfo) {
       // Use a small delay for touch events to prevent immediate closing
       const timeoutId = setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
         document.addEventListener('touchend', handleClickOutside);
       }, 100);
       
@@ -2324,7 +2680,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         document.removeEventListener('touchend', handleClickOutside);
       };
     }
-  }, [showServerDropdown]);
+  }, [showServerDropdown, showServerInfo]);
 
   // Settings menu hover timeout
   const settingsTimeoutRef = useRef<NodeJS.Timeout>();
@@ -2510,7 +2866,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           <iframe
             key={`iframe-${currentSource?.url}-no-sandbox`}
             ref={iframeRef}
-            src={currentSource?.url}
+            src={iframeUrl}
             className="w-full h-full border-0"
             allowFullScreen
             allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
@@ -2529,6 +2885,65 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               }
               
               console.log('✅ Iframe loaded successfully');
+              console.log(`🕐 Iframe loaded, waiting for player API events...`);
+              
+              // Set iframe start time for manual tracking
+              setIframeStartTime(Date.now());
+              console.log(`🕐 Iframe start time set: ${Date.now()}`);
+              
+              // Try to seek to preserved time or initial time if available
+              const timeToSeek = preservedTime > 0 ? preservedTime : initialTime;
+              if (timeToSeek > 0 && iframeRef.current) {
+                console.log(`🔄 Attempting to seek iframe to ${timeToSeek}s (preserved: ${preservedTime}s, initial: ${initialTime}s)`);
+                console.log(`🔄 Current iframe URL: ${iframeRef.current.src}`);
+                const iframe = iframeRef.current;
+                const currentUrl = currentSource?.url || '';
+                const timeInMinutes = Math.floor(timeToSeek / 60);
+                const remainingSeconds = Math.floor(timeToSeek % 60);
+                
+                // Try different postMessage formats based on the player
+                setTimeout(() => {
+                  // VidZee player - based on their documentation
+                  if (currentUrl.includes('vidzee.wtf') || currentUrl.includes('player.vidzee.wtf')) {
+                    iframe.contentWindow?.postMessage({ 
+                      type: 'SEEK', 
+                      time: Math.floor(timeToSeek),
+                      seconds: Math.floor(timeToSeek)
+                    }, 'https://vidzee.wtf');
+                  }
+                  // Videasy player - try their format
+                  else if (currentUrl.includes('player.videasy.net') || currentUrl.includes('videasy.net')) {
+                    iframe.contentWindow?.postMessage({ 
+                      type: 'seek', 
+                      time: Math.floor(timeToSeek),
+                      progress: Math.floor(timeToSeek)
+                    }, '*');
+                  }
+                  // VidFast player - try generic formats
+                  else if (currentUrl.includes('vidfast.pro')) {
+                    iframe.contentWindow?.postMessage({ 
+                      type: 'seek', 
+                      time: Math.floor(timeToSeek),
+                      seconds: Math.floor(timeToSeek)
+                    }, '*');
+                  }
+                  // Generic fallback - try multiple formats
+                  else {
+                    iframe.contentWindow?.postMessage({ 
+                      type: 'seek', 
+                      time: timeToSeek,
+                      seconds: Math.floor(timeToSeek),
+                      minutes: timeInMinutes,
+                      timeString: `${timeInMinutes}:${remainingSeconds.toString().padStart(2, '0')}`
+                    }, '*');
+                    
+                    // Alternative formats
+                    iframe.contentWindow?.postMessage({ action: 'seek', time: timeToSeek }, '*');
+                    iframe.contentWindow?.postMessage({ command: 'seek', value: timeToSeek }, '*');
+                    iframe.contentWindow?.postMessage({ method: 'seek', params: [timeToSeek] }, '*');
+                  }
+                }, 2000); // Wait 2 seconds for iframe to fully load
+              }
               
               // No automatic button showing - only on errors or manual trigger
             }}
@@ -2575,7 +2990,41 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
         {/* Server Selector - Always visible when multiple sources */}
         {streamingSources.length > 1 && (
-          <div className="fixed top-4 right-2 sm:right-4 z-[9999] pointer-events-auto">
+          <div className="fixed top-4 right-2 sm:right-4 z-[9999] pointer-events-auto flex items-center gap-2">
+            {/* Info Icon */}
+            <div className="relative" data-server-info>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowServerInfo(!showServerInfo);
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowServerInfo(!showServerInfo);
+                }}
+                className="bg-black/80 hover:bg-black/95 text-white p-1.5 sm:p-2 rounded-lg backdrop-blur-md border border-blue-500 shadow-2xl hover:shadow-blue-500/20 transition-all duration-200 hover:scale-105 touch-manipulation"
+                title="Server Information"
+              >
+                <Info className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+              
+              {showServerInfo && (
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-3 bg-black/95 border border-blue-500 backdrop-blur-md rounded-lg shadow-2xl p-2 w-[240px] sm:w-[280px]">
+                  <div className="text-white text-xs text-center">
+                    <h4 className="font-semibold mb-1 text-blue-400 text-xs">Server Info</h4>
+                    <p className="text-xs leading-relaxed whitespace-nowrap">
+                      Try a different server if one doesn't work.
+                    </p>
+                  </div>
+                  {/* Arrow pointing up - centered */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-black/95"></div>
+                </div>
+              )}
+            </div>
+
+            {/* Server Dropdown */}
             <div className="relative" data-server-dropdown>
               <button
                 onClick={(e) => {
@@ -2609,25 +3058,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (index !== currentSourceIndex && index < streamingSources.length) {
-                          setCurrentSourceIndex(index);
-                          setCurrentSource(streamingSources[index]);
-                          setError(null);
-                          setLoading(true);
-                          setIframeContentDetected(false);
-                        }
+                        switchServerWithTimeline(index);
                         setShowServerDropdown(false);
                       }}
                       onTouchEnd={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (index !== currentSourceIndex && index < streamingSources.length) {
-                          setCurrentSourceIndex(index);
-                          setCurrentSource(streamingSources[index]);
-                          setError(null);
-                          setLoading(true);
-                          setIframeContentDetected(false);
-                        }
+                        switchServerWithTimeline(index);
                         setShowServerDropdown(false);
                       }}
                       className={`w-full text-left px-2 sm:px-3 py-1.5 sm:py-2 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm transition-colors touch-manipulation ${
@@ -2694,9 +3131,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   } as React.MouseEvent;
                   handleNextEpisode(syntheticEvent);
                 }}
-                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-white/20 touch-manipulation min-h-[44px]"
+                className="bg-black/80 hover:bg-black/90 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 backdrop-blur-sm border border-blue-500 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:border-blue-500 touch-manipulation min-h-[44px]"
               >
-                <NextEpisode className="w-4 h-4" />
+                <NextEpisode className="w-4 h-4 text-blue-500" />
                 <span className="text-sm font-medium">Next Episode</span>
               </Button>
             )}
@@ -2753,12 +3190,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   e.stopPropagation();
                   console.log('🎬 Close button clicked in first error overlay');
                   // Capture final screenshot before closing
-                  if (videoRef.current && onProgressUpdate) {
-                    const currentTime = videoRef.current.currentTime;
-                    const duration = videoRef.current.duration;
-                    console.log('🎬 Close button clicked - calling onProgressUpdate with video element');
-                    console.log('🎬 Current time:', currentTime, 'Duration:', duration);
-                    onProgressUpdate(currentTime, duration, videoRef.current);
+                  if (onProgressUpdate) {
+                    // Use current server's playback time
+                    const video = videoRef.current;
+                    let finalTotalTime = 0;
+                    
+                    if (currentSource?.type === 'hls' && video && !isNaN(video.currentTime) && video.currentTime > 0) {
+                      finalTotalTime = video.currentTime;
+                    } else if (currentSource?.type === 'iframe' && playerCurrentTime > 0) {
+                      finalTotalTime = playerCurrentTime;
+                    }
+                    
+                    console.log(`📊 Close: Using ${currentSource?.type} server time: ${finalTotalTime.toFixed(2)}s (${Math.floor(finalTotalTime/60)}:${Math.floor(finalTotalTime%60).toString().padStart(2, '0')})`);
+                    
+                    const duration = actualDuration || videoRef.current?.duration || (type === 'tv' ? 2700 : 7200);
+                    console.log('🎬 Close button clicked - calling onProgressUpdate with total watch time');
+                    console.log('🎬 Final total watch time:', finalTotalTime, 'Duration:', duration);
+                    onProgressUpdate(finalTotalTime, duration, videoRef.current);
                   }
                   onClose();
                 }} 
@@ -2767,12 +3215,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   e.stopPropagation();
                   console.log('🎬 Close button touched in first error overlay (mobile)');
                   // Capture final screenshot before closing
-                  if (videoRef.current && onProgressUpdate) {
-                    const currentTime = videoRef.current.currentTime;
-                    const duration = videoRef.current.duration;
-                    console.log('🎬 Close button touched - calling onProgressUpdate with video element');
-                    console.log('🎬 Current time:', currentTime, 'Duration:', duration);
-                    onProgressUpdate(currentTime, duration, videoRef.current);
+                  if (onProgressUpdate) {
+                    // Use current server's playback time
+                    const video = videoRef.current;
+                    let finalTotalTime = 0;
+                    
+                    if (currentSource?.type === 'hls' && video && !isNaN(video.currentTime) && video.currentTime > 0) {
+                      finalTotalTime = video.currentTime;
+                    } else if (currentSource?.type === 'iframe' && playerCurrentTime > 0) {
+                      finalTotalTime = playerCurrentTime;
+                    }
+                    
+                    console.log(`📊 Close: Using ${currentSource?.type} server time: ${finalTotalTime.toFixed(2)}s (${Math.floor(finalTotalTime/60)}:${Math.floor(finalTotalTime%60).toString().padStart(2, '0')})`);
+                    
+                    const duration = actualDuration || videoRef.current?.duration || (type === 'tv' ? 2700 : 7200);
+                    console.log('🎬 Close button touched - calling onProgressUpdate with total watch time');
+                    console.log('🎬 Final total watch time:', finalTotalTime, 'Duration:', duration);
+                    onProgressUpdate(finalTotalTime, duration, videoRef.current);
                   }
                   onClose();
                 }} 
@@ -2784,6 +3243,91 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
         )}
         
+        {/* Universal Back Button - Always visible */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            console.log('🎬 Universal back button clicked');
+                // Capture final screenshot before closing
+            if (onProgressUpdate) {
+              // Use current server's playback time
+              const video = videoRef.current;
+              let finalTotalTime = 0;
+              
+              if (currentSource?.type === 'hls' && video && !isNaN(video.currentTime) && video.currentTime > 0) {
+                finalTotalTime = video.currentTime;
+              } else if (currentSource?.type === 'iframe') {
+                // For iframe, try multiple sources for current time
+                if (playerCurrentTime > 0) {
+                  finalTotalTime = playerCurrentTime;
+                } else if (iframeElapsedTime > 0) {
+                  finalTotalTime = iframeElapsedTime;
+                } else if (iframeStartTime > 0) {
+                  // Manual time tracking: start time + elapsed time
+                  const elapsedTime = (Date.now() - iframeStartTime) / 1000;
+                  const startTime = preservedTime > 0 ? preservedTime : initialTime;
+                  finalTotalTime = startTime + elapsedTime;
+                } else if (preservedTime > 0) {
+                  finalTotalTime = preservedTime;
+                } else if (initialTime > 0) {
+                  finalTotalTime = initialTime;
+                }
+              }
+              
+              console.log(`📊 Universal Back: Using ${currentSource?.type} server time: ${finalTotalTime.toFixed(2)}s (${Math.floor(finalTotalTime/60)}:${Math.floor(finalTotalTime%60).toString().padStart(2, '0')})`);
+              
+              const duration = actualDuration || videoRef.current?.duration || (type === 'tv' ? 2700 : 7200);
+              console.log('🎬 Universal back button clicked - calling onProgressUpdate with total watch time');
+              console.log('🎬 Final total watch time:', finalTotalTime, 'Duration:', duration);
+              onProgressUpdate(finalTotalTime, duration, videoRef.current);
+                }
+                onClose();
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            console.log('🎬 Universal back button touched (mobile)');
+                // Capture final screenshot before closing
+            if (onProgressUpdate) {
+              // Use current server's playback time
+              const video = videoRef.current;
+              let finalTotalTime = 0;
+              
+              if (currentSource?.type === 'hls' && video && !isNaN(video.currentTime) && video.currentTime > 0) {
+                finalTotalTime = video.currentTime;
+              } else if (currentSource?.type === 'iframe') {
+                // For iframe, try multiple sources for current time
+                if (playerCurrentTime > 0) {
+                  finalTotalTime = playerCurrentTime;
+                } else if (iframeElapsedTime > 0) {
+                  finalTotalTime = iframeElapsedTime;
+                } else if (iframeStartTime > 0) {
+                  // Manual time tracking: start time + elapsed time
+                  const elapsedTime = (Date.now() - iframeStartTime) / 1000;
+                  const startTime = preservedTime > 0 ? preservedTime : initialTime;
+                  finalTotalTime = startTime + elapsedTime;
+                } else if (preservedTime > 0) {
+                  finalTotalTime = preservedTime;
+                } else if (initialTime > 0) {
+                  finalTotalTime = initialTime;
+                }
+              }
+              
+              console.log(`📊 Universal Back: Using ${currentSource?.type} server time: ${finalTotalTime.toFixed(2)}s (${Math.floor(finalTotalTime/60)}:${Math.floor(finalTotalTime%60).toString().padStart(2, '0')})`);
+              
+              const duration = actualDuration || videoRef.current?.duration || (type === 'tv' ? 2700 : 7200);
+              console.log('🎬 Universal back button touched - calling onProgressUpdate with total watch time');
+              console.log('🎬 Final total watch time:', finalTotalTime, 'Duration:', duration);
+              onProgressUpdate(finalTotalTime, duration, videoRef.current);
+                }
+                onClose();
+              }}
+          className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation min-h-[44px] min-w-[44px]"
+            >
+              <ArrowLeft size={20} />
+            </button>
+
         {/* Controls Overlay */}
         {showControls && currentSource?.type === 'hls' && (
           <div 
@@ -2791,40 +3335,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             style={{ pointerEvents: 'none' }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Back Button - Top Left */}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🎬 Back button clicked');
-                // Capture final screenshot before closing
-                if (videoRef.current && onProgressUpdate) {
-                  const currentTime = videoRef.current.currentTime;
-                  const duration = videoRef.current.duration;
-                  console.log('🎬 Back button clicked - calling onProgressUpdate with video element');
-                  console.log('🎬 Current time:', currentTime, 'Duration:', duration);
-                  onProgressUpdate(currentTime, duration, videoRef.current);
-                }
-                onClose();
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🎬 Back button touched (mobile)');
-                // Capture final screenshot before closing
-                if (videoRef.current && onProgressUpdate) {
-                  const currentTime = videoRef.current.currentTime;
-                  const duration = videoRef.current.duration;
-                  console.log('🎬 Back button touched - calling onProgressUpdate with video element');
-                  console.log('🎬 Current time:', currentTime, 'Duration:', duration);
-                  onProgressUpdate(currentTime, duration, videoRef.current);
-                }
-                onClose();
-              }}
-              className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation min-h-[44px] min-w-[44px]"
-            >
-              <ArrowLeft size={20} />
-            </button>
 
             {/* Movie Title - Top Center */}
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 text-center pointer-events-auto max-w-[calc(100vw-120px)] px-2">
@@ -2905,7 +3415,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 {/* Timestamp preview tooltip - positioned outside progress bar */}
                 {showPreview && previewTime !== null && (
                   <div 
-                    className={`absolute bottom-full left-0 transform -translate-y-2 bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-500 shadow-2xl transition-all duration-75 ease-out ${isFullscreen ? 'fullscreen-tooltip' : ''}`}
+                    className={`absolute bottom-full bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-500 shadow-2xl transition-all duration-75 ease-out ${isFullscreen ? 'fullscreen-tooltip' : ''}`}
                     style={{ 
                       left: `${Math.max(0, Math.min(100, (previewTime / (duration || 1)) * 100))}%`,
                       transform: 'translateX(-50%) translateY(-8px)',
@@ -3123,26 +3633,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               </div>
             )}
         
-        {/* Iframe Back Button */}
-        {currentSource?.type === 'iframe' && (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('🎬 Iframe back button clicked');
-              onClose();
-            }}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('🎬 Iframe back button touched (mobile)');
-              onClose();
-            }}
-            className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation min-h-[44px] min-w-[44px]"
-          >
-            <ArrowLeft size={20} />
-          </button>
-        )}
 
         {/* Settings Menu - Outside controls overlay */}
         {renderSettingsMenu()}
