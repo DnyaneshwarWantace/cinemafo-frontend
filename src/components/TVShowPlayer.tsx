@@ -36,6 +36,9 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
 
   const { settings: adminSettings } = useAdminSettings();
   const { getHistoryItem } = useWatchHistory();
+  
+  // Check if there's continue watching progress for this TV show
+  const continueWatchingItem = getHistoryItem(show.id, 'tv');
 
   // Watchlist functions
   const isInWatchlist = (item: TVShow): boolean => {
@@ -142,18 +145,25 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
     }
   }, [show.id, selectedSeason]);
 
-  const handlePlayEpisode = (episodeNumber: number) => {
+  const handlePlayEpisode = (episodeNumber: number, seasonNumber?: number, initialTime?: number) => {
+    const season = seasonNumber || selectedSeason;
+    
     // Check for existing watch history to resume from where left off
-    const historyItem = getHistoryItem(show.id, 'tv', selectedSeason, episodeNumber);
+    const historyItem = getHistoryItem(show.id, 'tv', season, episodeNumber);
     
     // Navigate to video player page for TV shows
     const params = new URLSearchParams({
       id: show.id.toString(),
       type: 'tv',
-      season: selectedSeason.toString(),
+      season: season.toString(),
       episode: episodeNumber.toString(),
       title: show.name || 'TV Show'
     });
+    
+    // Add initial time if provided (for continue watching)
+    if (initialTime && initialTime > 0) {
+      params.set('time', initialTime.toString());
+    }
     
     // Add time parameter if there's existing watch history
     if (historyItem && historyItem.currentTime > 10 && historyItem.progress < 90) {
@@ -355,6 +365,22 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
 
                 {/* Action Buttons and Show More Details */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-center lg:justify-start">
+                  {/* Continue Watching Button - Show if there's progress */}
+                  {continueWatchingItem && (
+                    <Button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Continue Watching clicked');
+                        handlePlayEpisode(continueWatchingItem.episode || 1, continueWatchingItem.season || 1, continueWatchingItem.currentTime);
+                      }}
+                      className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-md text-base font-semibold hover:bg-blue-700 transition-all duration-200 hover:scale-105 transform w-full sm:w-auto"
+                    >
+                      <Play className="w-4 h-4" />
+                      Continue Watching S{continueWatchingItem.season || 1}E{continueWatchingItem.episode || 1} ({Math.floor(continueWatchingItem.currentTime / 60)}:{(continueWatchingItem.currentTime % 60).toFixed(0).padStart(2, '0')})
+                    </Button>
+                  )}
+                  
                   <Button 
                     onClick={(e) => {
                       e.preventDefault();
@@ -365,7 +391,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
                     className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-md text-base font-semibold hover:bg-gray-200 transition-all duration-200 hover:scale-105 transform w-full sm:w-auto"
                   >
                     <Play className="w-4 h-4" />
-                    Play S1E1
+                    {continueWatchingItem ? 'Start Over' : 'Play S1E1'}
                   </Button>
                   
                   <Button

@@ -33,6 +33,9 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
   const [watchlistUpdate, setWatchlistUpdate] = useState(0);
   const { settings: adminSettings } = useAdminSettings();
   const { getHistoryItem } = useWatchHistory();
+  
+  // Check if there's continue watching progress for this movie
+  const continueWatchingItem = getHistoryItem(movie.id, 'movie');
 
   // Watchlist functions
   const isInWatchlist = (item: Movie): boolean => {
@@ -346,10 +349,24 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
                       <span className="sm:hidden">Coming Soon</span>
                       </Button>
                     ) : (
-                    <Button onClick={handleWatchNow} className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-md text-base font-semibold hover:bg-gray-200 transition-all duration-200 hover:scale-105 transform w-full sm:w-auto">
-                        <Film className="w-4 h-4" />
-                        Watch Now
-                      </Button>
+                      <>
+                        {/* Continue Watching Button - Show if there's progress */}
+                        {continueWatchingItem && (
+                          <Button 
+                            onClick={() => handleWatchNow(continueWatchingItem.currentTime)} 
+                            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-md text-base font-semibold hover:bg-blue-700 transition-all duration-200 hover:scale-105 transform w-full sm:w-auto"
+                          >
+                            <Play className="w-4 h-4" />
+                            Continue Watching ({Math.floor(continueWatchingItem.currentTime / 60)}:{(continueWatchingItem.currentTime % 60).toFixed(0).padStart(2, '0')})
+                          </Button>
+                        )}
+                        
+                        {/* Watch Now Button */}
+                        <Button onClick={handleWatchNow} className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-md text-base font-semibold hover:bg-gray-200 transition-all duration-200 hover:scale-105 transform w-full sm:w-auto">
+                            <Film className="w-4 h-4" />
+                            {continueWatchingItem ? 'Start Over' : 'Watch Now'}
+                          </Button>
+                      </>
                 )}
                 
                 <Button
