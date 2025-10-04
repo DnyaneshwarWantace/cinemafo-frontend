@@ -470,6 +470,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               url: `https://vidfast.pro/movie/${tmdbId}?autoPlay=true`,
               name: 'VidFast (Fallback)',
               language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://v2.vidsrc.me/embed/movie/${tmdbId}`,
+              name: 'VidSrc (Fallback)',
+              language: 'multi'
             }
           );
         } else if (type === 'tv' && season && episode) {
@@ -490,6 +496,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               type: 'iframe',
               url: `https://vidfast.pro/tv/${tmdbId}/${season}/${episode}?autoPlay=true`,
               name: 'VidFast (Fallback)',
+              language: 'multi'
+            },
+            {
+              type: 'iframe',
+              url: `https://v2.vidsrc.me/embed/tv/${tmdbId}/${season}/${episode}`,
+              name: 'VidSrc (Fallback)',
               language: 'multi'
             }
           );
@@ -1181,6 +1193,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     // VidZee player - try generic parameters
     else if (url.includes('vidzee.wtf') || url.includes('player.vidzee.wtf')) {
       urlWithTime = `${url}${separator}t=${Math.floor(timeInSeconds)}&progress=${Math.floor(timeInSeconds)}`;
+    }
+    // VidSrc player - supports t parameter for timeline
+    else if (url.includes('vidsrc.me') || url.includes('v2.vidsrc.me')) {
+      urlWithTime = `${url}${separator}t=${Math.floor(timeInSeconds)}`;
     }
     // Generic fallback
     else {
@@ -3363,7 +3379,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {/* Bottom Controls */}
             <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
               {/* Progress Bar */}
-              <div className="mb-4">
+              <div className="mb-4 relative">
                                  <div 
                    className={`progress-bar-container relative w-full h-2 bg-gray-600 rounded-lg overflow-hidden cursor-pointer ${isFullscreen ? 'fullscreen-progress-bar' : ''}`}
                    onMouseEnter={handleProgressBarHover}
@@ -3407,20 +3423,17 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                      onTouchEnd={handleRangeInputTouchEnd}
                 />
                 </div>
-                <div className="flex justify-between text-sm text-gray-300 mt-1">
-                  <span>{formatTime(currentTime || 0)}</span>
-                  <span>{formatTime(duration || 0)}</span>
-                </div>
                 
                 {/* Timestamp preview tooltip - positioned outside progress bar */}
                 {showPreview && previewTime !== null && (
                   <div 
-                    className={`absolute bottom-full bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-500 shadow-2xl transition-all duration-75 ease-out ${isFullscreen ? 'fullscreen-tooltip' : ''}`}
+                    className="absolute bottom-full bg-black/95 backdrop-blur-sm text-white px-3 py-2 rounded-lg text-sm font-bold pointer-events-none z-[99999] border border-blue-500 shadow-2xl transition-all duration-75 ease-out"
                     style={{ 
                       left: `${Math.max(0, Math.min(100, (previewTime / (duration || 1)) * 100))}%`,
                       transform: 'translateX(-50%) translateY(-8px)',
                       position: 'absolute',
-                      willChange: 'transform, left'
+                      willChange: 'transform, left',
+                      whiteSpace: 'nowrap'
                     }}
                   >
                     <div className="flex flex-col items-center">
@@ -3430,6 +3443,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/95"></div>
                   </div>
                 )}
+                
+                <div className="flex justify-between text-sm text-gray-300 mt-1">
+                  <span>{formatTime(currentTime || 0)}</span>
+                  <span>{formatTime(duration || 0)}</span>
+                </div>
               </div>
               
               {/* Control Buttons */}
