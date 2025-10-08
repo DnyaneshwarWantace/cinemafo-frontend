@@ -805,22 +805,50 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         return; // Ignore these common third-party player errors
       }
 
-      // Detect ANY 404 errors from iframe sources - show proper error message
-      if (message.includes('404') && currentSource?.type === 'iframe') {
-        console.log(`🚨 404 Error detected from iframe source: ${message}`);
-        console.log('🔄 Showing error message and switch button for 404 error');
-        setError(`Movie not found on ${currentSource.name}. Please try a different server.`);
-        setLoading(false);
-        setShowSwitchSourceButton(true);
-      }
+      // Enhanced error detection for iframe sources
+      if (currentSource?.type === 'iframe') {
+        // Detect 404 errors
+        if (message.includes('404') || message.includes('Not Found')) {
+          console.log(`🚨 404 Error detected from iframe source: ${message}`);
+          setError(`Content not found on ${currentSource.name}. Please try a different server.`);
+          setLoading(false);
+          setShowSwitchSourceButton(true);
+          return;
+        }
 
-      // Also detect network errors and show proper error message
-      if ((message.includes('Failed to fetch') || message.includes('NetworkError') || message.includes('ERR_')) && currentSource?.type === 'iframe') {
-        console.log(`🚨 Network Error detected: ${message}`);
-        console.log('🔄 Showing error message and switch button for network error');
-        setError(`Network error on ${currentSource.name}. Please try a different server.`);
-        setLoading(false);
-        setShowSwitchSourceButton(true);
+        // Detect network errors
+        if (message.includes('Failed to fetch') || 
+            message.includes('NetworkError') || 
+            message.includes('ERR_') ||
+            message.includes('net::ERR_') ||
+            message.includes('Connection refused')) {
+          console.log(`🚨 Network Error detected: ${message}`);
+          setError(`Network error on ${currentSource.name}. Please try a different server.`);
+          setLoading(false);
+          setShowSwitchSourceButton(true);
+          return;
+        }
+
+        // Detect server errors
+        if (message.includes('500') || 
+            message.includes('502') || 
+            message.includes('503') || 
+            message.includes('504')) {
+          console.log(`🚨 Server Error detected: ${message}`);
+          setError(`Server error on ${currentSource.name}. Please try a different server.`);
+          setLoading(false);
+          setShowSwitchSourceButton(true);
+          return;
+        }
+
+        // Detect timeout errors
+        if (message.includes('timeout') || message.includes('TIMEOUT')) {
+          console.log(`🚨 Timeout Error detected: ${message}`);
+          setError(`Request timeout on ${currentSource.name}. Please try a different server.`);
+          setLoading(false);
+          setShowSwitchSourceButton(true);
+          return;
+        }
       }
 
       originalError.apply(console, args);
@@ -1419,12 +1447,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, []);
 
-  // Video controls with debounce to prevent rapid play/pause errors
-  // This prevents the "AbortError: The play() request was interrupted by a call to pause()" error
-  // that occurs when users click the play/pause button too rapidly
+  // Enhanced video controls with better error handling and user feedback
   const togglePlayPause = useCallback(async () => {
     console.log('togglePlayPause called, current isPlaying:', isPlaying);
-    console.log('videoRef.current:', videoRef.current);
 
     if (!videoRef.current || isPlayPausePending) {
       console.log('No video element found or operation pending');
@@ -1436,45 +1461,61 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     // Safety timeout to reset pending state if something goes wrong
     const safetyTimeout = setTimeout(() => {
       setIsPlayPausePending(false);
-    }, 2000);
+    }, 3000);
 
-    if (isPlaying) {
-      console.log('Pausing video');
-      videoRef.current.pause();
-      // Small delay to prevent rapid state changes
-      setTimeout(() => {
+    try {
+      if (isPlaying) {
+        console.log('Pausing video');
+        videoRef.current.pause();
+        // Small delay to prevent rapid state changes
+        setTimeout(() => {
+          clearTimeout(safetyTimeout);
+          setIsPlayPausePending(false);
+        }, 150);
+      } else {
+        console.log('Playing video');
+
+        // Record user gesture when playing video (since play is usually user-initiated)
+        const now = Date.now();
+        setLastUserGesture(now);
+        localStorage.setItem('lastUserGesture', now.toString());
+        console.log('User gesture recorded from video play');
+
+        // Request PiP permission when playing HLS videos
+        if (currentSource?.type === 'hls') {
+          await requestPipPermission();
+        }
+
+        // Enhanced play promise handling
+        const playPromise = videoRef.current.play();
+        
+        if (playPromise !== undefined) {
+          await playPromise;
+          console.log('Video play successful');
+        }
+        
         clearTimeout(safetyTimeout);
         setIsPlayPausePending(false);
-      }, 100);
-    } else {
-      console.log('Playing video');
-
-      // Record user gesture when playing video (since play is usually user-initiated)
-      const now = Date.now();
-      setLastUserGesture(now);
-      localStorage.setItem('lastUserGesture', now.toString());
-      console.log('User gesture recorded from video play');
-
-      // Request PiP permission when playing HLS videos
-      if (currentSource?.type === 'hls') {
-        await requestPipPermission();
       }
-
-      videoRef.current.play()
-        .then(() => {
-          console.log('Video play successful');
-          clearTimeout(safetyTimeout);
-          setIsPlayPausePending(false);
-        })
-        .catch((error) => {
-          console.error('Error playing video:', error);
-          // Only log the error if it's not an abort error (which is expected during rapid clicking)
-          if (error.name !== 'AbortError') {
-            console.error('Non-abort error playing video:', error);
-          }
-          clearTimeout(safetyTimeout);
-          setIsPlayPausePending(false);
-        });
+    } catch (error: any) {
+      console.error('Error in togglePlayPause:', error);
+      
+      // Handle specific error types
+      if (error.name === 'AbortError') {
+        console.log('Play/pause operation was aborted (user clicked rapidly)');
+      } else if (error.name === 'NotAllowedError') {
+        console.log('Autoplay prevented by browser - user interaction required');
+        setError('Please click the play button to start the video');
+      } else if (error.name === 'NotSupportedError') {
+        console.log('Video format not supported');
+        setError('Video format not supported. Please try a different server.');
+      } else {
+        console.error('Unexpected error:', error);
+        setError('An error occurred while playing the video. Please try again.');
+      }
+      
+      clearTimeout(safetyTimeout);
+      setIsPlayPausePending(false);
     }
   }, [isPlaying, isPlayPausePending, pipPermissionGranted, currentSource, requestPipPermission]);
 

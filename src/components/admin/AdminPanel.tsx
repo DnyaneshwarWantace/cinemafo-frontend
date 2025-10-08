@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
 import ReferralManager from './ReferralManager';
+import ForgotPassword from './ForgotPassword';
+import AccountSettings from './AccountSettings';
 
 interface AdminSettings {
   appearance: {
@@ -587,6 +589,7 @@ const AdminPanel: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -917,6 +920,11 @@ const AdminPanel: React.FC = () => {
     }
   };
 
+  // Show Forgot Password screen
+  if (showForgotPassword) {
+    return <ForgotPassword onBack={() => setShowForgotPassword(false)} />;
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center p-4">
@@ -926,7 +934,7 @@ const AdminPanel: React.FC = () => {
               <Shield className="w-8 h-8 text-white" />
             </div>
             <CardTitle className="text-2xl text-white">Admin Login</CardTitle>
-            <CardDescription className="text-gray-300">Enter your credentials to access the admin panel</CardDescription>
+            <CardDescription className="text-gray-400">Secure access to CinemaFO administration panel</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4">
@@ -943,9 +951,10 @@ const AdminPanel: React.FC = () => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="cinemafo"
-                  className="bg-gray-700 border-gray-600 text-white"
+                  placeholder="Enter your username"
+                  className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-500"
                   required
+                  autoComplete="username"
                 />
               </div>
               
@@ -957,9 +966,10 @@ const AdminPanel: React.FC = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="cinemafo"
-                    className="bg-gray-700 border-gray-600 text-white pr-12"
+                    placeholder="Enter your password"
+                    className="bg-gray-700 border-gray-600 text-white pr-12 placeholder:text-gray-500"
                     required
+                    autoComplete="current-password"
                   />
                   <Button
                     type="button"
@@ -972,7 +982,7 @@ const AdminPanel: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              
+
               <Button 
                 type="submit" 
                 className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
@@ -980,6 +990,22 @@ const AdminPanel: React.FC = () => {
               >
                 {isLoggingIn ? 'Logging in...' : 'Login'}
               </Button>
+
+              <div className="flex items-center justify-center pt-2">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="text-blue-400 hover:text-blue-300 text-sm p-0 h-auto"
+                  onClick={() => setShowForgotPassword(true)}
+                >
+                  Forgot your password?
+                </Button>
+              </div>
+
+              <div className="text-center text-xs text-gray-500 pt-2 border-t border-gray-700 mt-4">
+                <p>Need to reset your account?</p>
+                <p className="mt-1">Use your recovery codes from Account Settings</p>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -1058,7 +1084,7 @@ const AdminPanel: React.FC = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-gray-800">
+          <TabsList className="grid w-full grid-cols-8 bg-gray-800">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-blue-600">
               <BarChart3 className="w-4 h-4 mr-2" />
               Dashboard
@@ -1086,6 +1112,10 @@ const AdminPanel: React.FC = () => {
             <TabsTrigger value="referrals" className="data-[state=active]:bg-blue-600">
               <Share2 className="w-4 h-4 mr-2" />
               Referrals
+            </TabsTrigger>
+            <TabsTrigger value="account" className="data-[state=active]:bg-blue-600">
+              <Settings className="w-4 h-4 mr-2" />
+              Account
             </TabsTrigger>
           </TabsList>
 
@@ -1927,6 +1957,10 @@ const AdminPanel: React.FC = () => {
 
           <TabsContent value="referrals" className="space-y-6">
             <ReferralManager />
+          </TabsContent>
+
+          <TabsContent value="account" className="space-y-6">
+            <AccountSettings />
           </TabsContent>
         </Tabs>
       </div>
