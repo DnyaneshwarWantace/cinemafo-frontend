@@ -57,7 +57,7 @@ const useAdminSettings = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/public/settings`);
+        const response = await fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinema.fo/api/admin'}/public/settings`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch settings');
@@ -121,7 +121,7 @@ const useAdminSettings = () => {
       setError(null);
       // Trigger refetch by updating timestamp
       const timestamp = Date.now();
-      fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinemafo.lol/api/admin'}/public/settings?t=${timestamp}`)
+      fetch(`${import.meta.env.VITE_ADMIN_URL || 'https://cinema.fo/api/admin'}/public/settings?t=${timestamp}`)
         .then(response => response.json())
         .then(data => {
           setSettings(data);

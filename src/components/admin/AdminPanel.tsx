@@ -92,7 +92,7 @@ const apiCallWithRefresh = async (apiCall: () => Promise<Response>) => {
 // API functions
 const adminApi = {
   login: async (username: string, password: string) => {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/login`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -113,7 +113,7 @@ const adminApi = {
       throw new Error('No token to refresh');
     }
 
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/refresh-token`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/refresh-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token })
@@ -131,7 +131,7 @@ const adminApi = {
   getSettings: async () => {
     const token = localStorage.getItem('adminToken');
     const response = await apiCallWithRefresh(() => 
-      fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/settings`, {
+      fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/settings`, {
       headers: { 'Authorization': `Bearer ${token}` }
       })
     );
@@ -145,7 +145,7 @@ const adminApi = {
 
   updateAnnouncement: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/settings/announcement`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/settings/announcement`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -163,7 +163,7 @@ const adminApi = {
 
   updateSocialButtons: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/settings/social-buttons`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/settings/social-buttons`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -181,7 +181,7 @@ const adminApi = {
 
   updateSocialLinks: async (socialLinks: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/settings/social-links`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/settings/social-links`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -204,7 +204,7 @@ const adminApi = {
     const token = localStorage.getItem('adminToken');
     console.log('🔑 Frontend: Token exists:', !!token);
     
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/settings/content`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/settings/content`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -229,7 +229,7 @@ const adminApi = {
 
   updateAds: async (settings: any) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/settings/ads`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/settings/ads`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -247,7 +247,7 @@ const adminApi = {
 
   uploadAdImage: async (adKey: string, imageUrl: string) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/upload-ad-image`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/upload-ad-image`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -265,7 +265,7 @@ const adminApi = {
 
   updateCSS: async (css: string) => {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/settings/css`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/settings/css`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -293,7 +293,7 @@ const AdAnalyticsDashboard: React.FC = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/admin/ad-analytics?days=${timeRange}${selectedAd ? `&adKey=${selectedAd}` : ''}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/admin/ad-analytics?days=${timeRange}${selectedAd ? `&adKey=${selectedAd}` : ''}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -315,7 +315,7 @@ const AdAnalyticsDashboard: React.FC = () => {
   const fetchSummary = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/admin/ad-summary?days=${timeRange}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/admin/ad-summary?days=${timeRange}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -334,7 +334,7 @@ const AdAnalyticsDashboard: React.FC = () => {
   const exportData = async (format: 'json' | 'csv' = 'json') => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api'}/admin/admin/export-ad-data?format=${format}${selectedAd ? `&adKey=${selectedAd}` : ''}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/admin/export-ad-data?format=${format}${selectedAd ? `&adKey=${selectedAd}` : ''}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

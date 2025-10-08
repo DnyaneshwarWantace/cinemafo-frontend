@@ -28,7 +28,7 @@ const AccountSettings: React.FC = () => {
   
   const [error, setError] = useState<string | null>(null);
 
-  const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinemafo.lol/api';
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api';
 
   useEffect(() => {
     fetchAccountInfo();

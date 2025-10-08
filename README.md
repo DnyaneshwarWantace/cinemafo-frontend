@@ -56,7 +56,7 @@ src/
 
 Create `.env` file:
 ```
-VITE_BACKEND_URL=https://cinemafo.lol/api
+VITE_BACKEND_URL=https://cinema.fo/api
 VITE_DISCORD_URL=your_discord_invite_url
 ```
 

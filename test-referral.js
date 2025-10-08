@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 async function testReferralSystem() {
-  const baseUrl = 'https://cinemafo.lol/api';
+  const baseUrl = 'https://cinema.fo/api';
   
   try {
     console.log('🧪 Testing Referral System...\n');
