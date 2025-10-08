@@ -361,9 +361,14 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                       }}
                         onBlur={() => setIsSearchFocused(false)}
                         onKeyDown={handleSearchKeyDown}
-                        placeholder="Search..."
+                        placeholder=""
                         className="w-full bg-white/10 text-white pl-10 pr-10 py-2.5 rounded-full border border-white/20 focus:border-blue-500 focus:outline-none text-sm placeholder-gray-400 transition-all duration-300 focus:bg-white/15"
                       />
+                      {!searchQuery && (
+                        <div className="absolute left-10 top-1/2 transform -translate-y-1/2 flex items-center gap-2 text-gray-400 pointer-events-none">
+                          <img src="/logo.svg" alt="Cinema.fo" className="h-4 opacity-50" />
+                        </div>
+                      )}
                       {searchQuery && (
                         <button
                           type="button"
@@ -860,9 +865,14 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                         }
                       }}
                       onKeyDown={handleSearchKeyDown}
-                      placeholder="Search..."
+                      placeholder=""
                       className="w-full bg-white/10 text-white pl-10 pr-4 py-3 rounded-lg border border-white/20 focus:border-blue-500 focus:outline-none text-sm placeholder-gray-400"
                     />
+                    {!searchQuery && (
+                      <div className="absolute left-10 top-1/2 transform -translate-y-1/2 flex items-center gap-2 text-gray-400 pointer-events-none">
+                        <img src="/logo.svg" alt="Cinema.fo" className="h-4 opacity-50" />
+                      </div>
+                    )}
                     {searchQuery && (
                       <button
                         type="button"

@@ -527,7 +527,7 @@ const Search = () => {
             <div className="relative flex-1">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="What do you want to watch?"
+                placeholder=""
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -543,6 +543,12 @@ const Search = () => {
                 }}
                 className="bg-gray-800 border-gray-700 text-white pl-10 pr-10 h-12 text-lg rounded-full focus:border-blue-500 focus:ring-0 focus:outline-none focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
+              {!query && (
+                <div className="absolute left-10 top-1/2 transform -translate-y-1/2 flex items-center gap-2 text-gray-400 pointer-events-none">
+                  <img src="/logo.svg" alt="Cinema.fo" className="h-4 opacity-50" />
+                  <span className="text-sm font-medium">- SEARCH</span>
+                </div>
+              )}
               {query && (
                 <Button
                   variant="ghost"

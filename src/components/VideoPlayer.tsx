@@ -278,6 +278,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const hlsRef = useRef<Hls | null>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout>();
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Helper function to hide controls and clear timeout
+  const hideControls = useCallback(() => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+      controlsTimeoutRef.current = undefined;
+    }
+    setShowControls(false);
+  }, []);
   const initializedRef = useRef(false);
   const currentSourceUrlRef = useRef<string>('');
   const skipIntroTimeoutRef = useRef<NodeJS.Timeout>();
@@ -1040,12 +1049,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [currentSource, iframeContentDetected]);
 
-  // Cleanup source switch notification timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       // Removed sourceSwitchTimeoutRef cleanup
       if (iframeLoadTimeoutRef.current) {
         clearTimeout(iframeLoadTimeoutRef.current);
+      }
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
       }
     };
   }, []);
@@ -1989,8 +2001,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return;
     }
     
-    // Only toggle play/pause on PC (not mobile)
-    if (!isMobile) {
+    // Clear any existing timeout
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    
+    if (isMobile) {
+      // On mobile: toggle controls visibility
+      setShowControls(prev => !prev);
+      
+      // Auto-hide controls after 3 seconds if they're shown
+      if (!showControls) {
+        controlsTimeoutRef.current = setTimeout(() => {
+          hideControls();
+        }, 3000);
+      }
+    } else {
+      // On PC: toggle play/pause
       togglePlayPause();
     }
     
@@ -2612,7 +2639,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       if (isPlaying) {
-        setShowControls(false);
+        hideControls();
       }
     }, 3000);
 
@@ -2841,20 +2868,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onClick={handleScreenClick}
         onDoubleClick={handleScreenDoubleClick}
         onMouseMove={() => setShowControls(true)}
-        onMouseLeave={() => isPlaying && setShowControls(false)}
+        onMouseLeave={() => isPlaying && hideControls()}
         onTouchStart={(e) => {
           if (isMobile) {
-            setShowControls(true);
+            // Clear any existing timeout
+            if (controlsTimeoutRef.current) {
+              clearTimeout(controlsTimeoutRef.current);
+            }
+            
+            // Toggle controls visibility on touch
+            setShowControls(prev => !prev);
+            
+            // Auto-hide controls after 3 seconds if they're shown
+            if (!showControls) {
+              controlsTimeoutRef.current = setTimeout(() => {
+                hideControls();
+              }, 3000);
+            }
+            
             // Prevent default touch behavior to avoid conflicts
             e.preventDefault();
-            // Only show controls on touch - no play/pause toggle
           }
         }}
         onTouchEnd={(e) => {
           if (isMobile) {
             // Prevent default touch behavior
             e.preventDefault();
-            // Touch end handler - no play/pause toggle on mobile
           }
         }}
         onTouchMove={(e) => {
@@ -3004,11 +3043,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         {/* Removed auto-switch notification - using simple arrow button instead */}
 
-        {/* Server Selector - Always visible when multiple sources */}
-        {streamingSources.length > 1 && (
-          <div className="fixed top-4 right-2 sm:right-4 z-[9999] pointer-events-auto flex items-center gap-2">
-            {/* Info Icon */}
-            <div className="relative" data-server-info>
+        {/* Server Selector - Hide/Show with other controls in fullscreen */}
+        {showControls && streamingSources.length > 1 && (
+          <div className="fixed top-4 right-2 sm:right-4 z-[9999] pointer-events-auto flex items-center gap-2 transition-opacity duration-300">
+            {/* Info Icon - Hidden on mobile */}
+            <div className="relative hidden sm:block" data-server-info>
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -3031,7 +3070,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   <div className="text-white text-xs text-center">
                     <h4 className="font-semibold mb-1 text-blue-400 text-xs">Server Info</h4>
                     <p className="text-xs leading-relaxed whitespace-nowrap">
-                      Try a different server if one doesn't work.
+                      Try switching servers if one doesn't work.
                     </p>
                   </div>
                   {/* Arrow pointing up - centered */}
@@ -3055,7 +3094,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   console.log('Server dropdown button touched, current state:', showServerDropdown);
                   setShowServerDropdown(!showServerDropdown);
                 }}
-                className="bg-black/80 hover:bg-black/95 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg backdrop-blur-md border border-blue-500 shadow-2xl hover:shadow-blue-500/20 transition-all duration-200 hover:scale-105 min-w-[100px] sm:min-w-[140px] flex items-center justify-center gap-1 sm:gap-2 touch-manipulation"
+                className="bg-black/80 hover:bg-black/95 text-white p-2 rounded-lg backdrop-blur-md border border-blue-500 shadow-2xl hover:shadow-blue-500/20 transition-all duration-200 hover:scale-105 min-h-[44px] min-w-[44px] sm:min-w-[140px] flex items-center justify-center gap-1 sm:gap-2 touch-manipulation"
               >
                 <span className="text-sm sm:text-lg filter drop-shadow-[0_0_2px_rgba(59,130,246,0.8)]">☁️</span>
                 <span className="text-xs sm:text-sm font-medium">
@@ -3259,7 +3298,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
         )}
         
-        {/* Universal Back Button - Always visible */}
+        {/* Universal Back Button - Hide/Show with other controls in fullscreen */}
+        {showControls && (
             <button
               onClick={(e) => {
                 e.preventDefault();
@@ -3339,10 +3379,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 }
                 onClose();
               }}
-          className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation min-h-[44px] min-w-[44px]"
+          className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation min-h-[44px] min-w-[44px] transition-opacity duration-300"
             >
               <ArrowLeft size={20} />
             </button>
+        )}
 
         {/* Controls Overlay */}
         {showControls && currentSource?.type === 'hls' && (
@@ -3352,15 +3393,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
 
-            {/* Movie Title - Top Center */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 text-center pointer-events-auto max-w-[calc(100vw-120px)] px-2">
-                <h1 className="text-white text-sm sm:text-lg md:text-xl font-bold truncate">
-                  {title}
-                  {type === 'tv' && season && episode && (
-                    <span className="text-gray-300 text-xs sm:text-base md:text-lg ml-1 sm:ml-2">S{season}E{episode}</span>
-                  )}
-                </h1>
+            {/* Movie Title - Scrolling (Mobile Only) */}
+            <div className="absolute top-4 left-0 right-0 z-10 pointer-events-none h-[44px] flex items-center md:hidden">
+              <div className="marquee-container">
+                <div className="marquee-content">
+                  <span className="text-white text-sm font-bold whitespace-nowrap drop-shadow-lg">
+                    {title}
+                    {type === 'tv' && season && episode && (
+                      <span className="text-gray-300 text-xs ml-1">S{season}E{episode}</span>
+                    )}
+                  </span>
+                </div>
               </div>
+            </div>
+            
+            {/* Movie Title - Static (Desktop Only) */}
+            <div className="absolute top-4 left-0 right-0 z-10 pointer-events-none h-[44px] flex items-center justify-center hidden md:flex">
+              <h1 className="text-white text-lg md:text-xl font-bold whitespace-nowrap drop-shadow-lg px-4 text-center">
+                {title}
+                {type === 'tv' && season && episode && (
+                  <span className="text-gray-300 text-base md:text-lg ml-2">S{season}E{episode}</span>
+                )}
+              </h1>
+            </div>
               
             {/* Top Right Controls */}
                 <div 
@@ -3451,8 +3506,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               </div>
               
               {/* Control Buttons */}
-              <div className="flex items-center justify-between flex-wrap gap-1 sm:gap-2">
-                <div className="flex items-center gap-1 sm:gap-4 flex-wrap">
+              <div className="flex items-center justify-between gap-1 sm:gap-2">
+                <div className="flex items-center gap-1 sm:gap-4">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -3586,7 +3641,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-1 sm:gap-4 flex-wrap">
+                <div className="flex items-center gap-1 sm:gap-4">
                   {/* Speed Display */}
                   <div className="text-white text-sm bg-black/50 px-1.5 sm:px-2 py-1 rounded">
                     {playbackSpeed}x
@@ -3693,7 +3748,67 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         )}
       </div>
 
-      {/* Custom Styles are handled via global CSS */}
+      {/* Custom Styles */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .marquee-container {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            height: 100%;
+          }
+
+          .marquee-content {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 15s linear infinite;
+          }
+
+          @keyframes marquee {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+          }
+
+          /* Faster on mobile */
+          @media (max-width: 640px) {
+            .marquee-content {
+              animation: marquee 12s linear infinite;
+            }
+          }
+          
+          /* Galaxy Z Fold and large screen optimizations */
+          @media (min-width: 768px) and (max-width: 1024px) {
+            .controls-overlay .flex-wrap {
+              flex-wrap: nowrap !important;
+            }
+            .controls-overlay .gap-1 {
+              gap: 0.5rem !important;
+            }
+            .controls-overlay .gap-2 {
+              gap: 0.75rem !important;
+            }
+            .controls-overlay .gap-4 {
+              gap: 1rem !important;
+            }
+          }
+          
+          /* Fullscreen controls optimization */
+          .fullscreen-controls .flex-wrap {
+            flex-wrap: nowrap !important;
+          }
+          .fullscreen-controls .gap-1 {
+            gap: 0.25rem !important;
+          }
+          .fullscreen-controls .gap-2 {
+            gap: 0.5rem !important;
+          }
+          .fullscreen-controls .gap-4 {
+            gap: 0.75rem !important;
+          }
+        `
+      }} />
     </div>
   );
 };
