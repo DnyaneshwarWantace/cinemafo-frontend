@@ -57,7 +57,7 @@ const AdBanner: React.FC<AdBannerProps> = ({
       // Send click data to backend for tracking
       const trackAdClick = async () => {
         try {
-          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api'}/admin/public/track-ad-click`, {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'https://cinema.bz/api'}/admin/public/track-ad-click`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

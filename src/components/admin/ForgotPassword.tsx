@@ -23,7 +23,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack }) => {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [resetToken, setResetToken] = useState('');
 
-  const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api';
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinema.bz/api';
 
   const handleCheckUsername = async () => {
     if (!username.trim()) {

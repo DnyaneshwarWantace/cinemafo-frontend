@@ -364,7 +364,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinema.fo/api';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinema.bz/api';
       
       // Test backend connectivity first (optional)
       try {
