@@ -70,14 +70,14 @@ const Admin: React.FC = () => {
   const [settings, setSettings] = useState<AdminSettings>({
     content: {
       disclaimer: 'This is a streaming platform for entertainment purposes only.',
-      aboutUs: 'Cinema.fo is your premier destination for streaming movies and TV shows.',
+      aboutUs: 'Cinema.bz is your premier destination for streaming movies and TV shows.',
       discordLink: 'https://discord.gg/cinema-fo',
       telegramLink: 'https://t.me/cinema-fo'
     },
     features: {
       announcementBar: {
         enabled: false,
-        text: 'Welcome to Cinema.fo - Your premium streaming destination!'
+        text: 'Welcome to Cinema.bz - Your premium streaming destination!'
       },
       floatingButtons: {
         enabled: true,

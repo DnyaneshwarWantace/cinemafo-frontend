@@ -1044,7 +1044,7 @@ const AdminPanel: React.FC = () => {
               <div className="flex items-center">
                 <img 
                   src="/logo.svg" 
-                  alt="CINEMA.FO" 
+                  alt="CINEMA.BZ" 
                   className="h-10 w-auto transition-all duration-300 filter brightness-110"
                 />
                 <div className="ml-4">

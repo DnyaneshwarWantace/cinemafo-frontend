@@ -279,7 +279,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="absolute top-4 left-1/2 -translate-x-1/2">
-            <img src="/logo.svg" alt="CINEMA.FO" className="h-6 sm:h-8 md:h-10 lg:h-12 w-auto drop-shadow transition-all duration-300 filter brightness-110" />
+            <img src="/logo.svg" alt="CINEMA.BZ" className="h-6 sm:h-8 md:h-10 lg:h-12 w-auto drop-shadow transition-all duration-300 filter brightness-110" />
           </div>
             </div>
 
@@ -353,7 +353,7 @@ const MovieModal: React.FC<MovieModalProps> = ({ movie: initialMovie, onClose, o
                         {/* Continue Watching Button - Show if there's progress */}
                         {continueWatchingItem && (
                           <Button 
-                            onClick={() => handleWatchNow(continueWatchingItem.currentTime)} 
+                            onClick={handleWatchNow} 
                             className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-md text-base font-semibold hover:bg-blue-700 transition-all duration-200 hover:scale-105 transform w-full sm:w-auto"
                           >
                             <Play className="w-4 h-4" />

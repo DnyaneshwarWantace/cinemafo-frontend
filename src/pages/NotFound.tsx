@@ -34,7 +34,7 @@ const NotFound = () => {
           <div className="w-32 h-32 mx-auto mb-6 rounded-full flex items-center justify-center">
             <img 
               src="/logo-icon.svg" 
-              alt="CINEMA.FO" 
+              alt="CINEMA.BZ" 
               className="w-32 h-32 transition-all duration-300"
             />
           </div>

@@ -37,7 +37,7 @@ const Footer = () => {
             <div className="mb-6">
               <img 
                 src="/logo.svg" 
-                alt="CINEMA.FO" 
+                alt="CINEMA.BZ" 
                 className="h-12 w-auto"
               />
             </div>
@@ -103,7 +103,7 @@ const Footer = () => {
         {/* Copyright */}
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-gray-500 text-sm font-bold">
-            © {new Date().getFullYear()} CINEMA.FO. All rights reserved.
+            © {new Date().getFullYear()} CINEMA.BZ. All rights reserved.
           </p>
         </div>
       </div>

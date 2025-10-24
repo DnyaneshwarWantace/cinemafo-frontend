@@ -308,7 +308,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
               <Link to="/" className="flex-shrink-0 group">
               <img 
                 src="/logo.svg" 
-                  alt="CINEMA.FO" 
+                  alt="CINEMA.BZ" 
                   className="h-8 sm:h-9 md:h-10 lg:h-12 w-auto transition-all duration-300 group-hover:scale-105 filter group-hover:brightness-110"
               />
               </Link>
@@ -366,7 +366,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                       />
                       {!searchQuery && (
                         <div className="absolute left-10 top-1/2 transform -translate-y-1/2 flex items-center gap-2 text-gray-400 pointer-events-none">
-                          <img src="/logo.svg" alt="Cinema.fo" className="h-4 opacity-50" />
+                          <img src="/logo.svg" alt="Cinema.bz" className="h-4 opacity-50" />
                         </div>
                       )}
                       {searchQuery && (
@@ -870,7 +870,7 @@ const Navigation: React.FC<NavigationProps> = ({ inModalView = false }) => {
                     />
                     {!searchQuery && (
                       <div className="absolute left-10 top-1/2 transform -translate-y-1/2 flex items-center gap-2 text-gray-400 pointer-events-none">
-                        <img src="/logo.svg" alt="Cinema.fo" className="h-4 opacity-50" />
+                        <img src="/logo.svg" alt="Cinema.bz" className="h-4 opacity-50" />
                       </div>
                     )}
                     {searchQuery && (

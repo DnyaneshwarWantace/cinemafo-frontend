@@ -3243,7 +3243,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <div className="absolute inset-0 flex items-center justify-center -mt-10 sm:-mt-12 md:-mt-16">
               <img
                 src="/logo.svg"
-                alt="CINEMA.FO"
+                alt="CINEMA.BZ"
                 className="h-8 sm:h-10 md:h-12 lg:h-16 w-auto transition-all duration-300 filter brightness-110"
               />
             </div>

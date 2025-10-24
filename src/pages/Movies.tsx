@@ -481,7 +481,7 @@ const Movies = () => {
             />
             {!searchQuery && (
               <div className="absolute left-10 top-1/2 transform -translate-y-1/2 flex items-center gap-2 text-gray-400 pointer-events-none">
-                <img src="/logo.svg" alt="Cinema.fo" className="h-4 opacity-50" />
+                <img src="/logo.svg" alt="Cinema.bz" className="h-4 opacity-50" />
                 <span className="text-xs font-medium">- MOVIES</span>
               </div>
             )}
@@ -614,7 +614,7 @@ const Movies = () => {
               />
               {!searchQuery && (
                 <div className="absolute left-10 top-1/2 transform -translate-y-1/2 flex items-center gap-2 text-gray-400 pointer-events-none">
-                  <img src="/logo.svg" alt="Cinema.fo" className="h-5 opacity-50" />
+                  <img src="/logo.svg" alt="Cinema.bz" className="h-5 opacity-50" />
                   <span className="text-sm font-medium">- MOVIES</span>
                 </div>
               )}

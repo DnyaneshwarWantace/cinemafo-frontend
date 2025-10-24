@@ -303,7 +303,7 @@ const TVShowPlayer: React.FC<TVShowPlayerProps> = ({ show, onClose, onProgressUp
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="absolute top-4 left-1/2 -translate-x-1/2">
-            <img src="/logo.svg" alt="CINEMA.FO" className="h-6 sm:h-8 md:h-10 lg:h-12 w-auto drop-shadow transition-all duration-300 filter brightness-110" />
+            <img src="/logo.svg" alt="CINEMA.BZ" className="h-6 sm:h-8 md:h-10 lg:h-12 w-auto drop-shadow transition-all duration-300 filter brightness-110" />
           </div>
           </div>
 
