@@ -24,6 +24,6 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     // This line ensures VITE_BACKEND_URL is hardcoded into your final build
-    'import.meta.env.VITE_BACKEND_URL': JSON.stringify(process.env.VITE_BACKEND_URL || 'http://localhost:5000/api'),
+    'import.meta.env.VITE_BACKEND_URL': JSON.stringify(process.env.VITE_BACKEND_URL || 'https://cinema.bz/api'),
   },
 }));

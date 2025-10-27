@@ -364,7 +364,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinema.bz/api';
       
       // Test backend connectivity first (optional)
       try {
@@ -2961,6 +2961,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onMouseLeave={() => isPlaying && hideControls()}
         onTouchStart={(e) => {
           if (isMobile) {
+            // Check if touch is on a control element
+            const target = e.target as HTMLElement;
+            const isControlTouch = target.closest('button') || 
+                                  target.closest('input') || 
+                                  target.closest('.controls-overlay') ||
+                                  target.closest('.settings-menu') ||
+                                  target.closest('.settings-button') ||
+                                  target.closest('[type="range"]') ||
+                                  target.closest('[data-server-dropdown]') ||
+                                  target.closest('[data-server-info]') ||
+                                  target.closest('.fixed') ||
+                                  target.tagName === 'INPUT' ||
+                                  target.tagName === 'BUTTON';
+            
+            // Don't handle touches on controls
+            if (isControlTouch) {
+              console.log('🎯 Touch detected on control element, not toggling controls');
+              return;
+            }
+            
             // Clear any existing timeout
             if (controlsTimeoutRef.current) {
               clearTimeout(controlsTimeoutRef.current);
