@@ -514,7 +514,6 @@ const Search = () => {
           <AdBanner 
               adKey="searchTopAd"
               imageUrl={adminSettings.ads.searchTopAd.imageUrl}
-                              cloudinaryUrl={adminSettings.ads.searchTopAd.cloudinaryUrl}
               clickUrl={adminSettings.ads.searchTopAd.clickUrl}
               enabled={adminSettings.ads.searchTopAd.enabled}
           />
@@ -787,7 +786,6 @@ const Search = () => {
           <AdBanner 
               adKey="searchBottomAd"
               imageUrl={adminSettings.ads.searchBottomAd.imageUrl}
-                              cloudinaryUrl={adminSettings.ads.searchBottomAd.cloudinaryUrl}
               clickUrl={adminSettings.ads.searchBottomAd.clickUrl}
               enabled={adminSettings.ads.searchBottomAd.enabled}
             />
