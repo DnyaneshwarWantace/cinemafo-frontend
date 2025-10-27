@@ -281,6 +281,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   
   // Helper function to hide controls and clear timeout
   const hideControls = useCallback(() => {
+    console.log('🔇 Hiding controls');
     if (controlsTimeoutRef.current) {
       clearTimeout(controlsTimeoutRef.current);
       controlsTimeoutRef.current = undefined;
@@ -2071,19 +2072,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const handleScreenClick = (e: React.MouseEvent) => {
-    // Check if the click is on a control element
+    // Check if the click is on a control element (excluding always-visible buttons)
     const target = e.target as HTMLElement;
-    const isControlClick = target.closest('button') || 
-                          target.closest('input') || 
+    const isAlwaysVisibleButton = target.closest('.absolute.top-4.left-4') || // Back button
+                                target.closest('.fixed.top-4.right-2') || // Server button
+                                target.closest('.fixed.top-4.right-4');
+    
+    const isControlClick = target.closest('input') || 
                           target.closest('.controls-overlay') ||
                           target.closest('.settings-menu') ||
                           target.closest('.settings-button') ||
                           target.closest('[type="range"]') ||
                           target.closest('[data-server-dropdown]') ||
                           target.closest('[data-server-info]') ||
-                          target.closest('.fixed') ||
-                          target.tagName === 'INPUT' ||
-                          target.tagName === 'BUTTON';
+                          (target.tagName === 'INPUT') ||
+                          // Only exclude buttons that are NOT the always-visible ones
+                          (target.tagName === 'BUTTON' && !isAlwaysVisibleButton);
     
     // Don't handle clicks on controls
     if (isControlClick) {
@@ -2961,19 +2965,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         onMouseLeave={() => isPlaying && hideControls()}
         onTouchStart={(e) => {
           if (isMobile) {
-            // Check if touch is on a control element
+            // Check if touch is on a control element (excluding always-visible buttons)
             const target = e.target as HTMLElement;
-            const isControlTouch = target.closest('button') || 
-                                  target.closest('input') || 
+            const isAlwaysVisibleButton = target.closest('.absolute.top-4.left-4') || // Back button
+                                        target.closest('.fixed.top-4.right-2') || // Server button
+                                        target.closest('.fixed.top-4.right-4');
+            
+            const isControlTouch = target.closest('input') || 
                                   target.closest('.controls-overlay') ||
                                   target.closest('.settings-menu') ||
                                   target.closest('.settings-button') ||
                                   target.closest('[type="range"]') ||
                                   target.closest('[data-server-dropdown]') ||
                                   target.closest('[data-server-info]') ||
-                                  target.closest('.fixed') ||
-                                  target.tagName === 'INPUT' ||
-                                  target.tagName === 'BUTTON';
+                                  (target.tagName === 'INPUT') ||
+                                  // Only exclude buttons that are NOT the always-visible ones
+                                  (target.tagName === 'BUTTON' && !isAlwaysVisibleButton);
             
             // Don't handle touches on controls
             if (isControlTouch) {
@@ -2987,14 +2994,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             }
             
             // Toggle controls visibility on touch
-            setShowControls(prev => !prev);
-            
-            // Auto-hide controls after 3 seconds if they're shown
-            if (!showControls) {
-              controlsTimeoutRef.current = setTimeout(() => {
-                hideControls();
-              }, 3000);
-            }
+            setShowControls(prev => {
+              const newShowControls = !prev;
+              console.log(`📱 Mobile touch: Controls ${prev ? 'hidden' : 'visible'} → ${newShowControls ? 'visible' : 'hidden'}`);
+              
+              // Auto-hide controls after 3 seconds if they're being shown
+              if (newShowControls) {
+                console.log('⏰ Setting 3-second auto-hide timeout');
+                controlsTimeoutRef.current = setTimeout(() => {
+                  console.log('⏰ Auto-hiding controls after 3 seconds');
+                  hideControls();
+                }, 3000);
+              }
+              
+              return newShowControls;
+            });
             
             // Prevent default touch behavior to avoid conflicts
             e.preventDefault();
@@ -3004,6 +3018,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           if (isMobile) {
             // Prevent default touch behavior
             e.preventDefault();
+            e.stopPropagation();
+            console.log('📱 Touch end event');
           }
         }}
         onTouchMove={(e) => {
@@ -3153,9 +3169,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         
         {/* Removed auto-switch notification - using simple arrow button instead */}
 
-        {/* Server Selector - Hide/Show with other controls in fullscreen */}
-        {showControls && streamingSources.length > 1 && (
-          <div className="fixed top-4 right-2 sm:right-4 z-[9999] pointer-events-auto flex items-center gap-2 transition-opacity duration-300">
+        {/* Server Selector - Always visible */}
+        {streamingSources.length > 1 && (
+          <div className="fixed top-4 right-2 sm:right-4 z-[9999] pointer-events-auto flex items-center gap-2">
             {/* Info Icon - Hidden on mobile */}
             <div className="relative hidden sm:block" data-server-info>
               <button
@@ -3418,9 +3434,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
         )}
         
-        {/* Universal Back Button - Hide/Show with other controls in fullscreen */}
-        {showControls && (
-            <button
+        {/* Universal Back Button - Always visible */}
+        <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -3438,11 +3453,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 console.log('🎬 Universal back button touched (mobile)');
                 handleBackButton();
               }}
-          className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-1.5 sm:p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] transition-opacity duration-300"
+          className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-1.5 sm:p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px]"
             >
               <ArrowLeft size={16} className="sm:w-5 sm:h-5" />
             </button>
-        )}
 
         {/* Controls Overlay */}
         {showControls && currentSource?.type === 'hls' && (
