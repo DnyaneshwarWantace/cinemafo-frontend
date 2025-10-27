@@ -701,6 +701,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       }
       
+      // CRITICAL: Clean up HLS instance before switching to prevent conflicts
+      if (hlsRef.current) {
+        console.log('🧹 Cleaning up HLS instance before auto-switch');
+        try {
+          hlsRef.current.destroy();
+          console.log('✅ HLS instance destroyed successfully');
+        } catch (error) {
+          console.warn('Error destroying HLS instance during auto-switch:', error);
+        }
+        hlsRef.current = null;
+      }
+      
+      // Clear video source to prevent conflicts
+      if (video) {
+        video.src = '';
+        video.load();
+        console.log('🧹 Video source cleared');
+      }
+      
       // Reset player tracking for new server
       setPlayerCurrentTime(0);
       setPlayerDuration(0);
@@ -712,7 +731,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setError(null);
       setLoading(true);
       setIframeContentDetected(false); // Reset content detection for new source
-      // Don't hide switch button - keep it visible for manual control
+      setShowSwitchSourceButton(true); // Keep switch button visible for manual control
+      setHlsFailed(false); // Reset HLS failure flag when auto-switching
+      
+      console.log(`✅ Auto-switch completed: Now using ${streamingSources[nextIndex].type} server ${nextIndex + 1}`);
       
       // Silent switching - no notifications
     } else {
@@ -1268,6 +1290,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Server switching with timeline preservation and watch time accumulation
   const switchServerWithTimeline = useCallback((newSourceIndex: number) => {
     if (newSourceIndex !== currentSourceIndex && newSourceIndex < streamingSources.length) {
+      console.log(`🔄 Manual switch: From ${currentSource?.type} server ${currentSourceIndex + 1} to server ${newSourceIndex + 1}`);
+      
       // Preserve current playback time and pass it to the next server
       const video = videoRef.current;
       let currentPlaybackTime = 0;
@@ -1291,6 +1315,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         }
       }
       
+      // CRITICAL: Clean up HLS instance before switching to prevent conflicts
+      if (hlsRef.current) {
+        console.log('🧹 Cleaning up HLS instance before server switch');
+        try {
+          hlsRef.current.destroy();
+          console.log('✅ HLS instance destroyed successfully');
+        } catch (error) {
+          console.warn('Error destroying HLS instance during switch:', error);
+        }
+        hlsRef.current = null;
+      }
+      
+      // Clear video source to prevent conflicts
+      if (video) {
+        video.src = '';
+        video.load();
+        console.log('🧹 Video source cleared');
+      }
+      
       // Reset player tracking for new server
       setPlayerCurrentTime(0);
       setPlayerDuration(0);
@@ -1303,6 +1346,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setLoading(true);
       setIframeContentDetected(false);
       setHlsFailed(false); // Reset HLS failure flag when manually switching
+      
+      console.log(`✅ Server switch completed: Now using ${streamingSources[newSourceIndex].type} server ${newSourceIndex + 1}`);
     }
   }, [currentSourceIndex, streamingSources, lastServerSwitchTime, totalWatchTime]);
 
@@ -2792,29 +2837,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Handle click outside server dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
       const serverDropdown = document.querySelector('[data-server-dropdown]');
       const serverInfo = document.querySelector('[data-server-info]');
       
-      if (serverDropdown && !serverDropdown.contains(event.target as Node)) {
+      // Close server dropdown if clicking outside
+      if (showServerDropdown && serverDropdown && !serverDropdown.contains(target)) {
+        console.log('🎬 Clicking outside server dropdown, closing...');
         setShowServerDropdown(false);
       }
       
-      if (serverInfo && !serverInfo.contains(event.target as Node)) {
+      // Close server info if clicking outside
+      if (showServerInfo && serverInfo && !serverInfo.contains(target)) {
+        console.log('🎬 Clicking outside server info, closing...');
         setShowServerInfo(false);
       }
     };
 
     if (showServerDropdown || showServerInfo) {
-      // Use a small delay for touch events to prevent immediate closing
-      const timeoutId = setTimeout(() => {
+      // Add event listeners immediately for better responsiveness
       document.addEventListener('mousedown', handleClickOutside);
-        document.addEventListener('touchend', handleClickOutside);
-      }, 100);
+      document.addEventListener('touchstart', handleClickOutside);
       
       return () => {
-        clearTimeout(timeoutId);
         document.removeEventListener('mousedown', handleClickOutside);
-        document.removeEventListener('touchend', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
       };
     }
   }, [showServerDropdown, showServerInfo]);
