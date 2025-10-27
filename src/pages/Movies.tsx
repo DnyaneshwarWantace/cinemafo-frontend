@@ -474,17 +474,11 @@ const Movies = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               type="text"
-              placeholder=""
+              placeholder="Search movies..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               className="pl-10 pr-10 bg-gray-800/30 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500"
             />
-            {!searchQuery && (
-              <div className="absolute left-10 top-1/2 transform -translate-y-1/2 flex items-center gap-2 text-gray-400 pointer-events-none">
-                <img src="/logo.svg" alt="Cinema.bz" className="h-4 opacity-50" />
-                <span className="text-xs font-medium">- MOVIES</span>
-              </div>
-            )}
             {searchQuery && (
           <button 
                 onClick={clearSearch}
@@ -607,17 +601,11 @@ const Movies = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
                 type="text"
-                placeholder=""
+                placeholder="Search movies..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="pl-10 pr-10 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-0 focus:outline-none focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-lg rounded-full"
               />
-              {!searchQuery && (
-                <div className="absolute left-10 top-1/2 transform -translate-y-1/2 flex items-center gap-2 text-gray-400 pointer-events-none">
-                  <img src="/logo.svg" alt="Cinema.bz" className="h-5 opacity-50" />
-                  <span className="text-sm font-medium">- MOVIES</span>
-                </div>
-              )}
               {searchQuery && (
                   <button
                   onClick={clearSearch}

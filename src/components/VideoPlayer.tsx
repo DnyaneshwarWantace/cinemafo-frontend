@@ -364,7 +364,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'https://cinema.bz/api';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
       
       // Test backend connectivity first (optional)
       try {
@@ -1447,6 +1447,51 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, []);
 
+  // Handle back button action
+  const handleBackButton = useCallback(() => {
+    console.log('🎬 Handle back button called');
+    // Capture final screenshot before closing
+    if (onProgressUpdate) {
+      // Use current server's playback time
+      const video = videoRef.current;
+      let finalTotalTime = 0;
+      
+      if (currentSource?.type === 'hls' && video && !isNaN(video.currentTime) && video.currentTime > 0) {
+        finalTotalTime = video.currentTime;
+      } else if (currentSource?.type === 'iframe') {
+        // For iframe, try multiple sources for current time
+        if (playerCurrentTime > 0) {
+          finalTotalTime = playerCurrentTime;
+        } else if (iframeElapsedTime > 0) {
+          finalTotalTime = iframeElapsedTime;
+        } else if (iframeStartTime > 0) {
+          // Manual time tracking: start time + elapsed time
+          const elapsedTime = (Date.now() - iframeStartTime) / 1000;
+          const startTime = preservedTime > 0 ? preservedTime : initialTime;
+          finalTotalTime = startTime + elapsedTime;
+        } else if (preservedTime > 0) {
+          finalTotalTime = preservedTime;
+        } else if (initialTime > 0) {
+          finalTotalTime = initialTime;
+        }
+      }
+      
+      console.log(`📊 Universal Back: Using ${currentSource?.type} server time: ${finalTotalTime.toFixed(2)}s (${Math.floor(finalTotalTime/60)}:${Math.floor(finalTotalTime%60).toString().padStart(2, '0')})`);
+      
+      const duration = actualDuration || videoRef.current?.duration || (type === 'tv' ? 2700 : 7200);
+      console.log('🎬 Universal back button - calling onProgressUpdate with total watch time');
+      console.log('🎬 Final total watch time:', finalTotalTime, 'Duration:', duration);
+      onProgressUpdate(finalTotalTime, duration, videoRef.current);
+    }
+    onClose();
+  }, [onProgressUpdate, currentSource?.type, playerCurrentTime, iframeElapsedTime, iframeStartTime, preservedTime, initialTime, actualDuration, type, onClose]);
+
+  // Handle server button click
+  const handleServerButtonClick = useCallback(() => {
+    console.log('🔄 Server button clicked, toggling dropdown');
+    setShowServerDropdown(!showServerDropdown);
+  }, [showServerDropdown]);
+
   // Enhanced video controls with better error handling and user feedback
   const togglePlayPause = useCallback(async () => {
     console.log('togglePlayPause called, current isPlaying:', isPlaying);
@@ -2034,11 +2079,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                           target.closest('.settings-menu') ||
                           target.closest('.settings-button') ||
                           target.closest('[type="range"]') ||
+                          target.closest('[data-server-dropdown]') ||
+                          target.closest('[data-server-info]') ||
+                          target.closest('.fixed') ||
                           target.tagName === 'INPUT' ||
                           target.tagName === 'BUTTON';
     
     // Don't handle clicks on controls
     if (isControlClick) {
+      console.log('🎯 Click detected on control element, not hiding controls');
       return;
     }
     
@@ -3127,15 +3176,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   e.preventDefault();
                   e.stopPropagation();
                   console.log('Server dropdown button clicked, current state:', showServerDropdown);
-                  setShowServerDropdown(!showServerDropdown);
+                  handleServerButtonClick();
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Server dropdown button touch start');
                 }}
                 onTouchEnd={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   console.log('Server dropdown button touched, current state:', showServerDropdown);
-                  setShowServerDropdown(!showServerDropdown);
+                  handleServerButtonClick();
                 }}
-                className="bg-black/80 hover:bg-black/95 text-white p-2 rounded-lg backdrop-blur-md border border-blue-500 shadow-2xl hover:shadow-blue-500/20 transition-all duration-200 hover:scale-105 min-h-[44px] min-w-[44px] sm:min-w-[140px] flex items-center justify-center gap-1 sm:gap-2 touch-manipulation"
+                className="bg-black/80 hover:bg-black/95 text-white p-1 sm:p-2 rounded-lg backdrop-blur-md border border-blue-500 shadow-2xl hover:shadow-blue-500/20 transition-all duration-200 hover:scale-105 min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] sm:min-w-[140px] flex items-center justify-center gap-1 sm:gap-2 touch-manipulation"
               >
                 <span className="text-sm sm:text-lg filter drop-shadow-[0_0_2px_rgba(59,130,246,0.8)]">☁️</span>
                 <span className="text-xs sm:text-sm font-medium">
@@ -3157,9 +3211,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                         switchServerWithTimeline(index);
                         setShowServerDropdown(false);
                       }}
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                       onTouchEnd={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        console.log(`🔄 Server ${index + 1} selected via touch`);
                         switchServerWithTimeline(index);
                         setShowServerDropdown(false);
                       }}
@@ -3345,84 +3404,23 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-            console.log('🎬 Universal back button clicked');
-                // Capture final screenshot before closing
-            if (onProgressUpdate) {
-              // Use current server's playback time
-              const video = videoRef.current;
-              let finalTotalTime = 0;
-              
-              if (currentSource?.type === 'hls' && video && !isNaN(video.currentTime) && video.currentTime > 0) {
-                finalTotalTime = video.currentTime;
-              } else if (currentSource?.type === 'iframe') {
-                // For iframe, try multiple sources for current time
-                if (playerCurrentTime > 0) {
-                  finalTotalTime = playerCurrentTime;
-                } else if (iframeElapsedTime > 0) {
-                  finalTotalTime = iframeElapsedTime;
-                } else if (iframeStartTime > 0) {
-                  // Manual time tracking: start time + elapsed time
-                  const elapsedTime = (Date.now() - iframeStartTime) / 1000;
-                  const startTime = preservedTime > 0 ? preservedTime : initialTime;
-                  finalTotalTime = startTime + elapsedTime;
-                } else if (preservedTime > 0) {
-                  finalTotalTime = preservedTime;
-                } else if (initialTime > 0) {
-                  finalTotalTime = initialTime;
-                }
-              }
-              
-              console.log(`📊 Universal Back: Using ${currentSource?.type} server time: ${finalTotalTime.toFixed(2)}s (${Math.floor(finalTotalTime/60)}:${Math.floor(finalTotalTime%60).toString().padStart(2, '0')})`);
-              
-              const duration = actualDuration || videoRef.current?.duration || (type === 'tv' ? 2700 : 7200);
-              console.log('🎬 Universal back button clicked - calling onProgressUpdate with total watch time');
-              console.log('🎬 Final total watch time:', finalTotalTime, 'Duration:', duration);
-              onProgressUpdate(finalTotalTime, duration, videoRef.current);
-                }
-                onClose();
+                console.log('🎬 Universal back button clicked');
+                handleBackButton();
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🎬 Universal back button touch start');
               }}
               onTouchEnd={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-            console.log('🎬 Universal back button touched (mobile)');
-                // Capture final screenshot before closing
-            if (onProgressUpdate) {
-              // Use current server's playback time
-              const video = videoRef.current;
-              let finalTotalTime = 0;
-              
-              if (currentSource?.type === 'hls' && video && !isNaN(video.currentTime) && video.currentTime > 0) {
-                finalTotalTime = video.currentTime;
-              } else if (currentSource?.type === 'iframe') {
-                // For iframe, try multiple sources for current time
-                if (playerCurrentTime > 0) {
-                  finalTotalTime = playerCurrentTime;
-                } else if (iframeElapsedTime > 0) {
-                  finalTotalTime = iframeElapsedTime;
-                } else if (iframeStartTime > 0) {
-                  // Manual time tracking: start time + elapsed time
-                  const elapsedTime = (Date.now() - iframeStartTime) / 1000;
-                  const startTime = preservedTime > 0 ? preservedTime : initialTime;
-                  finalTotalTime = startTime + elapsedTime;
-                } else if (preservedTime > 0) {
-                  finalTotalTime = preservedTime;
-                } else if (initialTime > 0) {
-                  finalTotalTime = initialTime;
-                }
-              }
-              
-              console.log(`📊 Universal Back: Using ${currentSource?.type} server time: ${finalTotalTime.toFixed(2)}s (${Math.floor(finalTotalTime/60)}:${Math.floor(finalTotalTime%60).toString().padStart(2, '0')})`);
-              
-              const duration = actualDuration || videoRef.current?.duration || (type === 'tv' ? 2700 : 7200);
-              console.log('🎬 Universal back button touched - calling onProgressUpdate with total watch time');
-              console.log('🎬 Final total watch time:', finalTotalTime, 'Duration:', duration);
-              onProgressUpdate(finalTotalTime, duration, videoRef.current);
-                }
-                onClose();
+                console.log('🎬 Universal back button touched (mobile)');
+                handleBackButton();
               }}
-          className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation min-h-[44px] min-w-[44px] transition-opacity duration-300"
+          className="absolute top-4 left-4 z-50 flex items-center justify-center bg-black/70 hover:bg-black/90 text-white p-1.5 sm:p-2 rounded-lg transition-all duration-300 pointer-events-auto border border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation min-h-[36px] min-w-[36px] sm:min-h-[44px] sm:min-w-[44px] transition-opacity duration-300"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={16} className="sm:w-5 sm:h-5" />
             </button>
         )}
 
@@ -3434,18 +3432,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
 
-            {/* Movie Title - Scrolling (Mobile Only) */}
-            <div className="absolute top-4 left-0 right-0 z-10 pointer-events-none h-[44px] flex items-center md:hidden">
-              <div className="marquee-container">
-                <div className="marquee-content">
-                  <span className="text-white text-sm font-bold whitespace-nowrap drop-shadow-lg">
-                    {title}
-                    {type === 'tv' && season && episode && (
-                      <span className="text-gray-300 text-xs ml-1">S{season}E{episode}</span>
-                    )}
-                  </span>
-                </div>
-              </div>
+            {/* Movie Title - Static (Mobile) */}
+            <div className="absolute top-4 left-0 right-0 z-10 pointer-events-none h-[44px] flex items-center md:hidden px-16">
+              <h1 className="text-white text-sm font-bold whitespace-nowrap drop-shadow-lg text-center w-full truncate">
+                {title}
+                {type === 'tv' && season && episode && (
+                  <span className="text-gray-300 text-xs ml-1">S{season}E{episode}</span>
+                )}
+              </h1>
             </div>
             
             {/* Movie Title - Static (Desktop Only) */}
@@ -3792,33 +3786,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {/* Custom Styles */}
       <style dangerouslySetInnerHTML={{
         __html: `
-          .marquee-container {
-            width: 100%;
-            overflow: hidden;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            height: 100%;
-          }
-
-          .marquee-content {
-            display: inline-block;
-            padding-left: 100%;
-            animation: marquee 15s linear infinite;
-          }
-
-          @keyframes marquee {
-            0% { transform: translate3d(0, 0, 0); }
-            100% { transform: translate3d(-100%, 0, 0); }
-          }
-
-          /* Faster on mobile */
-          @media (max-width: 640px) {
-            .marquee-content {
-              animation: marquee 12s linear infinite;
-            }
-          }
-          
           /* Galaxy Z Fold and large screen optimizations */
           @media (min-width: 768px) and (max-width: 1024px) {
             .controls-overlay .flex-wrap {

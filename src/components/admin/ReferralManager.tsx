@@ -8,8 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Plus, Copy, Eye, Edit, Trash2, BarChart3, Users, MousePointer, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://cinema.bz/api';
-const BACKEND_SERVER_URL = import.meta.env.VITE_BACKEND_SERVER_URL || 'https://cinema.bz';
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
+const BACKEND_SERVER_URL = import.meta.env.VITE_BACKEND_SERVER_URL || 'http://localhost:5000/api';
 
 interface Referral {
   _id: string;
