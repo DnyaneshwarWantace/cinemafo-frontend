@@ -1714,68 +1714,6 @@ const AdminPanel: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Ad Templates */}
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white">Ad Templates</CardTitle>
-                <CardDescription className="text-gray-300">
-                  Quick ad templates to get started
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Demo Ad Templates */}
-                  {[
-                    { name: 'Gaming Ad', imageUrl: 'https://picsum.photos/400/200?random=gaming', clickUrl: 'https://gaming-site.com', category: 'Entertainment' },
-                    { name: 'Tech Ad', imageUrl: 'https://picsum.photos/400/200?random=tech', clickUrl: 'https://tech-site.com', category: 'Technology' },
-                    { name: 'Fashion Ad', imageUrl: 'https://picsum.photos/400/200?random=fashion', clickUrl: 'https://fashion-site.com', category: 'Lifestyle' },
-                    { name: 'Food Ad', imageUrl: 'https://picsum.photos/400/200?random=food', clickUrl: 'https://food-site.com', category: 'Food & Drink' },
-                    { name: 'Travel Ad', imageUrl: 'https://picsum.photos/400/200?random=travel', clickUrl: 'https://travel-site.com', category: 'Travel' },
-                    { name: 'Education Ad', imageUrl: 'https://picsum.photos/400/200?random=education', clickUrl: 'https://edu-site.com', category: 'Education' }
-                  ].map((template) => (
-                    <div key={template.name} className="bg-gray-700/50 rounded-lg p-4 border border-gray-600 hover:border-blue-500 transition-colors">
-                      <img 
-                        src={template.imageUrl} 
-                        alt={template.name} 
-                        className="w-full h-24 object-cover rounded mb-3"
-                      />
-                      <h4 className="text-white font-medium mb-1">{template.name}</h4>
-                      <p className="text-gray-400 text-xs mb-3">{template.category}</p>
-                      <Button
-                        onClick={() => {
-                          // Find first available slot and apply template
-                          const availableSlot = Object.keys(settings?.ads || {}).find(key => 
-                            !settings?.ads?.[key as keyof typeof settings.ads]?.enabled
-                          );
-                          if (availableSlot && settings) {
-                            const newSettings = {
-                              ...settings,
-                              ads: {
-                                ...settings.ads,
-                                [availableSlot]: {
-                                  enabled: true,
-                                  imageUrl: template.imageUrl,
-                                  clickUrl: template.clickUrl
-                                }
-                              }
-                            };
-                            setSettings(newSettings);
-                            updateAdsMutation.mutate(newSettings.ads);
-                            toast({
-                              title: "Success",
-                              description: `Applied ${template.name} to ${availableSlot}`,
-                            });
-                          }
-                        }}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm"
-                      >
-                        Apply Template
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
