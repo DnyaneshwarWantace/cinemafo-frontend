@@ -257,7 +257,7 @@ const adminApi = {
     });
     
     if (!response.ok) {
-              throw new Error('Failed to upload ad image to Google Drive');
+              throw new Error('Failed to upload ad image to Storj');
     }
     
     return response.json();
@@ -703,7 +703,7 @@ const AdminPanel: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['adminSettings'] });
       toast({
         title: "Success",
-        description: data.message || "Image uploaded to Google Drive successfully!",
+        description: data.message || "Image uploaded to Storj successfully!",
       });
     },
     onError: (error) => {
@@ -733,7 +733,7 @@ const AdminPanel: React.FC = () => {
     
     toast({
       title: "Starting upload",
-      description: `Uploading ${adsToUpload.length} ads to Google Drive...`,
+      description: `Uploading ${adsToUpload.length} ads to Storj...`,
     });
     
     // Upload ads one by one
@@ -1618,7 +1618,7 @@ const AdminPanel: React.FC = () => {
                             </div>
                             {adConfig.imageUrl && !adConfig.cloudinaryUrl && (
                               <p className="text-xs text-yellow-400 mt-1">
-                                ⚠️ Image URL set but not uploaded to Google Drive. Use "Upload All Ads to Google Drive" button below.
+                                ⚠️ Image URL set but not uploaded to Storj. Use "Upload All Ads to Storj" button below.
                               </p>
                             )}
                           </div>
@@ -1636,7 +1636,7 @@ const AdminPanel: React.FC = () => {
                         {adConfig.cloudinaryUrl && (
                           <div>
                             <Label className="text-white">
-                              {adConfig.cloudinaryUrl.startsWith('http') ? '✅ Google Drive Image URL (Ready to use)' : '⚠️ Local Image URL (Fallback)'}
+                              {adConfig.cloudinaryUrl.startsWith('http') ? '✅ Storj Image URL (Ready to use)' : '⚠️ Local Image URL (Fallback)'}
                             </Label>
                             <Input
                               value={adConfig.cloudinaryUrl}
@@ -1646,8 +1646,8 @@ const AdminPanel: React.FC = () => {
                             <div className="flex items-center gap-2 mt-1">
                               <p className={`text-xs ${adConfig.cloudinaryUrl.startsWith('http') ? 'text-blue-400' : 'text-yellow-400'}`}>
                                 {adConfig.cloudinaryUrl.startsWith('http') 
-                                  ? '✅ Image uploaded to Google Drive successfully! This image is stored in the cloud and optimized for fast loading.'
-                                  : '⚠️ Image saved locally (Google Drive upload failed). Check your Google Drive configuration.'
+                                  ? '✅ Image uploaded to Storj successfully! This image is stored in the cloud and optimized for fast loading.'
+                                  : '⚠️ Image saved locally (Storj upload failed). Check your Storj configuration.'
                                 }
                               </p>
                               <Button
@@ -1670,7 +1670,7 @@ const AdminPanel: React.FC = () => {
                                     await updateAdsMutation.mutateAsync(newSettings.ads);
                                     toast({
                                       title: "Cleared",
-                                      description: "Google Drive image removed. Upload a new image to continue.",
+                                      description: "Storj image removed. Upload a new image to continue.",
                                     });
                                     // Force refresh the settings to get the latest data from backend
                                     queryClient.invalidateQueries({ queryKey: ['adminSettings'] });
@@ -1678,7 +1678,7 @@ const AdminPanel: React.FC = () => {
                                     console.error('Error clearing uploaded image:', error);
                                     toast({
                                       title: "Error",
-                                      description: "Failed to clear Google Drive image. Please try again.",
+                                      description: "Failed to clear Storj image. Please try again.",
                                       variant: "destructive",
                                     });
                                   }
@@ -1708,7 +1708,7 @@ const AdminPanel: React.FC = () => {
                     disabled={uploadAdImageMutation.isPending}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    {uploadAdImageMutation.isPending ? 'Uploading...' : '☁️ Upload All Ads to Google Drive'}
+                    {uploadAdImageMutation.isPending ? 'Uploading...' : '☁️ Upload All Ads to Storj'}
                   </Button>
                 </div>
               </CardContent>
